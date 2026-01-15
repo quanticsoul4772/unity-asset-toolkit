@@ -1,23 +1,29 @@
 # Environment Checklist 
  
 ## Software Installation 
-- [ ] Unity Hub installed 
-- [ ] Unity 6 LTS installed 
-- [ ] JetBrains Rider OR Visual Studio 2022 
-- [ ] Git installed 
+- [x] Unity Hub installed 
+- [x] Unity 7 LTS installed 
+- [x] Visual Studio 2022 installed 
+- [x] Git installed (v2.45.1) 
 - [ ] Git LFS configured 
  
 ## Unity Setup 
-- [ ] Create Unity ID/account 
+- [ ] Create Unity ID/account (if not done) 
 - [ ] Create Publisher account at publisher.unity.com 
-- [ ] Configure Unity Hub preferences 
+- [ ] Set Visual Studio 2022 as external editor 
  
-## IDE Setup 
-- [ ] Unity integration plugin enabled 
-- [ ] Code style/formatting configured 
-- [ ] Git integration configured 
+## Visual Studio Setup 
+- [ ] Install Unity workload 
+- [ ] Enable Unity integration plugin 
+- [ ] Configure code formatting 
  
 ## First Project 
 - [ ] Create new Unity project in assets/ folder 
-- [ ] Test build works 
-- [ ] Test git commit works
+- [ ] Test build compiles 
+- [ ] Test Play mode works 
+- [ ] Test git commit works 
+ 
+## Asset Store Prep 
+- [ ] Review Asset Store guidelines 
+- [ ] Plan documentation structure 
+- [ ] Design demo scenes
