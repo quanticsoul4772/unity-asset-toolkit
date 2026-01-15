@@ -1,0 +1,20 @@
+# Unity Asset Toolkit .gitignore  
+  
+# Unity  
+[Ll]ibrary/  
+[Tt]emp/  
+[Oo]bj/  
+[Bb]uild/  
+[Bb]uilds/  
+[Ll]ogs/  
+[Mm]emoryCaptures/  
+  
+# IDE  
+.idea/  
+.vs/  
+*.csproj  
+*.sln  
+  
+# OS  
+.DS_Store  
+Thumbs.db 
