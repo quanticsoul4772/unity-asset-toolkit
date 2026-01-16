@@ -42,6 +42,13 @@ namespace SwarmAI.Editor
         {
             serializedObject.Update();
             
+            // Validate properties exist before using
+            if (_formationType == null || _spacing == null)
+            {
+                DrawDefaultInspector();
+                return;
+            }
+            
             SwarmFormation formation = (SwarmFormation)target;
             
             // Header

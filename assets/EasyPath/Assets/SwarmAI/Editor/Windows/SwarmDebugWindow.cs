@@ -323,7 +323,8 @@ namespace SwarmAI.Editor
             {
                 foreach (var node in ResourceNode.AllNodes)
                 {
-                    if (node != null && node.IsDepleted)
+                    // Use implicit bool conversion to handle Unity's fake null for destroyed objects
+                    if (node && node.IsDepleted)
                         depletedCount++;
                 }
             }

@@ -33,96 +33,96 @@ namespace SwarmAI.Editor
             // Spatial Partitioning
             _showSpatial = DrawSection("Spatial Partitioning", _showSpatial, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_spatialHashCellSize"));
+                DrawPropertyIfExists("_spatialHashCellSize");
             });
             
             // Agent Defaults
             _showAgentDefaults = DrawSection("Agent Defaults", _showAgentDefaults, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultSpeed"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultRotationSpeed"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultMaxForce"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultNeighborRadius"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultStoppingDistance"));
+                DrawPropertyIfExists("_defaultSpeed");
+                DrawPropertyIfExists("_defaultRotationSpeed");
+                DrawPropertyIfExists("_defaultMaxForce");
+                DrawPropertyIfExists("_defaultNeighborRadius");
+                DrawPropertyIfExists("_defaultStoppingDistance");
             });
             
             // Behavior Weights
             _showBehaviorWeights = DrawSection("Behavior Weights", _showBehaviorWeights, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_separationWeight"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_alignmentWeight"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_cohesionWeight"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_followLeaderWeight"));
+                DrawPropertyIfExists("_separationWeight");
+                DrawPropertyIfExists("_alignmentWeight");
+                DrawPropertyIfExists("_cohesionWeight");
+                DrawPropertyIfExists("_followLeaderWeight");
             });
             
             // Wander Behavior
             _showWander = DrawSection("Wander Behavior", _showWander, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_wanderRadius"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_wanderDistance"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_wanderJitter"));
+                DrawPropertyIfExists("_wanderRadius");
+                DrawPropertyIfExists("_wanderDistance");
+                DrawPropertyIfExists("_wanderJitter");
             });
             
             // Obstacle Avoidance
             _showObstacle = DrawSection("Obstacle Avoidance", _showObstacle, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_obstacleDetectionDistance"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_obstacleWhiskerAngle"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_obstacleRayCount"));
+                DrawPropertyIfExists("_obstacleDetectionDistance");
+                DrawPropertyIfExists("_obstacleWhiskerAngle");
+                DrawPropertyIfExists("_obstacleRayCount");
             });
             
             // Arrive Behavior
             _showArrive = DrawSection("Arrive Behavior", _showArrive, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_arriveSlowingRadius"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_arriveArrivalRadius"));
+                DrawPropertyIfExists("_arriveSlowingRadius");
+                DrawPropertyIfExists("_arriveArrivalRadius");
             });
             
             // Formation Settings
             _showFormation = DrawSection("Formation Settings", _showFormation, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_formationSpacing"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_formationMoveSpeed"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_formationArrivalRadius"));
+                DrawPropertyIfExists("_formationSpacing");
+                DrawPropertyIfExists("_formationMoveSpeed");
+                DrawPropertyIfExists("_formationArrivalRadius");
             });
             
             // Follow Leader
             _showFollowLeader = DrawSection("Follow Leader", _showFollowLeader, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultFollowDistance"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_followSlowingRadius"));
+                DrawPropertyIfExists("_defaultFollowDistance");
+                DrawPropertyIfExists("_followSlowingRadius");
             });
             
             // Resource Gathering
             _showResourceGathering = DrawSection("Resource Gathering", _showResourceGathering, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultCarryCapacity"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_depositRadius"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_resourceSearchDelay"));
+                DrawPropertyIfExists("_defaultCarryCapacity");
+                DrawPropertyIfExists("_depositRadius");
+                DrawPropertyIfExists("_resourceSearchDelay");
             });
             
             // Performance
             _showPerformance = DrawSection("Performance", _showPerformance, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_maxAgentsPerFrame"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_spatialHashUpdateInterval"));
+                DrawPropertyIfExists("_maxAgentsPerFrame");
+                DrawPropertyIfExists("_spatialHashUpdateInterval");
             });
             
             // State Machine
             _showStateMachine = DrawSection("State Machine", _showStateMachine, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_stuckThreshold"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_stuckTimeLimit"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_defaultFleeDistance"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_fleeSpeedMultiplier"));
+                DrawPropertyIfExists("_stuckThreshold");
+                DrawPropertyIfExists("_stuckTimeLimit");
+                DrawPropertyIfExists("_defaultFleeDistance");
+                DrawPropertyIfExists("_fleeSpeedMultiplier");
             });
             
             // Debug
             _showDebug = DrawSection("Debug", _showDebug, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_enableDebugVisualization"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_showNeighborConnections"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_showVelocityVectors"));
+                DrawPropertyIfExists("_enableDebugVisualization");
+                DrawPropertyIfExists("_showNeighborConnections");
+                DrawPropertyIfExists("_showVelocityVectors");
             });
             
             serializedObject.ApplyModifiedProperties();
@@ -139,6 +139,15 @@ namespace SwarmAI.Editor
             }
             EditorGUILayout.Space();
             return foldout;
+        }
+        
+        private void DrawPropertyIfExists(string propertyName)
+        {
+            var prop = serializedObject.FindProperty(propertyName);
+            if (prop != null)
+            {
+                EditorGUILayout.PropertyField(prop);
+            }
         }
     }
 }

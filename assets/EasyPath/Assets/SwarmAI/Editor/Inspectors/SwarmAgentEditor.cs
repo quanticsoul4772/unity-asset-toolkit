@@ -6,6 +6,7 @@ using System.Collections.Generic;
 namespace SwarmAI.Editor
 {
     [CustomEditor(typeof(SwarmAgent))]
+    [CanEditMultipleObjects]
     public class SwarmAgentEditor : UnityEditor.Editor
     {
         // Movement
@@ -129,10 +130,10 @@ namespace SwarmAI.Editor
                     EditorGUILayout.FloatField("Distance to Target", distance);
                 }
                 
-                if (Application.isPlaying)
+                if (Application.isPlaying && agent != null && agent.gameObject != null)
                 {
                     var neighbors = agent.GetNeighbors();
-                    EditorGUILayout.IntField("Neighbor Count", neighbors.Count);
+                    EditorGUILayout.IntField("Neighbor Count", neighbors?.Count ?? 0);
                 }
                 
                 EditorGUI.EndDisabledGroup();
