@@ -5,6 +5,7 @@ using SwarmAI;
 namespace SwarmAI.Editor
 {
     [CustomEditor(typeof(ResourceNode))]
+    [CanEditMultipleObjects]
     public class ResourceNodeEditor : UnityEditor.Editor
     {
         private SerializedProperty _resourceType;

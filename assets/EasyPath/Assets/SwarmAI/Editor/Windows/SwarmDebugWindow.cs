@@ -8,7 +8,6 @@ namespace SwarmAI.Editor
     public class SwarmDebugWindow : EditorWindow
     {
         private Vector2 _agentScrollPos;
-        private Vector2 _messageScrollPos;
         private SwarmAgent _selectedAgent;
         
         // Visualization options
@@ -140,7 +139,9 @@ namespace SwarmAI.Editor
             }
             else
             {
-                foreach (var kvp in manager.Agents)
+                // Create snapshot to avoid iteration issues during play mode
+                var agentSnapshot = new List<KeyValuePair<int, SwarmAgent>>(manager.Agents);
+                foreach (var kvp in agentSnapshot)
                 {
                     SwarmAgent agent = kvp.Value;
                     if (agent == null) continue;
@@ -294,7 +295,9 @@ namespace SwarmAI.Editor
                 
                 Dictionary<AgentStateType, int> stateCounts = new Dictionary<AgentStateType, int>();
                 
-                foreach (var kvp in manager.Agents)
+                // Create snapshot to avoid iteration issues during play mode
+                var agentSnapshot = new List<KeyValuePair<int, SwarmAgent>>(manager.Agents);
+                foreach (var kvp in agentSnapshot)
                 {
                     SwarmAgent agent = kvp.Value;
                     if (agent == null) continue;
@@ -339,7 +342,9 @@ namespace SwarmAI.Editor
             
             SwarmManager manager = SwarmManager.Instance;
             
-            foreach (var kvp in manager.Agents)
+            // Create snapshot to avoid iteration issues during play mode
+            var agentSnapshot = new List<KeyValuePair<int, SwarmAgent>>(manager.Agents);
+            foreach (var kvp in agentSnapshot)
             {
                 SwarmAgent agent = kvp.Value;
                 if (agent == null) continue;

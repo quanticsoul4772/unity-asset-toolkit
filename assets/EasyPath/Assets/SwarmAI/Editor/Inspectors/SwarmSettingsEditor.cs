@@ -5,6 +5,7 @@ using SwarmAI;
 namespace SwarmAI.Editor
 {
     [CustomEditor(typeof(SwarmSettings))]
+    [CanEditMultipleObjects]
     public class SwarmSettingsEditor : UnityEditor.Editor
     {
         // Foldout states
