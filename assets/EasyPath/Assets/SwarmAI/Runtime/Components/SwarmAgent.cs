@@ -167,8 +167,8 @@ namespace SwarmAI
         
         private void OnEnable()
         {
-            // Register with SwarmManager
-            if (SwarmManager.Instance != null)
+            // Register with SwarmManager (use HasInstance to avoid creating during scene load)
+            if (SwarmManager.HasInstance)
             {
                 SwarmManager.Instance.RegisterAgent(this);
             }
@@ -176,8 +176,8 @@ namespace SwarmAI
         
         private void OnDisable()
         {
-            // Unregister from SwarmManager
-            if (SwarmManager.Instance != null)
+            // Unregister from SwarmManager (use HasInstance to avoid creating during scene teardown)
+            if (SwarmManager.HasInstance)
             {
                 SwarmManager.Instance.UnregisterAgent(this);
             }
@@ -480,7 +480,7 @@ namespace SwarmAI
             
             _lastNeighborQueryTime = Time.time;
             
-            if (SwarmManager.Instance != null)
+            if (SwarmManager.HasInstance)
             {
                 // Use the new accurate distance filtering method
                 SwarmManager.Instance.GetNeighborsExcluding(Position, _neighborRadius, this, _cachedNeighbors);

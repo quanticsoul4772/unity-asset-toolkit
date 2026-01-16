@@ -19,6 +19,7 @@ namespace SwarmAI
         
         // Singleton instance
         private static SwarmManager _instance;
+        private static bool _applicationQuitting;
         
         // Agent registry
         private Dictionary<int, SwarmAgent> _agents;
@@ -42,17 +43,22 @@ namespace SwarmAI
         
         /// <summary>
         /// Singleton instance of the SwarmManager.
-        /// Creates a new instance if one doesn't exist.
+        /// Creates a new instance if one doesn't exist (unless application is quitting).
         /// </summary>
         public static SwarmManager Instance
         {
             get
             {
+                if (_applicationQuitting)
+                {
+                    return null;
+                }
+                
                 if (_instance == null)
                 {
                     _instance = FindFirstObjectByType<SwarmManager>();
                     
-                    if (_instance == null)
+                    if (_instance == null && !_applicationQuitting)
                     {
                         // Create new instance
                         var go = new GameObject("SwarmManager");
@@ -66,8 +72,9 @@ namespace SwarmAI
         
         /// <summary>
         /// Check if an instance exists without creating one.
+        /// Use this in OnDisable/OnDestroy to avoid creating new instances during scene teardown.
         /// </summary>
-        public static bool HasInstance => _instance != null;
+        public static bool HasInstance => _instance != null && !_applicationQuitting;
         
         #endregion
         
@@ -147,6 +154,11 @@ namespace SwarmAI
             {
                 _instance = null;
             }
+        }
+        
+        private void OnApplicationQuit()
+        {
+            _applicationQuitting = true;
         }
         
         private void Update()
