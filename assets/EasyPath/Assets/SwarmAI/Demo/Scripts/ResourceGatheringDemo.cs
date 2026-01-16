@@ -120,11 +120,9 @@ namespace SwarmAI.Demo
                 renderer.material.color = resourceColors[index % resourceColors.Length];
             }
             
-            // Add ResourceNode component
+            // Add ResourceNode component and configure with demo settings
             ResourceNode node = nodeObj.AddComponent<ResourceNode>();
-            
-            // Configure via reflection or serialized object (simplified - set public fields if available)
-            // The ResourceNode uses SerializeField, so we'll work with what's exposed
+            node.Configure(_resourceAmount, _harvestRate, _resourcesRespawn, _respawnTime);
             
             // Subscribe to events
             node.OnResourceHarvested += (amount) => { };

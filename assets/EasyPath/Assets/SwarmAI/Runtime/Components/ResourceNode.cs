@@ -285,6 +285,24 @@ namespace SwarmAI
             OnRespawned?.Invoke();
         }
         
+        /// <summary>
+        /// Configure the resource node settings programmatically.
+        /// Call this after AddComponent but before the first Update.
+        /// </summary>
+        /// <param name="totalAmount">Total resource amount.</param>
+        /// <param name="harvestRate">Harvest rate per second.</param>
+        /// <param name="respawns">Whether the node respawns after depletion.</param>
+        /// <param name="respawnTime">Time to respawn in seconds.</param>
+        public void Configure(float totalAmount, float harvestRate, bool respawns = false, float respawnTime = 30f)
+        {
+            _totalAmount = totalAmount;
+            _currentAmount = totalAmount;
+            _initialAmount = totalAmount;
+            _harvestRate = harvestRate;
+            _respawns = respawns;
+            _respawnTime = respawnTime;
+        }
+        
         #endregion
         
         #region Static Helpers
