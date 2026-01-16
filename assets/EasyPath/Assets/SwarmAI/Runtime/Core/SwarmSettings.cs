@@ -66,6 +66,33 @@ namespace SwarmAI
         [Tooltip("Default arrival radius for arrive behavior.")]
         [SerializeField] private float _arriveArrivalRadius = 0.5f;
         
+        [Header("Formation Settings")]
+        [Tooltip("Default spacing between agents in formations.")]
+        [SerializeField] private float _formationSpacing = 2f;
+        
+        [Tooltip("How quickly agents move to their formation positions.")]
+        [SerializeField] private float _formationMoveSpeed = 5f;
+        
+        [Tooltip("Distance at which an agent is considered "in position".")]
+        [SerializeField] private float _formationArrivalRadius = 0.5f;
+        
+        [Header("Follow Leader")]
+        [Tooltip("Default follow distance for leader-follower behavior.")]
+        [SerializeField] private float _defaultFollowDistance = 3f;
+        
+        [Tooltip("Slowing radius when following a leader.")]
+        [SerializeField] private float _followSlowingRadius = 5f;
+        
+        [Header("Resource Gathering")]
+        [Tooltip("Default carry capacity for agents.")]
+        [SerializeField] private float _defaultCarryCapacity = 10f;
+        
+        [Tooltip("Default deposit radius when returning resources.")]
+        [SerializeField] private float _depositRadius = 2f;
+        
+        [Tooltip("Time to wait before searching for new resources after depletion.")]
+        [SerializeField] private float _resourceSearchDelay = 0.5f;
+        
         [Header("Performance")]
         [Tooltip("Maximum number of agents to process per frame for neighbor updates.")]
         [SerializeField] private int _maxAgentsPerFrame = 50;
@@ -114,6 +141,14 @@ namespace SwarmAI
         public int ObstacleRayCount => _obstacleRayCount;
         public float ArriveSlowingRadius => _arriveSlowingRadius;
         public float ArriveArrivalRadius => _arriveArrivalRadius;
+        public float FormationSpacing => _formationSpacing;
+        public float FormationMoveSpeed => _formationMoveSpeed;
+        public float FormationArrivalRadius => _formationArrivalRadius;
+        public float DefaultFollowDistance => _defaultFollowDistance;
+        public float FollowSlowingRadius => _followSlowingRadius;
+        public float DefaultCarryCapacity => _defaultCarryCapacity;
+        public float DepositRadius => _depositRadius;
+        public float ResourceSearchDelay => _resourceSearchDelay;
         public int MaxAgentsPerFrame => _maxAgentsPerFrame;
         public float SpatialHashUpdateInterval => _spatialHashUpdateInterval;
         public float StuckThreshold => _stuckThreshold;

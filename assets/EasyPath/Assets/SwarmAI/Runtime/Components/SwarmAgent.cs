@@ -490,6 +490,34 @@ namespace SwarmAI
                         Stop();
                         SetState(new IdleState());
                         break;
+                        
+                    case SwarmMessageType.Flee:
+                        SetState(new FleeingState(message.Position));
+                        break;
+                        
+                    case SwarmMessageType.Follow:
+                        int leaderId = (int)message.Value;
+                        SetState(new FollowingState(leaderId));
+                        break;
+                        
+                    case SwarmMessageType.FormationUpdate:
+                        SetTarget(message.Position);
+                        break;
+                        
+                    case SwarmMessageType.GatherResource:
+                        if (message.Data is ResourceNode resource && !resource.IsDepleted)
+                        {
+                            SetState(new GatheringState(resource, message.Position));
+                        }
+                        break;
+                        
+                    case SwarmMessageType.ReturnToBase:
+                        // Only handle if carrying resources
+                        if (_currentState is GatheringState gatherState && gatherState.CurrentCarry > 0)
+                        {
+                            SetState(new ReturningState(message.Position, gatherState.CurrentCarry));
+                        }
+                        break;
                 }
             }
             

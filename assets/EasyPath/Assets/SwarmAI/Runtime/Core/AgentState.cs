@@ -21,7 +21,7 @@ namespace SwarmAI
         Attacking,
         /// <summary>Agent is returning to base/home.</summary>
         Returning,
-        /// <summary>Agent is following a leader.</summary>
+        /// <summary>Agent is following a leader or formation.</summary>
         Following,
         /// <summary>Agent is patrolling waypoints.</summary>
         Patrolling,

@@ -25,6 +25,22 @@ namespace SwarmAI
         ResourceFound,
         /// <summary>Request for help.</summary>
         RequestHelp,
+        /// <summary>Command to join a formation.</summary>
+        JoinFormation,
+        /// <summary>Command to leave a formation.</summary>
+        LeaveFormation,
+        /// <summary>Update formation position.</summary>
+        FormationUpdate,
+        /// <summary>Command to join a group.</summary>
+        JoinGroup,
+        /// <summary>Command to leave a group.</summary>
+        LeaveGroup,
+        /// <summary>Command to gather a resource.</summary>
+        GatherResource,
+        /// <summary>Command to return to base.</summary>
+        ReturnToBase,
+        /// <summary>Resource depleted notification.</summary>
+        ResourceDepleted,
         /// <summary>Custom message type.</summary>
         Custom
     }
@@ -189,6 +205,97 @@ namespace SwarmAI
             return new SwarmMessage(SwarmMessageType.ThreatDetected, senderId, -1)
                 .WithPosition(threatPosition)
                 .WithValue(threatLevel);
+        }
+        
+        /// <summary>
+        /// Create a Follow message.
+        /// </summary>
+        public static SwarmMessage Follow(int leaderId, int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.Follow, senderId, targetId)
+                .WithValue(leaderId);
+        }
+        
+        /// <summary>
+        /// Create a JoinFormation message.
+        /// </summary>
+        public static SwarmMessage JoinFormation(int formationId, int slotIndex, int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.JoinFormation, senderId, targetId)
+                .WithValue(formationId)
+                .WithTag(slotIndex.ToString());
+        }
+        
+        /// <summary>
+        /// Create a LeaveFormation message.
+        /// </summary>
+        public static SwarmMessage LeaveFormation(int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.LeaveFormation, senderId, targetId);
+        }
+        
+        /// <summary>
+        /// Create a FormationUpdate message with the slot position.
+        /// </summary>
+        public static SwarmMessage FormationUpdate(Vector3 slotPosition, int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.FormationUpdate, senderId, targetId)
+                .WithPosition(slotPosition);
+        }
+        
+        /// <summary>
+        /// Create a JoinGroup message.
+        /// </summary>
+        public static SwarmMessage JoinGroup(int groupId, int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.JoinGroup, senderId, targetId)
+                .WithValue(groupId);
+        }
+        
+        /// <summary>
+        /// Create a LeaveGroup message.
+        /// </summary>
+        public static SwarmMessage LeaveGroup(int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.LeaveGroup, senderId, targetId);
+        }
+        
+        /// <summary>
+        /// Create a GatherResource message.
+        /// </summary>
+        public static SwarmMessage GatherResource(Vector3 resourcePosition, Object resourceNode, int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.GatherResource, senderId, targetId)
+                .WithPosition(resourcePosition)
+                .WithData(resourceNode);
+        }
+        
+        /// <summary>
+        /// Create a ReturnToBase message.
+        /// </summary>
+        public static SwarmMessage ReturnToBase(Vector3 basePosition, int senderId = -1, int targetId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.ReturnToBase, senderId, targetId)
+                .WithPosition(basePosition);
+        }
+        
+        /// <summary>
+        /// Create a ResourceFound message to alert others about a resource.
+        /// </summary>
+        public static SwarmMessage ResourceFound(Vector3 resourcePosition, float resourceAmount, int senderId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.ResourceFound, senderId, -1)
+                .WithPosition(resourcePosition)
+                .WithValue(resourceAmount);
+        }
+        
+        /// <summary>
+        /// Create a ResourceDepleted message.
+        /// </summary>
+        public static SwarmMessage ResourceDepleted(Vector3 resourcePosition, int senderId = -1)
+        {
+            return new SwarmMessage(SwarmMessageType.ResourceDepleted, senderId, -1)
+                .WithPosition(resourcePosition);
         }
     }
 }
