@@ -19,13 +19,6 @@ namespace EasyPath.Demo
         [SerializeField] private float _minWanderInterval = 2f;
         [SerializeField] private float _maxWanderInterval = 5f;
         
-        [Header("Controls")]
-        [SerializeField] private KeyCode _sendAllToRandomKey = KeyCode.Space;
-        [SerializeField] private KeyCode _startWanderKey = KeyCode.W;
-        [SerializeField] private KeyCode _stopAllKey = KeyCode.S;
-        [SerializeField] private KeyCode _gatherKey = KeyCode.G;
-        [SerializeField] private KeyCode _scatterKey = KeyCode.X;
-        
         [Header("State")]
         [SerializeField] private bool _isWandering = false;
         

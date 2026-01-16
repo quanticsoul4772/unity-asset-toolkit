@@ -17,10 +17,6 @@ namespace EasyPath.Demo
         [SerializeField] private Vector3 _obstacleSize = new Vector3(1.5f, 1.5f, 1.5f);
         [SerializeField] private Color _obstacleColor = new Color(0.6f, 0.2f, 0.2f);
         
-        [Header("Controls")]
-        [SerializeField] private KeyCode _spawnKey = KeyCode.Mouse1; // Right click
-        [SerializeField] private KeyCode _removeKey = KeyCode.Mouse2; // Middle click
-        
         private Transform _obstaclesParent;
         
         private void Start()

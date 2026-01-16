@@ -112,7 +112,14 @@ namespace EasyPath.Demo
         
         private void Update()
         {
-            // Clear button press flags at start of frame
+            // Clear button press flags at start of frame (before other scripts run due to DefaultExecutionOrder(-100))
+            // Callbacks will set flags during this frame, which other scripts can read
+            // Then next frame's Update clears them
+        }
+        
+        private void LateUpdate()
+        {
+            // Clear button press flags at end of frame so they're available for the full frame
             _clickPressed = false;
             _rightClickPressed = false;
             _middleClickPressed = false;

@@ -14,7 +14,6 @@ namespace EasyPath.Demo
         
         [Header("Demo Settings")]
         [SerializeField] private bool _autoFindReferences = true;
-        [SerializeField] private KeyCode _rebuildGridKey = KeyCode.R;
         
         [Header("UI")]
         [SerializeField] private bool _showInstructions = true;
