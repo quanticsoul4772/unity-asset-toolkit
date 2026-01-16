@@ -204,7 +204,10 @@ public class SpatialHash<T>
 ### Phase 4: Polish & Demo (Week 4)
 - [ ] Custom inspectors for all components
 - [ ] Debug visualization window
-- [ ] Demo scenes (3 minimum)
+- [x] Demo scenes (3 minimum)
+  - [x] FlockingDemo - Separation, Alignment, Cohesion, Wander, Obstacle Avoidance
+  - [x] FormationDemo - Line, Column, Circle, Wedge, V, Box formations
+  - [x] ResourceGatheringDemo - GatheringState, ReturningState, ResourceNode
 - [ ] Documentation
 - [ ] Performance optimization
 - [ ] Asset Store submission prep
