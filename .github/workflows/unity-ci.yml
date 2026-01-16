@@ -58,12 +58,6 @@ jobs:
             Library-${{ env.PROJECT_PATH }}-
             Library-
 
-      - name: Decode Unity License
-        run: |
-          echo "${{ secrets.UNITY_LICENSE }}" | base64 -d > Unity_lic.ulf
-          echo "License file created: $(wc -c < Unity_lic.ulf) bytes"
-        continue-on-error: true
-
       - name: Run EditMode Tests
         uses: game-ci/unity-test-runner@v4
         env:
