@@ -3,7 +3,8 @@
     "rootNamespace": "SwarmAI.Editor",
     "references": [
         "GUID:a1b2c3d4e5f6789012345678abcdef01",
-        "GUID:32e8732f4adef96408db2fc8a96644eb"
+        "GUID:32e8732f4adef96408db2fc8a96644eb",
+        "GUID:c3d4e5f6789012345678abcdef010203"
     ],
     "includePlatforms": [
         "Editor"
