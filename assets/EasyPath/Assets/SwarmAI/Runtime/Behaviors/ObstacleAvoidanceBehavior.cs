@@ -84,7 +84,7 @@ namespace SwarmAI
             if (agent == null) return Vector3.zero;
             
             // Determine forward direction
-            Vector3 forward = agent.Velocity.sqrMagnitude > 0.001f 
+            Vector3 forward = agent.Velocity.sqrMagnitude > SwarmSettings.DefaultVelocityThresholdSq 
                 ? agent.Velocity.normalized 
                 : agent.Forward;
             
@@ -135,7 +135,7 @@ namespace SwarmAI
                 avoidDir.y = 0; // Keep on horizontal plane
                 
                 // If normal is pointing mostly backward, steer perpendicular instead
-                if (Vector3.Dot(avoidDir, forward) < -0.5f)
+                if (Vector3.Dot(avoidDir, forward) < SwarmSettings.BackwardNormalThreshold)
                 {
                     // Choose perpendicular direction based on which side is clearer
                     Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
@@ -144,7 +144,7 @@ namespace SwarmAI
                     avoidDir = rightClear > leftClear ? right : -right;
                 }
                 
-                if (avoidDir.sqrMagnitude > 0.001f)
+                if (avoidDir.sqrMagnitude > SwarmSettings.DefaultVelocityThresholdSq)
                 {
                     avoidanceForce = avoidDir.normalized * agent.MaxForce * urgency;
                 }

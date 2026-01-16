@@ -117,6 +117,32 @@ namespace SwarmAI.Tests
         }
         
         [Test]
+        public void ArriveBehavior_SlowingRadius_ClampedToArrivalRadius()
+        {
+            var behavior = new ArriveBehavior();
+            behavior.ArrivalRadius = 3f;
+            behavior.SlowingRadius = 1f; // Less than arrival radius
+            Assert.GreaterOrEqual(behavior.SlowingRadius, behavior.ArrivalRadius);
+        }
+        
+        [Test]
+        public void ArriveBehavior_ArrivalRadius_AdjustsSlowingRadius()
+        {
+            var behavior = new ArriveBehavior();
+            behavior.SlowingRadius = 2f;
+            behavior.ArrivalRadius = 5f; // Greater than slowing radius
+            Assert.GreaterOrEqual(behavior.SlowingRadius, behavior.ArrivalRadius);
+        }
+        
+        [Test]
+        public void ArriveBehavior_Constructor_ValidatesRadii()
+        {
+            // arrivalRadius > slowingRadius should be handled
+            var behavior = new ArriveBehavior(Vector3.zero, 1f, 5f);
+            Assert.GreaterOrEqual(behavior.SlowingRadius, behavior.ArrivalRadius);
+        }
+        
+        [Test]
         public void ArriveBehavior_NullAgent_ReturnsZero()
         {
             var behavior = new ArriveBehavior(Vector3.forward * 10);
@@ -237,6 +263,13 @@ namespace SwarmAI.Tests
         {
             var behavior = new SeparationBehavior();
             Assert.IsTrue(behavior.UseSquaredFalloff);
+        }
+        
+        [Test]
+        public void SeparationBehavior_LinearFalloff_CanBeSet()
+        {
+            var behavior = new SeparationBehavior(5f, false);
+            Assert.IsFalse(behavior.UseSquaredFalloff);
         }
         
         [Test]

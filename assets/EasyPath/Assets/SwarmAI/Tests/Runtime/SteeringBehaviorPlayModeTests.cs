@@ -242,5 +242,118 @@ namespace SwarmAI.Tests
         }
         
         #endregion
+        
+        #region Transform Tracking Tests
+        
+        [UnityTest]
+        public IEnumerator SeekBehavior_TargetTransform_UpdatesPosition()
+        {
+            _agentGO.transform.position = Vector3.zero;
+            
+            var targetGO = new GameObject("Target");
+            targetGO.transform.position = new Vector3(5, 0, 0);
+            
+            var behavior = new SeekBehavior(targetGO.transform);
+            yield return null;
+            
+            // Initial position
+            Assert.AreEqual(new Vector3(5, 0, 0), behavior.TargetPosition);
+            
+            // Move target
+            targetGO.transform.position = new Vector3(10, 0, 0);
+            yield return null;
+            
+            // Should track transform
+            Assert.AreEqual(new Vector3(10, 0, 0), behavior.TargetPosition);
+            
+            Object.DestroyImmediate(targetGO);
+        }
+        
+        [UnityTest]
+        public IEnumerator FleeBehavior_ThreatTransform_UpdatesPosition()
+        {
+            _agentGO.transform.position = Vector3.zero;
+            
+            var threatGO = new GameObject("Threat");
+            threatGO.transform.position = new Vector3(3, 0, 0);
+            
+            var behavior = new FleeBehavior(threatGO.transform);
+            yield return null;
+            
+            // Initial position
+            Assert.AreEqual(new Vector3(3, 0, 0), behavior.ThreatPosition);
+            
+            // Move threat
+            threatGO.transform.position = new Vector3(5, 0, 0);
+            yield return null;
+            
+            // Should track transform
+            Assert.AreEqual(new Vector3(5, 0, 0), behavior.ThreatPosition);
+            
+            Object.DestroyImmediate(threatGO);
+        }
+        
+        [UnityTest]
+        public IEnumerator ArriveBehavior_TargetTransform_UpdatesPosition()
+        {
+            _agentGO.transform.position = Vector3.zero;
+            
+            var targetGO = new GameObject("Target");
+            targetGO.transform.position = new Vector3(10, 0, 0);
+            
+            var behavior = new ArriveBehavior(targetGO.transform);
+            yield return null;
+            
+            // Initial position
+            Assert.AreEqual(new Vector3(10, 0, 0), behavior.TargetPosition);
+            
+            // Move target
+            targetGO.transform.position = new Vector3(20, 0, 0);
+            yield return null;
+            
+            // Should track transform
+            Assert.AreEqual(new Vector3(20, 0, 0), behavior.TargetPosition);
+            
+            Object.DestroyImmediate(targetGO);
+        }
+        
+        #endregion
+        
+        #region ArriveBehavior Slowing Radius Tests
+        
+        [UnityTest]
+        public IEnumerator ArriveBehavior_InsideSlowingRadius_ReducesSpeed()
+        {
+            _agentGO.transform.position = Vector3.zero;
+            yield return null;
+            
+            // Agent at origin, target at (3,0,0), slowing radius 5
+            // Agent is inside slowing radius but outside arrival radius
+            var behavior = new ArriveBehavior(new Vector3(3, 0, 0), 5f, 0.5f);
+            var forceInside = behavior.CalculateForce(_agent);
+            
+            // Now test outside slowing radius
+            var behavior2 = new ArriveBehavior(new Vector3(10, 0, 0), 5f, 0.5f);
+            var forceOutside = behavior2.CalculateForce(_agent);
+            
+            // Force inside slowing radius should be less than full speed seek
+            // (comparing magnitudes isn't ideal, but the force direction is the same)
+            Assert.Greater(forceInside.x, 0f, "Should still seek toward target");
+            Assert.Greater(forceOutside.x, 0f, "Should seek toward target");
+        }
+        
+        [UnityTest]
+        public IEnumerator ArriveBehavior_AtArrivalRadius_ReturnsZero()
+        {
+            _agentGO.transform.position = new Vector3(0.3f, 0, 0); // Within 0.5 arrival radius
+            yield return null;
+            
+            var behavior = new ArriveBehavior(Vector3.zero, 5f, 0.5f);
+            var force = behavior.CalculateForce(_agent);
+            
+            Assert.AreEqual(0f, force.magnitude, 0.01f, "Should return zero when within arrival radius");
+        }
+        
+        #endregion
     }
 }

@@ -131,6 +131,20 @@ namespace SwarmAI
         public const float DefaultPositionEqualityThresholdSq = 0.0001f;
         
         /// <summary>
+        /// Shared constant for velocity/magnitude squared threshold checks.
+        /// Used to determine if an agent is effectively stationary (velocity.sqrMagnitude less than this).
+        /// Value: 0.001f (equivalent to ~0.032 units/second velocity).
+        /// </summary>
+        public const float DefaultVelocityThresholdSq = 0.001f;
+        
+        /// <summary>
+        /// Threshold for determining if a surface normal is facing backward.
+        /// Used in obstacle avoidance to decide when to steer perpendicular.
+        /// Value: -0.5f (approximately 120 degrees from forward).
+        /// </summary>
+        public const float BackwardNormalThreshold = -0.5f;
+        
+        /// <summary>
         /// Create default settings at runtime if no asset exists.
         /// </summary>
         public static SwarmSettings CreateDefault()

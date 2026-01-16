@@ -107,7 +107,7 @@ namespace SwarmAI
             // Average and scale to max force
             separationForce /= count;
             
-            if (separationForce.sqrMagnitude > 0.001f)
+            if (separationForce.sqrMagnitude > SwarmSettings.DefaultVelocityThresholdSq)
             {
                 separationForce = separationForce.normalized * agent.MaxForce;
             }

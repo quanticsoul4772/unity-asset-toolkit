@@ -40,20 +40,30 @@ namespace SwarmAI
         
         /// <summary>
         /// Distance at which the agent starts slowing down.
+        /// Must be greater than or equal to <see cref="ArrivalRadius"/>.
         /// </summary>
         public float SlowingRadius
         {
             get => _slowingRadius;
-            set => _slowingRadius = Mathf.Max(0.1f, value);
+            set => _slowingRadius = Mathf.Max(_arrivalRadius, Mathf.Max(0.1f, value));
         }
         
         /// <summary>
         /// Distance at which the agent is considered "arrived" (returns zero force).
+        /// Will automatically adjust <see cref="SlowingRadius"/> if needed.
         /// </summary>
         public float ArrivalRadius
         {
             get => _arrivalRadius;
-            set => _arrivalRadius = Mathf.Max(0f, value);
+            set
+            {
+                _arrivalRadius = Mathf.Max(0f, value);
+                // Ensure slowing radius is always >= arrival radius
+                if (_slowingRadius < _arrivalRadius)
+                {
+                    _slowingRadius = _arrivalRadius;
+                }
+            }
         }
         
         /// <summary>
@@ -77,8 +87,8 @@ namespace SwarmAI
         {
             _targetPosition = targetPosition;
             _targetTransform = null;
-            _slowingRadius = Mathf.Max(0.1f, slowingRadius);
             _arrivalRadius = Mathf.Max(0f, arrivalRadius);
+            _slowingRadius = Mathf.Max(Mathf.Max(0.1f, _arrivalRadius), slowingRadius);
         }
         
         /// <summary>
@@ -91,8 +101,8 @@ namespace SwarmAI
         {
             _targetTransform = targetTransform;
             _targetPosition = targetTransform != null ? targetTransform.position : Vector3.zero;
-            _slowingRadius = Mathf.Max(0.1f, slowingRadius);
             _arrivalRadius = Mathf.Max(0f, arrivalRadius);
+            _slowingRadius = Mathf.Max(Mathf.Max(0.1f, _arrivalRadius), slowingRadius);
         }
         
         /// <inheritdoc/>

@@ -63,7 +63,7 @@ namespace SwarmAI
                 if (distanceSq > radiusSq) continue;
                 
                 // Only consider moving neighbors
-                if (neighbor.Velocity.sqrMagnitude > 0.001f)
+                if (neighbor.Velocity.sqrMagnitude > SwarmSettings.DefaultVelocityThresholdSq)
                 {
                     averageVelocity += neighbor.Velocity;
                     count++;
@@ -76,7 +76,7 @@ namespace SwarmAI
             averageVelocity /= count;
             
             // Return steering force to match average velocity
-            if (averageVelocity.sqrMagnitude > 0.001f)
+            if (averageVelocity.sqrMagnitude > SwarmSettings.DefaultVelocityThresholdSq)
             {
                 // Scale to desired speed
                 Vector3 desiredVelocity = averageVelocity.normalized * agent.MaxSpeed;

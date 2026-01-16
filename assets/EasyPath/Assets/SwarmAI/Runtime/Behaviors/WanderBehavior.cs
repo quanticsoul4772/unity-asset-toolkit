@@ -3,8 +3,18 @@ using UnityEngine;
 namespace SwarmAI
 {
     /// <summary>
-    /// Steering behavior that produces smooth random movement.
-    /// Projects a circle in front of the agent and picks a random point on it.
+    /// Steering behavior that produces smooth random movement using the "wander circle" algorithm.
+    /// 
+    /// <para><b>How it works:</b></para>
+    /// <para>1. A circle of radius <see cref="WanderRadius"/> is projected in front of the agent at distance <see cref="WanderDistance"/>.</para>
+    /// <para>2. A target point on this circle is tracked and randomly displaced each frame by up to <see cref="WanderJitter"/>.</para>
+    /// <para>3. The displaced point is re-projected onto the circle to maintain consistent distance.</para>
+    /// <para>4. The agent seeks toward this point, producing smooth, natural-looking random movement.</para>
+    /// 
+    /// <para><b>Tuning tips:</b></para>
+    /// <para>- Larger <see cref="WanderRadius"/> = wider turns</para>
+    /// <para>- Larger <see cref="WanderDistance"/> = gentler, more gradual direction changes</para>
+    /// <para>- Larger <see cref="WanderJitter"/> = more erratic movement</para>
     /// </summary>
     public class WanderBehavior : BehaviorBase
     {
@@ -82,7 +92,7 @@ namespace SwarmAI
             );
             
             // Re-project onto the circle (avoid zero vector normalization)
-            if (_wanderTarget.sqrMagnitude > SwarmSettings.DefaultPositionEqualityThresholdSq)
+            if (_wanderTarget.sqrMagnitude > SwarmSettings.DefaultVelocityThresholdSq)
             {
                 _wanderTarget = _wanderTarget.normalized * _wanderRadius;
             }
@@ -96,7 +106,7 @@ namespace SwarmAI
             
             // Transform to world space based on agent's forward direction
             Vector3 worldTarget;
-            if (agent.Velocity.sqrMagnitude > 0.001f)
+            if (agent.Velocity.sqrMagnitude > SwarmSettings.DefaultVelocityThresholdSq)
             {
                 // Use velocity direction
                 Quaternion rotation = Quaternion.LookRotation(agent.Velocity.normalized);
