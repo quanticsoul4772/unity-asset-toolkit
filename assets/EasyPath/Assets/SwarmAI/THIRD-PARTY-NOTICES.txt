@@ -1,0 +1,45 @@
+THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+
+SwarmAI - Multi-Agent Coordination System
+
+============================================
+
+This asset is built entirely with original code and does not include any
+third-party libraries, assets, or code that requires separate licensing
+or attribution.
+
+All algorithms implemented in this asset are based on publicly available
+academic research and industry-standard techniques:
+
+1. STEERING BEHAVIORS
+   Based on: "Steering Behaviors for Autonomous Characters" by Craig Reynolds (1999)
+   These are standard algorithms in the public domain, implemented from scratch.
+
+2. SPATIAL HASHING
+   A standard computer science technique for spatial partitioning.
+   Implementation is original work.
+
+3. BOIDS FLOCKING
+   Based on: "Flocks, Herds, and Schools: A Distributed Behavioral Model" 
+   by Craig Reynolds (1987)
+   The boids algorithm concepts are in the public domain.
+
+============================================
+
+OPTIONAL DEPENDENCIES
+
+SwarmAI can optionally integrate with:
+
+- EasyPath (separate asset) - For A* pathfinding integration
+  License: Unity Asset Store EULA (if purchased separately)
+
+- Unity Navigation System - For NavMesh integration
+  License: Unity Software License
+
+These integrations are optional and the core SwarmAI functionality
+works independently without them.
+
+============================================
+
+If you have questions about licensing or third-party components,
+please contact the publisher through the Unity Asset Store.

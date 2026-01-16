@@ -1,0 +1,48 @@
+{
+  "name": "com.publisher.swarmai",
+  "version": "1.0.0",
+  "displayName": "SwarmAI",
+  "description": "Multi-agent coordination system with swarm behaviors, formations, and emergent AI. Built from MIT Battlecode experience for RTS games, colony simulators, and AI-driven projects.",
+  "unity": "2021.3",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/publisher/swarmai/Documentation~/README.md",
+  "changelogUrl": "https://github.com/publisher/swarmai/CHANGELOG.md",
+  "licensesUrl": "https://unity.com/legal/as-terms",
+  "keywords": [
+    "ai",
+    "swarm",
+    "agents",
+    "steering",
+    "behaviors",
+    "flocking",
+    "boids",
+    "formations",
+    "rts",
+    "pathfinding",
+    "coordination",
+    "multi-agent"
+  ],
+  "author": {
+    "name": "Publisher Name",
+    "email": "contact@publisher.com",
+    "url": "https://publisher.com"
+  },
+  "type": "tool",
+  "samples": [
+    {
+      "displayName": "Flocking Demo",
+      "description": "Demonstrates boids-style flocking with separation, alignment, cohesion, and obstacle avoidance.",
+      "path": "Demo/Scenes/FlockingDemo"
+    },
+    {
+      "displayName": "Formation Demo",
+      "description": "Showcases formation system with line, circle, wedge, V, and box formations.",
+      "path": "Demo/Scenes/FormationDemo"
+    },
+    {
+      "displayName": "Resource Gathering Demo",
+      "description": "RTS-style resource collection with gather, return, and deposit workflow.",
+      "path": "Demo/Scenes/ResourceGatheringDemo"
+    }
+  ]
+}

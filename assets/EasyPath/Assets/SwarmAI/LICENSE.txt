@@ -1,0 +1,27 @@
+SwarmAI - Multi-Agent Coordination System
+Copyright (c) 2026 [Publisher Name]
+
+This asset is licensed under the Unity Asset Store End User License Agreement (EULA).
+
+License Summary:
+- You may use this asset in unlimited projects (personal and commercial)
+- You may modify and extend the source code for your projects
+- You may NOT redistribute or resell the asset in its original or modified form
+- You may NOT share the asset with others who have not purchased it
+- You may include compiled versions of this asset in your published games/applications
+
+Full License Terms:
+https://unity.com/legal/as-terms
+
+For questions about licensing, please contact:
+- Unity Asset Store: https://assetstore.unity.com
+
+---
+
+THIRD-PARTY NOTICES
+
+This asset does not include any third-party code, libraries, or assets that require
+separate attribution. All code is original work created by the publisher.
+
+If you have any questions about the licensing of this asset, please refer to the
+Unity Asset Store EULA or contact the publisher through the Asset Store.

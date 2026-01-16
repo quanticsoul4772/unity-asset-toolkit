@@ -1,8 +1,13 @@
 # SwarmAI - Multi-Agent Coordination System
 
-**Version:** 1.0  
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Unity](https://img.shields.io/badge/Unity-2021.3%2B-green.svg)
+![License](https://img.shields.io/badge/license-Asset%20Store%20EULA-orange.svg)
+
+**Version:** 1.0.0  
 **Unity Compatibility:** Unity 2021.3+ (LTS), Unity 2022.x, Unity 6+  
-**License:** Asset Store EULA
+**License:** [Asset Store EULA](https://unity.com/legal/as-terms)  
+**Asset Store:** [View on Asset Store](#) <!-- Update with actual link after publishing -->
 
 SwarmAI is a Unity asset for creating swarm behaviors, multi-agent coordination, and emergent AI systems. Built from MIT Battlecode 2026 experience, it provides patterns for RTS games, colony simulators, and AI-driven projects.
 
@@ -302,6 +307,31 @@ Create custom settings via **Assets → Create → SwarmAI → Swarm Settings**
 
 - **Documentation:** See the `/Documentation` folder
 - **Demo Scenes:** SwarmAI → Create Demo Scene
+- **Issues:** Report via Asset Store publisher page
+
+---
+
+## Package Contents
+
+```
+SwarmAI/
+├── Runtime/           # Core runtime code
+│   ├── Behaviors/     # 9 steering behaviors
+│   ├── Components/    # Agent, Formation, ResourceNode
+│   ├── Core/          # Manager, Settings, Messages
+│   └── States/        # 8 agent states
+├── Editor/            # Custom inspectors and tools
+│   ├── Inspectors/    # Component editors
+│   └── Windows/       # Debug window
+├── Demo/              # Demo scenes and scripts
+│   ├── Scripts/       # Demo controllers
+│   └── Scenes/        # Demo scene files
+├── Tests/             # Unit and integration tests
+├── Documentation/     # Guides and API reference
+├── LICENSE.txt        # License information
+├── CHANGELOG.md       # Version history
+└── package.json       # UPM package manifest
+```
 
 ---
 
