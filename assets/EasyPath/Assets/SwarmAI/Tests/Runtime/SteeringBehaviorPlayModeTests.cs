@@ -194,7 +194,7 @@ namespace SwarmAI.Tests
             var behavior = new ObstacleAvoidanceBehavior(10f, Physics.DefaultRaycastLayers);
             var force = behavior.CalculateForce(_agent);
             
-            Object.Destroy(obstacle);
+            Object.DestroyImmediate(obstacle);
             
             // Should have some avoidance force (may be zero if raycast doesn't hit)
             // This test is a bit flaky due to physics timing

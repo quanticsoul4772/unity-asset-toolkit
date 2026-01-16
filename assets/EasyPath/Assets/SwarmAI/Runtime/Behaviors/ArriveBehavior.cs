@@ -88,7 +88,7 @@ namespace SwarmAI
             _targetPosition = targetPosition;
             _targetTransform = null;
             _arrivalRadius = Mathf.Max(0f, arrivalRadius);
-            _slowingRadius = Mathf.Max(Mathf.Max(0.1f, _arrivalRadius), slowingRadius);
+            _slowingRadius = Mathf.Max(_arrivalRadius, Mathf.Max(0.1f, slowingRadius));
         }
         
         /// <summary>
@@ -102,7 +102,7 @@ namespace SwarmAI
             _targetTransform = targetTransform;
             _targetPosition = targetTransform != null ? targetTransform.position : Vector3.zero;
             _arrivalRadius = Mathf.Max(0f, arrivalRadius);
-            _slowingRadius = Mathf.Max(Mathf.Max(0.1f, _arrivalRadius), slowingRadius);
+            _slowingRadius = Mathf.Max(_arrivalRadius, Mathf.Max(0.1f, slowingRadius));
         }
         
         /// <inheritdoc/>
