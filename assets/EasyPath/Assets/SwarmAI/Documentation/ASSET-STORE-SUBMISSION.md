@@ -25,7 +25,9 @@ This document provides the checklist and guidelines for submitting SwarmAI to th
 - [x] Demo scene scripts created
 - [x] Demo scene setup via editor menu (SwarmAI > Create Demo Scene)
 - [x] Controls documented in README
-- [ ] Pre-built demo scenes (.unity files) - Created via menu
+
+**Action Required:**
+- [ ] Create demo scenes via Unity menu before submission (SwarmAI > Create Demo Scene)
 
 ### Code Quality
 - [x] No compiler warnings

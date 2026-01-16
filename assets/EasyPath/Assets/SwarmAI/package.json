@@ -2,11 +2,12 @@
   "name": "com.publisher.swarmai",
   "version": "1.0.0",
   "displayName": "SwarmAI",
-  "description": "Multi-agent coordination system with swarm behaviors, formations, and emergent AI. Built from MIT Battlecode experience for RTS games, colony simulators, and AI-driven projects.",
+  "description": "Multi-agent coordination system with swarm behaviors, formations, and emergent AI. Built from MIT Battlecode experience for RTS games, colony simulators, and AI-driven projects. Optional EasyPath integration for A* pathfinding.",
   "unity": "2021.3",
   "unityRelease": "0f1",
-  "documentationUrl": "https://github.com/publisher/swarmai/Documentation~/README.md",
-  "changelogUrl": "https://github.com/publisher/swarmai/CHANGELOG.md",
+  "_documentationUrl": "<UPDATE_BEFORE_SUBMISSION>",
+  "_changelogUrl": "<UPDATE_BEFORE_SUBMISSION>",
+  "_note": "Remove underscore prefix and update URLs with actual documentation links before publishing",
   "licensesUrl": "https://unity.com/legal/as-terms",
   "keywords": [
     "ai",
@@ -23,9 +24,9 @@
     "multi-agent"
   ],
   "author": {
-    "name": "Publisher Name",
-    "email": "contact@publisher.com",
-    "url": "https://publisher.com"
+    "name": "<PUBLISHER_NAME>",
+    "email": "<PUBLISHER_EMAIL>",
+    "url": "<PUBLISHER_URL>"
   },
   "type": "tool",
   "samples": [

@@ -1,5 +1,7 @@
 SwarmAI - Multi-Agent Coordination System
-Copyright (c) 2026 [Publisher Name]
+Copyright (c) 2026 <PUBLISHER_NAME>
+
+<!-- NOTE: Replace <PUBLISHER_NAME> with your actual publisher name before submission -->
 
 This asset is licensed under the Unity Asset Store End User License Agreement (EULA).
 
