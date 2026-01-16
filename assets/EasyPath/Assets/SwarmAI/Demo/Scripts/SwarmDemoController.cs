@@ -53,6 +53,15 @@ namespace SwarmAI.Demo
         protected virtual void Update()
         {
             HandleCommonInput();
+            CleanupStaleAgents();
+        }
+        
+        /// <summary>
+        /// Remove null entries from agents list (handles destroyed agents).
+        /// </summary>
+        protected void CleanupStaleAgents()
+        {
+            _agents.RemoveAll(a => a == null);
         }
         
         protected virtual void HandleCommonInput()

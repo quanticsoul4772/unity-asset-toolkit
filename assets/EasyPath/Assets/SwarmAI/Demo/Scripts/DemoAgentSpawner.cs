@@ -13,10 +13,6 @@ namespace SwarmAI.Demo
         [SerializeField] private float _spawnRadius = 5f;
         [SerializeField] private bool _spawnOnStart = true;
         
-        [Header("Agent Settings")]
-        [SerializeField] private float _agentSpeed = 5f;
-        [SerializeField] private float _agentMaxForce = 10f;
-        
         [Header("Visual Settings")]
         [SerializeField] private Color[] _agentColors = new Color[]
         {
