@@ -246,12 +246,20 @@ Workflow at `.github/workflows/unity-ci.yml`:
 - **Tests**: Runs EditMode and PlayMode tests
 - **Builds**: Windows and WebGL builds on main branch
 
-Requires GitHub secrets:
+GitHub secrets (✅ configured):
 - `UNITY_LICENSE` - Unity license file content
 - `UNITY_EMAIL` - Unity account email
 - `UNITY_PASSWORD` - Unity account password
 
 See: https://game.ci/docs/github/activation for license setup.
+
+## GitHub Repository
+
+**URL:** https://github.com/quanticsoul4772/unity-asset-toolkit
+
+**Commits:**
+- `8cc4d6c` - Add EasyPath pathfinding asset with working demo
+- `f6637c6` - Add development environment - CI/CD, Git LFS, pre-commit hooks, VS Code config
 
 ## VS Code Integration
 

@@ -10,6 +10,9 @@
 [Mm]emoryCaptures/
 [Uu]serSettings/
 
+# Google Mobile Dependency Resolver (modifies DLLs on Unity startup, causes dirty branch in CI)
+**/MobileDependencyResolver/
+
 # IDE
 .idea/
 .vs/

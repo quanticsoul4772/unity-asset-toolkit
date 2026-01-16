@@ -36,7 +36,7 @@
 - [x] .gitattributes for Git LFS (tracks binary files)
 - [x] GitHub Actions CI/CD workflow (.github/workflows/unity-ci.yml)
 - [x] Pre-commit hooks for meta file validation (.githooks/)
-- [ ] Configure GitHub secrets (UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD)
+- [x] Configure GitHub secrets (UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD)
 
 ## VS Code Setup
 - [x] Recommended extensions (.vscode/extensions.json)
@@ -47,7 +47,7 @@
 - [x] Create new Unity project in assets/ folder (EasyPath) 
 - [x] Test build compiles (EasyPath.Runtime.dll, EasyPath.Editor.dll, EasyPath.Demo.dll) 
 - [x] Test Play mode works (pathfinding functional!) 
-- [ ] Test git commit works 
+- [x] Test git commit works (pushed to GitHub) 
  
 ## Asset Store Prep 
 - [ ] Review Asset Store guidelines 
