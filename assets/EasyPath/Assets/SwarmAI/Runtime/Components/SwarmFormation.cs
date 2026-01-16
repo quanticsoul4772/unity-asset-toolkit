@@ -415,6 +415,11 @@ namespace SwarmAI
         private List<FormationSlot> GenerateCircleFormation(int count, float spacing)
         {
             var slots = new List<FormationSlot>();
+            
+            // Guard against divide-by-zero
+            if (count <= 0) return slots;
+            
+            // Calculate radius from circumference: C = 2*PI*r, r = (count * spacing) / (2 * PI)
             float radius = count * spacing / (2f * Mathf.PI);
             radius = Mathf.Max(radius, spacing);
             
@@ -438,7 +443,8 @@ namespace SwarmAI
             while (index < count)
             {
                 int unitsInRow = row + 1;
-                float rowOffset = -row * spacing * 0.866f; // Behind leader (cos 30°)
+                // 0.866f = cos(30°) = sqrt(3)/2 - creates 60° wedge angle
+                float rowOffset = -row * spacing * 0.866f; // Behind leader
                 float halfWidth = row * spacing * 0.5f;
                 
                 for (int i = 0; i < unitsInRow && index < count; i++)
@@ -457,16 +463,20 @@ namespace SwarmAI
         {
             var slots = new List<FormationSlot>();
             
+            // Guard against empty formation
+            if (count <= 0) return slots;
+            
             // Leader at front
             slots.Add(new FormationSlot(Vector3.zero, 0));
             
-            // Alternate left and right
+            // Alternate left and right wings
             for (int i = 1; i < count; i++)
             {
                 int wing = (i + 1) / 2;
                 bool isLeft = (i % 2) == 1;
                 
                 float x = wing * spacing * (isLeft ? -1 : 1);
+                // 0.7f creates approximately 55° angle from forward - classic V formation angle
                 float z = -wing * spacing * 0.7f; // Behind
                 
                 slots.Add(new FormationSlot(new Vector3(x, 0, z), i));

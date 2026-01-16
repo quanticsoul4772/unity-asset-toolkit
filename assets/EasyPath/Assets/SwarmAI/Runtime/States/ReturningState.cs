@@ -15,6 +15,10 @@ namespace SwarmAI
         private bool _hasDeposited;
         private string _resourceType;
         
+        // Stuck detection (consistent with GatheringState)
+        private float _stuckTimer;
+        private Vector3 _lastPosition;
+        
         /// <summary>
         /// Position of the base to return to.
         /// </summary>
@@ -79,6 +83,8 @@ namespace SwarmAI
         {
             base.Enter();
             Agent.SetTarget(BasePosition);
+            _lastPosition = Agent.Position;
+            _stuckTimer = 0f;
         }
         
         public override void Execute()
@@ -97,6 +103,11 @@ namespace SwarmAI
             {
                 // Deposit resources
                 DepositResources();
+            }
+            else if (!_hasDeposited)
+            {
+                // Check if stuck while moving to base
+                CheckStuck();
             }
         }
         
@@ -118,6 +129,16 @@ namespace SwarmAI
                     return new GatheringState(resource, BasePosition);
                 }
                 
+                return new IdleState();
+            }
+            
+            // Check if stuck for too long
+            float stuckTimeLimit = SwarmManager.HasInstance && SwarmManager.Instance.Settings != null
+                ? SwarmManager.Instance.Settings.StuckTimeLimit
+                : 2f;
+            if (_stuckTimer > stuckTimeLimit)
+            {
+                // Can't reach base, go idle
                 return new IdleState();
             }
             
@@ -163,7 +184,34 @@ namespace SwarmAI
             float deposited = _carryAmount;
             _carryAmount = 0f;
             
-            Debug.Log($"[ReturningState] Agent {Agent.AgentId} deposited {deposited} resources");
+            // Only log if debug visualization is enabled
+            if (SwarmManager.HasInstance && SwarmManager.Instance.Settings != null && 
+                SwarmManager.Instance.Settings.EnableDebugVisualization)
+            {
+                Debug.Log($"[ReturningState] Agent {Agent.AgentId} deposited {deposited} resources");
+            }
+        }
+        
+        private void CheckStuck()
+        {
+            // Use squared distance for performance
+            float movedSq = (Agent.Position - _lastPosition).sqrMagnitude;
+            float stuckThreshold = SwarmManager.HasInstance && SwarmManager.Instance.Settings != null
+                ? SwarmManager.Instance.Settings.StuckThreshold
+                : 0.1f;
+            float thresholdSq = stuckThreshold * Time.deltaTime;
+            thresholdSq *= thresholdSq;
+            
+            if (movedSq < thresholdSq)
+            {
+                _stuckTimer += Time.deltaTime;
+            }
+            else
+            {
+                _stuckTimer = 0f;
+            }
+            
+            _lastPosition = Agent.Position;
         }
     }
 }

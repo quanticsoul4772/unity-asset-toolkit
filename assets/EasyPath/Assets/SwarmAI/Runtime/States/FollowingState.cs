@@ -29,13 +29,17 @@ namespace SwarmAI
         /// Create a following state for a specific leader.
         /// </summary>
         /// <param name="leader">The agent to follow.</param>
-        /// <param name="followDistance">Distance to maintain.</param>
-        public FollowingState(SwarmAgent leader, float followDistance = 3f)
+        /// <param name="followDistance">Distance to maintain (uses SwarmSettings.DefaultFollowDistance if not specified).</param>
+        public FollowingState(SwarmAgent leader, float followDistance = -1f)
         {
             Type = AgentStateType.Following;
             _leader = leader;
             _leaderId = leader?.AgentId ?? -1;
-            _followDistance = Mathf.Max(1f, followDistance);
+            // Use SwarmSettings default if not specified
+            float defaultDist = SwarmManager.HasInstance && SwarmManager.Instance.Settings != null
+                ? SwarmManager.Instance.Settings.DefaultFollowDistance
+                : 3f;
+            _followDistance = followDistance < 0 ? defaultDist : Mathf.Max(1f, followDistance);
             _useOffset = false;
         }
         
@@ -58,12 +62,16 @@ namespace SwarmAI
         /// Create a following state by leader ID.
         /// </summary>
         /// <param name="leaderId">ID of the agent to follow.</param>
-        /// <param name="followDistance">Distance to maintain.</param>
-        public FollowingState(int leaderId, float followDistance = 3f)
+        /// <param name="followDistance">Distance to maintain (uses SwarmSettings.DefaultFollowDistance if not specified).</param>
+        public FollowingState(int leaderId, float followDistance = -1f)
         {
             Type = AgentStateType.Following;
             _leaderId = leaderId;
-            _followDistance = Mathf.Max(1f, followDistance);
+            // Use SwarmSettings default if not specified
+            float defaultDist = SwarmManager.HasInstance && SwarmManager.Instance.Settings != null
+                ? SwarmManager.Instance.Settings.DefaultFollowDistance
+                : 3f;
+            _followDistance = followDistance < 0 ? defaultDist : Mathf.Max(1f, followDistance);
             _useOffset = false;
         }
         
@@ -72,10 +80,7 @@ namespace SwarmAI
             base.Enter();
             
             // Look up leader if we only have ID
-            if (_leader == null && _leaderId >= 0 && SwarmManager.HasInstance)
-            {
-                _leader = SwarmManager.Instance.GetAgent(_leaderId);
-            }
+            TryFindLeader();
             
             // Create and add follow behavior
             if (_leader != null)
@@ -89,23 +94,22 @@ namespace SwarmAI
                     _followBehavior = new FollowLeaderBehavior(_leader, _followDistance);
                 }
                 
-                Agent.AddBehavior(_followBehavior, 1.5f);
+                // Use weight from SwarmSettings
+                float weight = SwarmManager.HasInstance && SwarmManager.Instance.Settings != null
+                    ? SwarmManager.Instance.Settings.FollowLeaderWeight
+                    : 1.5f;
+                Agent.AddBehavior(_followBehavior, weight);
             }
         }
         
         public override void Execute()
         {
-            // Check if leader still exists
+            // Check if leader still exists, try to re-acquire if lost
             if (_leader == null || _leader.gameObject == null)
             {
-                // Try to find leader again
-                if (_leaderId >= 0 && SwarmManager.HasInstance)
+                if (TryFindLeader() && _followBehavior != null)
                 {
-                    _leader = SwarmManager.Instance.GetAgent(_leaderId);
-                    if (_followBehavior != null)
-                    {
-                        _followBehavior.Leader = _leader;
-                    }
+                    _followBehavior.Leader = _leader;
                 }
             }
         }
@@ -124,22 +128,35 @@ namespace SwarmAI
         
         public override AgentState CheckTransitions()
         {
-            // Leader is gone
+            // Leader is gone - try to re-acquire
             if (_leader == null || _leader.gameObject == null)
             {
-                // Try to find by ID
-                if (_leaderId >= 0 && SwarmManager.HasInstance)
-                {
-                    _leader = SwarmManager.Instance.GetAgent(_leaderId);
-                }
-                
-                if (_leader == null)
+                if (!TryFindLeader())
                 {
                     return new IdleState();
                 }
             }
             
             return this;
+        }
+        
+        /// <summary>
+        /// Attempt to find/re-acquire the leader agent.
+        /// </summary>
+        /// <returns>True if leader was found.</returns>
+        private bool TryFindLeader()
+        {
+            if (_leader != null && _leader.gameObject != null)
+            {
+                return true;
+            }
+            
+            if (_leaderId >= 0 && SwarmManager.HasInstance)
+            {
+                _leader = SwarmManager.Instance.GetAgent(_leaderId);
+            }
+            
+            return _leader != null;
         }
         
         public override bool HandleMessage(SwarmMessage message)

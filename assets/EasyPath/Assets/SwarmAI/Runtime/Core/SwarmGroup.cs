@@ -363,9 +363,11 @@ namespace SwarmAI
         /// </summary>
         public void BroadcastToMembers(SwarmMessage message)
         {
-            foreach (var member in _members)
+            // Iterate over a copy to avoid issues if handlers modify the list
+            var membersCopy = new List<SwarmAgent>(_members);
+            foreach (var member in membersCopy)
             {
-                if (member != null)
+                if (member != null && member.gameObject != null)
                 {
                     SwarmManager.Instance?.SendMessage(member.AgentId, message.Clone(null, member.AgentId));
                 }

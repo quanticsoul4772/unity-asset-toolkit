@@ -57,7 +57,7 @@ namespace SwarmAI
                         // Create new instance
                         var go = new GameObject("SwarmManager");
                         _instance = go.AddComponent<SwarmManager>();
-                        Debug.Log("[SwarmManager] Created new instance.");
+                        // Debug log handled by _showDebugInfo flag in Awake
                     }
                 }
                 return _instance;
@@ -132,7 +132,10 @@ namespace SwarmAI
             // Initialize spatial hash
             _spatialHash = new SpatialHash<SwarmAgent>(_settings.SpatialHashCellSize);
             
-            Debug.Log($"[SwarmManager] Initialized with cell size {_settings.SpatialHashCellSize}");
+            if (_showDebugInfo)
+            {
+                Debug.Log($"[SwarmManager] Initialized with cell size {_settings.SpatialHashCellSize}");
+            }
         }
         
         private void OnDestroy()

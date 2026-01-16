@@ -39,6 +39,9 @@ namespace SwarmAI
         [Tooltip("Default weight for cohesion behavior.")]
         [SerializeField] private float _cohesionWeight = 1.0f;
         
+        [Tooltip("Default weight for follow leader behavior.")]
+        [SerializeField] private float _followLeaderWeight = 1.5f;
+        
         [Header("Wander Behavior")]
         [Tooltip("Radius of the wander circle.")]
         [SerializeField] private float _wanderRadius = 4f;
@@ -133,6 +136,7 @@ namespace SwarmAI
         public float SeparationWeight => _separationWeight;
         public float AlignmentWeight => _alignmentWeight;
         public float CohesionWeight => _cohesionWeight;
+        public float FollowLeaderWeight => _followLeaderWeight;
         public float WanderRadius => _wanderRadius;
         public float WanderDistance => _wanderDistance;
         public float WanderJitter => _wanderJitter;
@@ -178,6 +182,12 @@ namespace SwarmAI
         /// Value: -0.5f (approximately 120 degrees from forward).
         /// </summary>
         public const float BackwardNormalThreshold = -0.5f;
+        
+        /// <summary>
+        /// Threshold for deciding whether to continue gathering when resource depletes (90% capacity).
+        /// If agent has gathered less than this fraction of capacity, look for new resources.
+        /// </summary>
+        public const float GatheringContinueThreshold = 0.9f;
         
         /// <summary>
         /// Create default settings at runtime if no asset exists.

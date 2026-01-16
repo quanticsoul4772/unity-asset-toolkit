@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SwarmAI
@@ -29,9 +30,12 @@ namespace SwarmAI
         // Internal state
         private float _currentAmount;
         private float _initialAmount;
-        private int _currentHarvesters;
+        private HashSet<SwarmAgent> _activeHarvesters;
         private float _respawnTimer;
         private Vector3 _initialScale;
+        
+        // Static registry for efficient lookups
+        private static readonly List<ResourceNode> _allNodes = new List<ResourceNode>();
         
         #region Properties
         
@@ -68,7 +72,7 @@ namespace SwarmAI
         /// <summary>
         /// Number of agents currently harvesting.
         /// </summary>
-        public int CurrentHarvesters => _currentHarvesters;
+        public int CurrentHarvesters => _activeHarvesters?.Count ?? 0;
         
         /// <summary>
         /// Whether this node is depleted (no resources left).
@@ -78,7 +82,7 @@ namespace SwarmAI
         /// <summary>
         /// Whether this node has available harvest slots.
         /// </summary>
-        public bool HasCapacity => _currentHarvesters < _maxHarvesters && !IsDepleted;
+        public bool HasCapacity => CurrentHarvesters < _maxHarvesters && !IsDepleted;
         
         /// <summary>
         /// Percentage of resources remaining (0-1).
@@ -128,6 +132,20 @@ namespace SwarmAI
             _currentAmount = _totalAmount;
             _initialAmount = _totalAmount;
             _initialScale = transform.localScale;
+            _activeHarvesters = new HashSet<SwarmAgent>();
+        }
+        
+        private void OnEnable()
+        {
+            if (!_allNodes.Contains(this))
+            {
+                _allNodes.Add(this);
+            }
+        }
+        
+        private void OnDisable()
+        {
+            _allNodes.Remove(this);
         }
         
         private void Update()
@@ -166,7 +184,7 @@ namespace SwarmAI
             float distance = Vector3.Distance(agent.Position, Position);
             if (distance > _harvestRadius) return false;
             
-            _currentHarvesters++;
+            _activeHarvesters.Add(agent);
             OnHarvestStarted?.Invoke(agent);
             return true;
         }
@@ -176,10 +194,20 @@ namespace SwarmAI
         /// </summary>
         public void StopHarvesting(SwarmAgent agent)
         {
-            if (agent == null || _currentHarvesters <= 0) return;
+            if (agent == null) return;
             
-            _currentHarvesters--;
-            OnHarvestStopped?.Invoke(agent);
+            if (_activeHarvesters.Remove(agent))
+            {
+                OnHarvestStopped?.Invoke(agent);
+            }
+        }
+        
+        /// <summary>
+        /// Check if a specific agent is currently harvesting this node.
+        /// </summary>
+        public bool IsHarvesting(SwarmAgent agent)
+        {
+            return agent != null && _activeHarvesters.Contains(agent);
         }
         
         /// <summary>
@@ -247,7 +275,7 @@ namespace SwarmAI
         {
             _currentAmount = _totalAmount;
             _respawnTimer = 0f;
-            _currentHarvesters = 0;
+            _activeHarvesters.Clear();
             
             if (_scaleWithAmount)
             {
@@ -262,24 +290,23 @@ namespace SwarmAI
         #region Static Helpers
         
         /// <summary>
-        /// Find the nearest resource node of a given type.
+        /// Find the nearest resource node matching a predicate.
         /// </summary>
-        public static ResourceNode FindNearest(Vector3 position, string resourceType = null, float maxDistance = float.MaxValue)
+        private static ResourceNode FindNearestWhere(Vector3 position, System.Func<ResourceNode, bool> predicate, string resourceType, float maxDistance)
         {
-            var nodes = FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
-            
             ResourceNode nearest = null;
-            float nearestDist = maxDistance;
+            float nearestDistSq = maxDistance * maxDistance;
             
-            foreach (var node in nodes)
+            foreach (var node in _allNodes)
             {
-                if (node.IsDepleted) continue;
+                if (node == null || node.gameObject == null) continue;
+                if (!predicate(node)) continue;
                 if (resourceType != null && node.ResourceType != resourceType) continue;
                 
-                float dist = Vector3.Distance(position, node.Position);
-                if (dist < nearestDist)
+                float distSq = (node.Position - position).sqrMagnitude;
+                if (distSq < nearestDistSq)
                 {
-                    nearestDist = dist;
+                    nearestDistSq = distSq;
                     nearest = node;
                 }
             }
@@ -288,30 +315,25 @@ namespace SwarmAI
         }
         
         /// <summary>
+        /// Find the nearest resource node of a given type.
+        /// </summary>
+        public static ResourceNode FindNearest(Vector3 position, string resourceType = null, float maxDistance = float.MaxValue)
+        {
+            return FindNearestWhere(position, node => !node.IsDepleted, resourceType, maxDistance);
+        }
+        
+        /// <summary>
         /// Find the nearest resource node with available capacity.
         /// </summary>
         public static ResourceNode FindNearestAvailable(Vector3 position, string resourceType = null, float maxDistance = float.MaxValue)
         {
-            var nodes = FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
-            
-            ResourceNode nearest = null;
-            float nearestDist = maxDistance;
-            
-            foreach (var node in nodes)
-            {
-                if (!node.HasCapacity) continue;
-                if (resourceType != null && node.ResourceType != resourceType) continue;
-                
-                float dist = Vector3.Distance(position, node.Position);
-                if (dist < nearestDist)
-                {
-                    nearestDist = dist;
-                    nearest = node;
-                }
-            }
-            
-            return nearest;
+            return FindNearestWhere(position, node => node.HasCapacity, resourceType, maxDistance);
         }
+        
+        /// <summary>
+        /// Get all registered resource nodes (read-only).
+        /// </summary>
+        public static IReadOnlyList<ResourceNode> AllNodes => _allNodes;
         
         #endregion
         

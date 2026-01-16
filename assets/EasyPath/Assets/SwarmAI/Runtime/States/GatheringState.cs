@@ -160,7 +160,10 @@ namespace SwarmAI
             }
             
             // Check if stuck for too long
-            if (_stuckTimer > 5f)
+            float stuckTimeLimit = SwarmManager.HasInstance && SwarmManager.Instance.Settings != null
+                ? SwarmManager.Instance.Settings.StuckTimeLimit
+                : 2f;
+            if (_stuckTimer > stuckTimeLimit)
             {
                 // Try to find alternative path or resource
                 return new IdleState();
@@ -182,9 +185,9 @@ namespace SwarmAI
                     if (_targetResource != null && 
                         Vector3.Distance(message.Position, _targetResource.Position) < 0.1f)
                     {
-                        // Find new resource
+                        // Find new resource if we haven't gathered much yet (below 90% capacity threshold)
                         var newResource = ResourceNode.FindNearestAvailable(Agent.Position);
-                        if (newResource != null && _currentCarry < _carryCapacity * 0.9f)
+                        if (newResource != null && _currentCarry < _carryCapacity * SwarmSettings.GatheringContinueThreshold)
                         {
                             Agent.SetState(new GatheringState(newResource, _basePosition, _carryCapacity, _currentCarry));
                         }
@@ -210,9 +213,15 @@ namespace SwarmAI
         
         private void CheckStuck()
         {
-            float moved = Vector3.Distance(Agent.Position, _lastPosition);
+            // Use squared distance for performance
+            float movedSq = (Agent.Position - _lastPosition).sqrMagnitude;
+            float stuckThreshold = SwarmManager.HasInstance && SwarmManager.Instance.Settings != null
+                ? SwarmManager.Instance.Settings.StuckThreshold
+                : 0.1f;
+            float thresholdSq = stuckThreshold * Time.deltaTime;
+            thresholdSq *= thresholdSq;
             
-            if (moved < 0.1f * Time.deltaTime)
+            if (movedSq < thresholdSq)
             {
                 _stuckTimer += Time.deltaTime;
             }
