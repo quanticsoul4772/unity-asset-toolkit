@@ -118,15 +118,17 @@ namespace SwarmAI
             // Calculate target position
             Vector3 targetPosition = CalculateTargetPosition();
             
-            // Calculate distance to target
+            // Calculate distance to target using sqrMagnitude for efficiency
             Vector3 toTarget = targetPosition - agent.Position;
-            float distance = toTarget.magnitude;
+            float sqrDistance = toTarget.sqrMagnitude;
             
-            // Already at target (compare squared distance for consistency)
-            if (distance * distance < SwarmSettings.DefaultPositionEqualityThresholdSq)
+            // Already at target
+            if (sqrDistance < SwarmSettings.DefaultPositionEqualityThresholdSq)
             {
                 return Vector3.zero;
             }
+            
+            float distance = Mathf.Sqrt(sqrDistance);
             
             // Calculate desired speed based on distance (arrive behavior)
             float targetSpeed;
@@ -140,7 +142,7 @@ namespace SwarmAI
             }
             
             // Calculate desired velocity
-            Vector3 desiredVelocity = toTarget.normalized * targetSpeed;
+            Vector3 desiredVelocity = toTarget / distance * targetSpeed; // Normalize manually since we have distance
             
             // Steering = desired - current
             return desiredVelocity - agent.Velocity;

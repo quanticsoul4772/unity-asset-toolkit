@@ -73,7 +73,7 @@ namespace SwarmAI
         [Tooltip("How quickly agents move to their formation positions.")]
         [SerializeField] private float _formationMoveSpeed = 5f;
         
-        [Tooltip("Distance at which an agent is considered "in position".")]
+        [Tooltip("Distance at which an agent is considered in position.")]
         [SerializeField] private float _formationArrivalRadius = 0.5f;
         
         [Header("Follow Leader")]

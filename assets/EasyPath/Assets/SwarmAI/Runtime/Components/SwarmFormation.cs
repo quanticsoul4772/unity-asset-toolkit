@@ -284,10 +284,10 @@ namespace SwarmAI
             slot.AssignedAgent = agent;
             _slots[slotIndex] = slot;
             
-            // Send formation update message to agent
+            // Send formation update message to agent (senderId = formationId for attribution)
             Vector3 slotPosition = GetSlotWorldPosition(slotIndex);
             SwarmManager.Instance?.SendMessage(agent.AgentId, 
-                SwarmMessage.FormationUpdate(slotPosition, -1, agent.AgentId));
+                SwarmMessage.FormationUpdate(slotPosition, _formationId, agent.AgentId));
             
             OnAgentJoined?.Invoke(agent, slotIndex);
         }
