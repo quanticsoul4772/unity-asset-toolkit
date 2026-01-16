@@ -7,10 +7,10 @@ A collection of AI and pathfinding tools for the Unity Asset Store.
 ## Project Status 
 **EasyPath - In Development** (January 2026)
 
-✅ A* pathfinding working and tested in Unity 6  
-✅ CI/CD pipeline configured with GitHub Actions  
-✅ Git LFS for binary assets  
-✅ Pre-commit hooks for validation  
+- A* pathfinding working and tested in Unity 6
+- CI/CD pipeline configured with GitHub Actions
+- Git LFS for binary assets
+- Pre-commit hooks for validation  
  
 ## Development Environment 
 - Unity 6 (6000.3.4f1) 
@@ -22,7 +22,7 @@ A collection of AI and pathfinding tools for the Unity Asset Store.
 ## Potential Products 
 | Asset | Description | Price | Status |
 |-------|-------------|-------|--------|
-| EasyPath | Simple A* pathfinding for beginners | $35 | ✅ Working |
+| EasyPath | Simple A* pathfinding for beginners | $35 | Working |
 | SwarmAI | Multi-agent coordination system | $45 | Planned |
 | NPCBrain | All-in-one AI toolkit | $60 | Planned |
  
