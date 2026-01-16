@@ -11,6 +11,8 @@ namespace SwarmAI.Tests
     public class BehaviorBaseTests
     {
         // Test implementation of BehaviorBase
+        // Note: This class is duplicated in BehaviorPlayModeTests.cs for test isolation.
+        // Both versions expose Seek/Flee/Truncate for testing but run in different contexts.
         private class TestBehavior : BehaviorBase
         {
             public override string Name => "Test Behavior";

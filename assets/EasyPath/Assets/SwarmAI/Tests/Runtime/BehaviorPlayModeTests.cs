@@ -13,6 +13,8 @@ namespace SwarmAI.Tests
     public class BehaviorPlayModeTests
     {
         // Test implementation of BehaviorBase to expose protected methods
+        // Note: This class is duplicated in BehaviorBaseTests.cs for test isolation.
+        // Both versions expose Seek/Flee for testing but run in different contexts (EditMode vs PlayMode).
         private class TestBehavior : BehaviorBase
         {
             public override string Name => "Test Behavior";
@@ -48,6 +50,7 @@ namespace SwarmAI.Tests
         [TearDown]
         public void TearDown()
         {
+            _behavior = null;
             if (_agentGO != null)
             {
                 Object.Destroy(_agentGO);

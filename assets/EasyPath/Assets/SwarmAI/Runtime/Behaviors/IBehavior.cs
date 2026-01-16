@@ -60,7 +60,7 @@ namespace SwarmAI
             if (agent == null) return Vector3.zero;
             
             Vector3 toTarget = targetPosition - agent.Position;
-            if (toTarget.sqrMagnitude < 0.0001f) return Vector3.zero;
+            if (toTarget.sqrMagnitude < SwarmSettings.DefaultPositionEqualityThresholdSq) return Vector3.zero;
             
             Vector3 desired = toTarget.normalized * agent.MaxSpeed;
             return desired - agent.Velocity;
@@ -75,7 +75,7 @@ namespace SwarmAI
             if (agent == null) return Vector3.zero;
             
             Vector3 fromThreat = agent.Position - threatPosition;
-            if (fromThreat.sqrMagnitude < 0.0001f) return Vector3.forward * agent.MaxSpeed;
+            if (fromThreat.sqrMagnitude < SwarmSettings.DefaultPositionEqualityThresholdSq) return Vector3.zero;
             
             Vector3 desired = fromThreat.normalized * agent.MaxSpeed;
             return desired - agent.Velocity;

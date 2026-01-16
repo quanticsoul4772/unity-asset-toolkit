@@ -79,7 +79,7 @@ namespace SwarmAI
             Vector3 fleeDirection;
             
             // Handle case where agent is at exact threat position
-            if (toAgent.sqrMagnitude < 0.001f)
+            if (toAgent.sqrMagnitude < SwarmSettings.DefaultPositionEqualityThresholdSq)
             {
                 fleeDirection = Vector3.forward;
             }
