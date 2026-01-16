@@ -7,6 +7,7 @@ namespace SwarmAI.Demo
     /// Centralized input handler for SwarmAI demo scenes using the new Input System.
     /// Provides a singleton-style access pattern with automatic lifecycle management.
     /// </summary>
+    [DefaultExecutionOrder(-100)] // Run before other scripts
     public class SwarmDemoInput : MonoBehaviour
     {
         private static SwarmDemoInput _instance;
@@ -81,20 +82,9 @@ namespace SwarmAI.Demo
             _isInitialized = true;
         }
         
-        private void LateUpdate()
+        private void Update()
         {
-            // Update continuous values
-            if (_actions != null)
-            {
-                _panInput = _actions.Camera.Pan.ReadValue<Vector2>();
-                _scrollInput = _actions.Camera.Scroll.ReadValue<Vector2>();
-                _rotateButton = _actions.Camera.RotateButton.IsPressed();
-                _rotateDelta = _actions.Camera.RotateDelta.ReadValue<Vector2>();
-                _mousePosition = _actions.Demo.MousePosition.ReadValue<Vector2>();
-                _movement = _actions.Demo.Movement.ReadValue<Vector2>();
-            }
-            
-            // Clear button press flags at end of frame
+            // Clear button press flags at START of frame (before other scripts read them)
             _clickPressed = false;
             _resetPressed = false;
             _cancelPressed = false;
@@ -112,6 +102,17 @@ namespace SwarmAI.Demo
             _actionXPressed = false;
             _plusPressed = false;
             _minusPressed = false;
+            
+            // Update continuous values
+            if (_actions != null)
+            {
+                _panInput = _actions.Camera.Pan.ReadValue<Vector2>();
+                _scrollInput = _actions.Camera.Scroll.ReadValue<Vector2>();
+                _rotateButton = _actions.Camera.RotateButton.IsPressed();
+                _rotateDelta = _actions.Camera.RotateDelta.ReadValue<Vector2>();
+                _mousePosition = _actions.Demo.MousePosition.ReadValue<Vector2>();
+                _movement = _actions.Demo.Movement.ReadValue<Vector2>();
+            }
         }
         
         private void OnDestroy()
