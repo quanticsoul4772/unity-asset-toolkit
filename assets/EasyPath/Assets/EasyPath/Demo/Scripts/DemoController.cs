@@ -78,7 +78,7 @@ namespace EasyPath.Demo
             GUILayout.Label("• Left Click - Set agent destination");
             GUILayout.Label("• Right Click - Spawn obstacle");
             GUILayout.Label("• Middle Click - Remove obstacle");
-            GUILayout.Label($"• {_rebuildGridKey} - Rebuild grid");
+            GUILayout.Label("• R - Rebuild grid");
             
             GUILayout.Space(10);
             

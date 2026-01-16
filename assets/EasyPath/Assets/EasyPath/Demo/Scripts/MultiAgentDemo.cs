@@ -260,11 +260,11 @@ namespace EasyPath.Demo
             GUILayout.Label("Multi-Agent Controls", GetHeaderStyle());
             GUILayout.Space(5);
             
-            GUILayout.Label($"• {_sendAllToRandomKey} - Send all to random");
-            GUILayout.Label($"• {_startWanderKey} - Toggle wander ({(_isWandering ? "ON" : "OFF")})");
-            GUILayout.Label($"• {_stopAllKey} - Stop all agents");
-            GUILayout.Label($"• {_gatherKey} - Gather at center");
-            GUILayout.Label($"• {_scatterKey} - Scatter to corners");
+            GUILayout.Label("• Space - Send all to random");
+            GUILayout.Label($"• W - Toggle wander ({(_isWandering ? "ON" : "OFF")})");
+            GUILayout.Label("• S - Stop all agents");
+            GUILayout.Label("• G - Gather at center");
+            GUILayout.Label("• X - Scatter to corners");
             
             GUILayout.Space(5);
             GUILayout.Label($"Agents: {_agents.Count}");
