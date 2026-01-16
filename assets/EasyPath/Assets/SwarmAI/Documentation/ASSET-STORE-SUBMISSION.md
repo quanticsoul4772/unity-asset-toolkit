@@ -27,7 +27,9 @@ This document provides the checklist and guidelines for submitting SwarmAI to th
 - [x] Controls documented in README
 
 **Action Required:**
-- [ ] Create demo scenes via Unity menu before submission (SwarmAI > Create Demo Scene)
+- [ ] Create demo scenes via Unity menu: **SwarmAI > Create Demo Scene > Create All Demo Scenes**
+- [ ] Validate package: **SwarmAI > Validate Package**
+- [ ] Run automated tests: `powershell -ExecutionPolicy Bypass -File scripts/test-unity-versions.ps1`
 
 ### Code Quality
 - [x] No compiler warnings
@@ -47,9 +49,11 @@ This document provides the checklist and guidelines for submitting SwarmAI to th
 - [x] Unit tests for core systems
 - [x] Edit-mode tests
 - [x] Play-mode tests
-- [ ] Tested on Unity 2021.3 LTS
-- [ ] Tested on Unity 2022.x
-- [ ] Tested on Unity 6
+- [x] TESTING-GUIDE.md with testing procedures
+- [x] Automated testing script (scripts/test-unity-versions.ps1)
+- [ ] Tested on Unity 2021.3 LTS (manual verification required)
+- [ ] Tested on Unity 2022.x (manual verification required)
+- [ ] Tested on Unity 6 (manual verification required)
 
 ## Asset Store Metadata
 
@@ -171,7 +175,9 @@ Main promotional image showing:
 
 2. **Prepare Package**
    - Open Unity project with SwarmAI
-   - Create demo scenes via menu
+   - Create demo scenes: **SwarmAI > Create Demo Scene > Create All Demo Scenes**
+   - Validate package: **SwarmAI > Validate Package**
+   - Run automated tests if available: `scripts/test-unity-versions.ps1`
    - Verify all tests pass
    - Check for compiler warnings
 

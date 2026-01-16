@@ -27,22 +27,81 @@ namespace SwarmAI.Editor
 
         #region Menu Items
 
+        [MenuItem("SwarmAI/Create Demo Scene/Create All Demo Scenes", false, 50)]
+        public static void CreateAllDemoScenes()
+        {
+            if (!CheckUnityVersionCompatibility())
+            {
+                return;
+            }
+            
+            bool proceed = EditorUtility.DisplayDialog(
+                "Create All Demo Scenes",
+                "This will create 3 demo scenes:\n\n" +
+                "- SwarmAI_FlockingDemo (30 agents)\n" +
+                "- SwarmAI_FormationDemo (10 agents)\n" +
+                "- SwarmAI_ResourceGatheringDemo (15 agents)\n\n" +
+                "Any existing scenes with the same names will be overwritten.\n\n" +
+                "Continue?",
+                "Create All",
+                "Cancel"
+            );
+            
+            if (!proceed) return;
+            
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Flocking Demo...", 0.1f);
+            CreateFlockingScene("SwarmAI_FlockingDemo", 30);
+            
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Formation Demo...", 0.4f);
+            CreateFormationScene("SwarmAI_FormationDemo", 10);
+            
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Resource Gathering Demo...", 0.7f);
+            CreateResourceGatheringScene("SwarmAI_ResourceGatheringDemo", 15);
+            
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Refreshing assets...", 0.9f);
+            AssetDatabase.Refresh();
+            
+            EditorUtility.ClearProgressBar();
+            
+            EditorUtility.DisplayDialog(
+                "Demo Scenes Created",
+                "All 3 demo scenes have been created successfully!\n\n" +
+                "Location: Assets/EasyPath/Assets/SwarmAI/Demo/Scenes/\n\n" +
+                "Next steps:\n" +
+                "1. Open a demo scene\n" +
+                "2. Press Play to test\n" +
+                "3. Use SwarmAI > Add Demo Scenes to Build Settings",
+                "OK"
+            );
+            
+            Debug.Log("[SwarmAI] All demo scenes created successfully!");
+        }
+
         [MenuItem("SwarmAI/Create Demo Scene/Flocking Demo (30 Agents)", false, 100)]
         public static void CreateFlockingDemoScene()
         {
+            if (!CheckUnityVersionCompatibility()) return;
             CreateFlockingScene("SwarmAI_FlockingDemo", 30);
         }
 
         [MenuItem("SwarmAI/Create Demo Scene/Formation Demo (10 Agents)", false, 101)]
         public static void CreateFormationDemoScene()
         {
+            if (!CheckUnityVersionCompatibility()) return;
             CreateFormationScene("SwarmAI_FormationDemo", 10);
         }
 
         [MenuItem("SwarmAI/Create Demo Scene/Resource Gathering Demo (15 Agents)", false, 102)]
         public static void CreateResourceGatheringDemoScene()
         {
+            if (!CheckUnityVersionCompatibility()) return;
             CreateResourceGatheringScene("SwarmAI_ResourceGatheringDemo", 15);
+        }
+
+        [MenuItem("SwarmAI/Validate Package", false, 150)]
+        public static void ValidatePackage()
+        {
+            ValidateSwarmAIPackage();
         }
 
         [MenuItem("SwarmAI/Add Demo Scenes to Build Settings", false, 200)]
@@ -76,6 +135,194 @@ namespace SwarmAI.Editor
             
             EditorBuildSettings.scenes = scenes.ToArray();
             Debug.Log($"[SwarmAI] Added {addedCount} demo scenes to Build Settings");
+        }
+
+        #endregion
+
+        #region Validation
+
+        private static bool CheckUnityVersionCompatibility()
+        {
+            string unityVersion = Application.unityVersion;
+            
+            // Parse major version
+            string[] versionParts = unityVersion.Split('.');
+            if (versionParts.Length < 1) return true;
+            
+            // Check for known compatible versions
+            bool isCompatible = true;
+            string warning = null;
+            
+            if (unityVersion.StartsWith("2020"))
+            {
+                warning = "Unity 2020.x is below the minimum supported version (2021.3 LTS).\n" +
+                         "Some features may not work correctly.";
+            }
+            else if (unityVersion.StartsWith("2019") || unityVersion.StartsWith("2018"))
+            {
+                isCompatible = false;
+                warning = "Unity " + versionParts[0] + ".x is not supported.\n" +
+                         "Please use Unity 2021.3 LTS or newer.";
+            }
+            
+            if (!isCompatible)
+            {
+                EditorUtility.DisplayDialog(
+                    "Unsupported Unity Version",
+                    warning,
+                    "OK"
+                );
+                return false;
+            }
+            
+            if (warning != null)
+            {
+                return EditorUtility.DisplayDialog(
+                    "Unity Version Warning",
+                    warning + "\n\nContinue anyway?",
+                    "Continue",
+                    "Cancel"
+                );
+            }
+            
+            return true;
+        }
+
+        private static void ValidateSwarmAIPackage()
+        {
+            var results = new List<string>();
+            var warnings = new List<string>();
+            int passCount = 0;
+            int failCount = 0;
+            
+            // Check assemblies by verifying key types exist
+            results.Add("=== Assembly Validation ===");
+            
+            // Check Runtime assembly types
+            CheckType<SwarmManager>("SwarmAI.SwarmManager", results, ref passCount, ref failCount);
+            CheckType<SwarmAgent>("SwarmAI.SwarmAgent", results, ref passCount, ref failCount);
+            CheckType<SwarmFormation>("SwarmAI.SwarmFormation", results, ref passCount, ref failCount);
+            CheckType<ResourceNode>("SwarmAI.ResourceNode", results, ref passCount, ref failCount);
+            
+            // Check Demo assembly types
+            CheckType<Demo.FlockingDemo>("SwarmAI.Demo.FlockingDemo", results, ref passCount, ref failCount);
+            CheckType<Demo.FormationDemo>("SwarmAI.Demo.FormationDemo", results, ref passCount, ref failCount);
+            CheckType<Demo.ResourceGatheringDemo>("SwarmAI.Demo.ResourceGatheringDemo", results, ref passCount, ref failCount);
+            
+            // Check demo scenes
+            results.Add("");
+            results.Add("=== Demo Scenes ===");
+            string scenesPath = "Assets/EasyPath/Assets/SwarmAI/Demo/Scenes";
+            string[] expectedScenes = new string[]
+            {
+                "SwarmAI_FlockingDemo.unity",
+                "SwarmAI_FormationDemo.unity",
+                "SwarmAI_ResourceGatheringDemo.unity"
+            };
+            
+            foreach (string scene in expectedScenes)
+            {
+                string fullPath = $"{scenesPath}/{scene}";
+                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(fullPath) != null)
+                {
+                    results.Add($"  [OK] {scene}");
+                    passCount++;
+                }
+                else
+                {
+                    results.Add($"  [MISSING] {scene} - Use 'Create Demo Scene' menu");
+                    warnings.Add($"Demo scene not found: {scene}");
+                }
+            }
+            
+            // Check documentation
+            results.Add("");
+            results.Add("=== Documentation ===");
+            string docsPath = "Assets/EasyPath/Assets/SwarmAI/Documentation";
+            string[] requiredDocs = new string[]
+            {
+                "README.md",
+                "API-REFERENCE.md",
+                "GETTING-STARTED.md",
+                "CHANGELOG.md"
+            };
+            
+            foreach (string doc in requiredDocs)
+            {
+                string fullPath = $"{docsPath}/{doc}";
+                if (System.IO.File.Exists(fullPath))
+                {
+                    results.Add($"  [OK] {doc}");
+                    passCount++;
+                }
+                else
+                {
+                    results.Add($"  [MISSING] {doc}");
+                    failCount++;
+                }
+            }
+            
+            // Check package files
+            results.Add("");
+            results.Add("=== Package Files ===");
+            string swarmAIPath = "Assets/EasyPath/Assets/SwarmAI";
+            string[] packageFiles = new string[]
+            {
+                "package.json",
+                "LICENSE.txt",
+                "THIRD-PARTY-NOTICES.txt"
+            };
+            
+            foreach (string file in packageFiles)
+            {
+                string fullPath = $"{swarmAIPath}/{file}";
+                if (System.IO.File.Exists(fullPath))
+                {
+                    results.Add($"  [OK] {file}");
+                    passCount++;
+                }
+                else
+                {
+                    results.Add($"  [MISSING] {file}");
+                    failCount++;
+                }
+            }
+            
+            // Summary
+            results.Add("");
+            results.Add($"=== Summary ===");
+            results.Add($"  Passed: {passCount}");
+            results.Add($"  Failed: {failCount}");
+            results.Add($"  Warnings: {warnings.Count}");
+            results.Add($"  Unity Version: {Application.unityVersion}");
+            
+            // Display results
+            string resultText = string.Join("\n", results);
+            Debug.Log("[SwarmAI Package Validation]\n" + resultText);
+            
+            string dialogMessage = failCount == 0
+                ? $"Validation passed!\n\nPassed: {passCount}\nWarnings: {warnings.Count}\n\nSee Console for details."
+                : $"Validation found issues.\n\nPassed: {passCount}\nFailed: {failCount}\nWarnings: {warnings.Count}\n\nSee Console for details.";
+            
+            EditorUtility.DisplayDialog(
+                "SwarmAI Package Validation",
+                dialogMessage,
+                "OK"
+            );
+        }
+
+        private static void CheckType<T>(string displayName, List<string> results, ref int passCount, ref int failCount)
+        {
+            if (typeof(T) != null)
+            {
+                results.Add($"  [OK] {displayName}");
+                passCount++;
+            }
+            else
+            {
+                results.Add($"  [FAIL] {displayName} - Type not found");
+                failCount++;
+            }
         }
 
         #endregion
@@ -218,9 +465,38 @@ namespace SwarmAI.Editor
             ground.transform.position = Vector3.zero;
             ground.transform.localScale = new Vector3(size / 10f, 1f, size / 10f);
 
-            Material groundMat = new Material(Shader.Find("Standard"));
-            groundMat.color = new Color(0.35f, 0.45f, 0.35f);
+            Material groundMat = CreateMaterial(new Color(0.35f, 0.45f, 0.35f));
             ground.GetComponent<Renderer>().material = groundMat;
+        }
+
+        private static Material CreateMaterial(Color color)
+        {
+            // Try to find an appropriate shader based on render pipeline
+            Shader shader = Shader.Find("Standard");
+            
+            // If Standard shader not found (URP/HDRP), try alternatives
+            if (shader == null)
+            {
+                shader = Shader.Find("Universal Render Pipeline/Lit");
+            }
+            if (shader == null)
+            {
+                shader = Shader.Find("HDRP/Lit");
+            }
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Color");
+            }
+            
+            if (shader == null)
+            {
+                Debug.LogWarning("[SwarmAI] Could not find suitable shader. Materials may appear incorrect.");
+                shader = Shader.Find("Hidden/InternalErrorShader");
+            }
+            
+            Material mat = new Material(shader);
+            mat.color = color;
+            return mat;
         }
 
         private static void CreateObstacles(Transform parent, int count)
@@ -255,8 +531,7 @@ namespace SwarmAI.Editor
                 obstacle.transform.position = pos;
                 obstacle.transform.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
 
-                Material obstacleMat = new Material(Shader.Find("Standard"));
-                obstacleMat.color = new Color(0.25f, 0.25f, 0.3f);
+                Material obstacleMat = CreateMaterial(new Color(0.25f, 0.25f, 0.3f));
                 obstacle.GetComponent<Renderer>().material = obstacleMat;
 
                 // Add to obstacle layer for avoidance
@@ -308,8 +583,7 @@ namespace SwarmAI.Editor
 
             Object.DestroyImmediate(body.GetComponent<Collider>());
 
-            Material bodyMat = new Material(Shader.Find("Standard"));
-            bodyMat.color = color;
+            Material bodyMat = CreateMaterial(color);
             body.GetComponent<Renderer>().material = bodyMat;
 
             // Direction indicator (cone-like using scaled sphere)
@@ -321,8 +595,7 @@ namespace SwarmAI.Editor
 
             Object.DestroyImmediate(indicator.GetComponent<Collider>());
 
-            Material indicatorMat = new Material(Shader.Find("Standard"));
-            indicatorMat.color = Color.white;
+            Material indicatorMat = CreateMaterial(Color.white);
             indicator.GetComponent<Renderer>().material = indicatorMat;
         }
 

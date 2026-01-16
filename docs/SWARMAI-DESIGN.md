@@ -238,6 +238,19 @@ public class SpatialHash<T>
 - [ ] Marketing images (Key Image, Icon, Screenshots)
 - [ ] Final submission to Asset Store
 
+### Phase 8: Demo Scenes & Multi-Version Testing [In Progress]
+- [x] TESTING-GUIDE.md with comprehensive testing instructions
+- [x] PowerShell automation script for version testing
+- [x] "Create All Demo Scenes" menu item
+- [x] Unity version compatibility checks in editor
+- [x] Package validation menu item
+- [x] Render pipeline shader fallbacks
+- [ ] Demo scenes created in Unity Editor (manual step)
+- [ ] Tested on Unity 2021.3 LTS
+- [ ] Tested on Unity 2022.3 LTS
+- [ ] Tested on Unity 6
+- [ ] Standalone builds tested
+
 ## Integration with EasyPath
 
 SwarmAI uses EasyPath for pathfinding:
