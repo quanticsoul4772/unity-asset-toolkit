@@ -120,12 +120,6 @@ namespace SwarmAI.Demo
         
         private void HandleFlockingInput()
         {
-            // Backtick/tilde - Toggle verbose debug on all agents
-            if (SwarmDemoInput.BackquotePressed)
-            {
-                ToggleVerboseDebug();
-            }
-            
             // Left click - Set flock target
             if (_useClickTarget && SwarmDemoInput.ClickPressed && Camera.main != null)
             {
@@ -370,26 +364,6 @@ namespace SwarmAI.Demo
             Debug.Log("[FlockingDemo] Flock gathering at center");
         }
         
-        private void ToggleVerboseDebug()
-        {
-            _verboseDebug = !_verboseDebug;
-            
-            // Also enable/disable on all agents via reflection or serialized field
-            foreach (var agent in _agents)
-            {
-                if (agent == null) continue;
-                
-                // Use reflection to set _verboseDebug on agents
-                var field = typeof(SwarmAgent).GetField("_verboseDebug", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field != null)
-                {
-                    field.SetValue(agent, _verboseDebug);
-                }
-            }
-            
-            Debug.Log($"[FlockingDemo] Verbose debug {(_verboseDebug ? "ENABLED" : "DISABLED")} for FlockingDemo and {_agents.Count} agents");
-        }
-        
         private void UpdateBoundaryAvoidance()
         {
             // Keep agents within bounds by applying steering force when near edges
@@ -433,7 +407,7 @@ namespace SwarmAI.Demo
             GUILayout.Label($"• 6 - Seek Target ({(IsBehaviorActive<SeekBehavior>() ? "ON" : "OFF")})");
             GUILayout.Label("• Space - Scatter flock");
             GUILayout.Label("• G - Gather at center");
-            GUILayout.Label($"• ` (backtick) - Toggle Debug ({(_verboseDebug ? "ON" : "OFF")})");
+
         }
         
         protected override void DrawStats()
