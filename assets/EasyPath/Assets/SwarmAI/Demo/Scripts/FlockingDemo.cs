@@ -210,6 +210,8 @@ namespace SwarmAI.Demo
         
         private void ScatterFlock()
         {
+            _hasTarget = false;
+            
             foreach (var agent in _agents)
             {
                 if (agent == null || !_agentBehaviors.ContainsKey(agent)) continue;
@@ -222,6 +224,12 @@ namespace SwarmAI.Demo
                         behavior.Weight = _separationWeight * 3f;
                     if (behavior is WanderBehavior)
                         behavior.IsActive = true;
+                }
+                
+                // Disable seek when scattering so agents don't move toward target
+                if (_agentSeekBehaviors.TryGetValue(agent, out var seekBehavior))
+                {
+                    seekBehavior.IsActive = false;
                 }
             }
             
