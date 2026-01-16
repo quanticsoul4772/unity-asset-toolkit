@@ -20,9 +20,6 @@ namespace SwarmAI
         // Cached list for broadcast iteration to avoid allocations
         private readonly List<SwarmAgent> _broadcastCache = new List<SwarmAgent>();
         
-        // Cached list for broadcast iteration to avoid allocations
-        private readonly List<SwarmAgent> _broadcastCache = new List<SwarmAgent>();
-        
         #region Properties
         
         /// <summary>
