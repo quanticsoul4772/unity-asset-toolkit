@@ -302,8 +302,6 @@ Create custom settings via **Assets → Create → SwarmAI → Swarm Settings**
 
 - **Documentation:** See the `/Documentation` folder
 - **Demo Scenes:** SwarmAI → Create Demo Scene
-- **Email:** support@example.com
-- **Discord:** discord.gg/example
 
 ---
 

@@ -447,7 +447,8 @@ public class SquadCombat : MonoBehaviour
     
     void Retreat()
     {
-        Vector3 retreatPos = transform.position; // Base position
+        if (_enemies.Count == 0) return;
+        
         _squad.Flee(_enemies[0].Position);
     }
 }
