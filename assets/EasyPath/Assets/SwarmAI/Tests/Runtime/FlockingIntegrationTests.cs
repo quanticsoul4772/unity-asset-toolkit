@@ -190,7 +190,8 @@ namespace SwarmAI.Tests
             Assert.Less(forceLinear.x, 0f, "Linear falloff should push away");
             
             // Forces should be different magnitudes due to different falloff calculations
-            Assert.AreNotEqual(forceSquared.magnitude, forceLinear.magnitude, 0.1f, 
+            // Note: AreNotEqual doesn't support tolerance, so we check if difference is significant
+            Assert.Greater(Mathf.Abs(forceSquared.magnitude - forceLinear.magnitude), 0.1f,
                 "Squared and linear falloff should produce different force magnitudes");
         }
         
