@@ -46,9 +46,11 @@ namespace SwarmAI.Demo
             {
                 SpawnAgents(_agentCount);
             }
-            else if (_autoSpawnAgents)
+            
+            // Always find existing agents if we don't have any yet
+            // This handles scenes where agents are pre-placed
+            if (_agents.Count == 0)
             {
-                // Find existing agents
                 var existingAgents = FindObjectsByType<SwarmAgent>(FindObjectsSortMode.None);
                 _agents.AddRange(existingAgents);
             }
