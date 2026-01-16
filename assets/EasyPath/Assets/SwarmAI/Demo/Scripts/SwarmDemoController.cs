@@ -50,10 +50,20 @@ namespace SwarmAI.Demo
             }
         }
         
+        private float _cleanupTimer = 0f;
+        private const float CleanupInterval = 1f;
+        
         protected virtual void Update()
         {
             HandleCommonInput();
-            CleanupStaleAgents();
+            
+            // Periodic cleanup instead of every frame
+            _cleanupTimer += Time.deltaTime;
+            if (_cleanupTimer >= CleanupInterval)
+            {
+                _cleanupTimer = 0f;
+                CleanupStaleAgents();
+            }
         }
         
         /// <summary>
