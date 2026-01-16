@@ -25,6 +25,8 @@ namespace EasyPath.Demo
         
         private void Start()
         {
+            EasyPathDemoInput.Initialize();
+            
             if (_autoFindReferences)
             {
                 if (_grid == null)
@@ -51,7 +53,7 @@ namespace EasyPath.Demo
         private void Update()
         {
             // Rebuild grid on key press
-            if (Input.GetKeyDown(_rebuildGridKey) && _grid != null)
+            if (EasyPathDemoInput.RebuildGridPressed && _grid != null)
             {
                 _grid.BuildGrid();
                 Debug.Log("[DemoController] Grid rebuilt!");

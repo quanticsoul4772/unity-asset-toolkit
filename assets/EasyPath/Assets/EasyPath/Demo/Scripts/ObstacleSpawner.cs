@@ -25,6 +25,8 @@ namespace EasyPath.Demo
         
         private void Start()
         {
+            EasyPathDemoInput.Initialize();
+            
             if (_grid == null)
             {
                 _grid = FindFirstObjectByType<EasyPathGrid>();
@@ -47,13 +49,13 @@ namespace EasyPath.Demo
         private void Update()
         {
             // Spawn obstacle on right click
-            if (Input.GetKeyDown(_spawnKey))
+            if (EasyPathDemoInput.RightClickPressed)
             {
                 TrySpawnObstacle();
             }
             
             // Remove obstacle on middle click
-            if (Input.GetKeyDown(_removeKey))
+            if (EasyPathDemoInput.MiddleClickPressed)
             {
                 TryRemoveObstacle();
             }
@@ -61,7 +63,7 @@ namespace EasyPath.Demo
         
         private void TrySpawnObstacle()
         {
-            Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = _camera.ScreenPointToRay(EasyPathDemoInput.MousePosition);
             
             if (Physics.Raycast(ray, out RaycastHit hit, 1000f))
             {
@@ -77,7 +79,7 @@ namespace EasyPath.Demo
         
         private void TryRemoveObstacle()
         {
-            Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = _camera.ScreenPointToRay(EasyPathDemoInput.MousePosition);
             
             if (Physics.Raycast(ray, out RaycastHit hit, 1000f))
             {

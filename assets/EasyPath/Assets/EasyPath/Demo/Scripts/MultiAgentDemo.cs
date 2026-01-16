@@ -35,6 +35,8 @@ namespace EasyPath.Demo
         
         private void Start()
         {
+            EasyPathDemoInput.Initialize();
+            
             if (_autoFindAgents)
             {
                 FindAllAgents();
@@ -71,31 +73,31 @@ namespace EasyPath.Demo
         private void HandleInput()
         {
             // Send all to random positions
-            if (Input.GetKeyDown(_sendAllToRandomKey))
+            if (EasyPathDemoInput.SendAllRandomPressed)
             {
                 SendAllToRandomPositions();
             }
             
             // Toggle wandering
-            if (Input.GetKeyDown(_startWanderKey))
+            if (EasyPathDemoInput.WanderPressed)
             {
                 ToggleWandering();
             }
             
             // Stop all agents
-            if (Input.GetKeyDown(_stopAllKey))
+            if (EasyPathDemoInput.StopAllPressed)
             {
                 StopAllAgents();
             }
             
             // Gather at center
-            if (Input.GetKeyDown(_gatherKey))
+            if (EasyPathDemoInput.GatherPressed)
             {
                 GatherAtCenter();
             }
             
             // Scatter to corners
-            if (Input.GetKeyDown(_scatterKey))
+            if (EasyPathDemoInput.ScatterPressed)
             {
                 ScatterToCorners();
             }

@@ -24,6 +24,8 @@ namespace EasyPath.Demo
         
         private void Start()
         {
+            EasyPathDemoInput.Initialize();
+            
             if (_agent == null)
             {
                 _agent = FindFirstObjectByType<EasyPathAgent>();
@@ -49,9 +51,9 @@ namespace EasyPath.Demo
         
         private void HandleInput()
         {
-            if (Input.GetMouseButtonDown(0))
+            if (EasyPathDemoInput.ClickPressed)
             {
-                Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+                Ray ray = _camera.ScreenPointToRay(EasyPathDemoInput.MousePosition);
                 
                 if (Physics.Raycast(ray, out RaycastHit hit, 1000f, _groundLayer))
                 {

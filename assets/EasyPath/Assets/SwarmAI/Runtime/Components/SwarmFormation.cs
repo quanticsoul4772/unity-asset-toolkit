@@ -13,10 +13,8 @@ namespace SwarmAI
         [SerializeField] private FormationType _formationType = FormationType.Line;
         [SerializeField] private float _spacing = 2f;
         [SerializeField] private int _maxSlots = 10;
-        [SerializeField] private bool _autoAssignSlots = true;
         
         [Header("Movement")]
-        [SerializeField] private float _formationSpeed = 5f;
         [SerializeField] private bool _matchLeaderRotation = true;
         
         [Header("Custom Formation")]
