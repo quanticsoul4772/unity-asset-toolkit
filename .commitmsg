@@ -1,0 +1,1 @@
+Fix SwarmGroup broadcast allocation - use cached list instead of allocating on every call  
