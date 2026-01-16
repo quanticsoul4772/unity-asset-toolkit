@@ -128,6 +128,7 @@ jobs:
           targetPlatform: StandaloneWindows64
           buildName: EasyPath-Demo
           allowDirtyBuild: true
+          buildsPath: build
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -170,6 +171,7 @@ jobs:
           targetPlatform: WebGL
           buildName: EasyPath-Demo
           allowDirtyBuild: true
+          buildsPath: build
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
