@@ -38,6 +38,7 @@ Unity Asset Store project for AI/pathfinding tools. C#, Unity 7 LTS, Visual Stud
 - **Unity 7 LTS** - Installed via Unity Hub 
 - **Visual Studio 2022** - Primary IDE (C:\Program Files\Microsoft Visual Studio\2022\Community)
 - **Git 2.45.1** - Version control 
+- **Git LFS 3.5.1** - Large file storage for binary assets
 - **Windows 11** - OS
 - **PowerShell** - CLI automation (not WSL)
 
@@ -124,12 +125,42 @@ From Battlecode experience:
 
 ## Automation Scripts
 
+### Core Scripts
 - **scripts/unity-cli.ps1** - Main CLI automation script for builds, tests, compilation
 - **scripts/quick.ps1** - Quick shortcut commands
-- **scripts/templates/** - Unity Editor scripts copied to new projects
-  - `BuildScript.cs` - CLI build automation
-  - `CompileValidator.cs` - Compilation validation
-  - `TestRunner.cs` - Test automation
+- **scripts/preflight.ps1** - Pre-development validation (run before opening Unity)
+
+### Validation Scripts
+- **scripts/validate-asmdef.ps1** - Check assembly definitions for GUID references (Unity 6 requirement)
+- **scripts/check-deprecated-api.ps1** - Scan for deprecated Unity APIs
+- **scripts/check-compile.ps1** - Check compilation status and errors
+- **scripts/read-unity-log.ps1** - Read and analyze Unity Editor.log
+
+### Template Scripts (copied to new projects)
+- **scripts/templates/BuildScript.cs** - CLI build automation
+- **scripts/templates/CompileValidator.cs** - Compilation validation
+- **scripts/templates/TestRunner.cs** - Test automation
+
+### Quick Commands
+```powershell
+# Before opening Unity - run all validators
+.\scripts\preflight.ps1
+
+# Check assembly definitions for issues
+.\scripts\validate-asmdef.ps1
+
+# Scan for deprecated APIs
+.\scripts\check-deprecated-api.ps1
+
+# Check compilation status
+.\scripts\check-compile.ps1
+
+# Read Unity log for errors
+.\scripts\read-unity-log.ps1
+
+# Setup Git hooks (run once)
+.\scripts\setup-hooks.ps1
+```
 
 ## Reference Guides
 
@@ -179,3 +210,55 @@ assets/EasyPath/Assets/EasyPath/
 - Assembly definitions should use GUID references, not name references
 - Editor assemblies need `"includePlatforms": ["Editor"]` in .asmdef
 - Grid obstacle detection uses `_obstacleCheckHeight` (default 0.5f) to check above ground plane
+
+## Common Issues & Solutions
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Editor scripts not compiling | Name-based asmdef references | Use GUID references: `"GUID:xxx"` |
+| Unity enters Safe Mode | Missing assembly reference | Add dependency to .asmdef file |
+| All pathfinding fails | Grid detecting ground as obstacle | Set obstacle layer, increase check height |
+| Menu items not appearing | Domain reload needed | Reimport All or restart Unity |
+| PowerShell log reading fails | Environment variable stripping | Scripts now use `[Environment]::GetFolderPath()` |
+
+## Runtime Diagnostics
+
+EasyPathGrid now includes automatic diagnostics:
+- Warns if <10% of cells are walkable (configuration issue)
+- Warns if obstacle layer is set to "Everything"
+- Warns if no obstacle layer is set
+- Logs grid build statistics
+
+## Git & CI/CD
+
+### Git LFS
+Large binary files (textures, audio, models) are tracked with Git LFS via `.gitattributes`.
+
+### Pre-commit Hooks
+Installed via `.\scripts\setup-hooks.ps1`. Validates:
+- Missing meta files for Unity assets
+- Orphan meta files (no matching asset)
+- Large files not tracked by LFS
+
+### GitHub Actions CI/CD
+Workflow at `.github/workflows/unity-ci.yml`:
+- **Pre-flight checks**: Validates asmdef files, checks for deprecated APIs
+- **Tests**: Runs EditMode and PlayMode tests
+- **Builds**: Windows and WebGL builds on main branch
+
+Requires GitHub secrets:
+- `UNITY_LICENSE` - Unity license file content
+- `UNITY_EMAIL` - Unity account email
+- `UNITY_PASSWORD` - Unity account password
+
+See: https://game.ci/docs/github/activation for license setup.
+
+## VS Code Integration
+
+Recommended extensions in `.vscode/extensions.json`:
+- C# Dev Kit
+- Unity Tools
+- GitLens
+- PowerShell
+
+Project settings in `.vscode/settings.json` and `.editorconfig`.

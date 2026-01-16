@@ -64,6 +64,61 @@ namespace EasyPath
             }
             
             _pathfinder = new AStarPathfinder(this);
+            
+            // Runtime diagnostics - warn about potential misconfigurations
+            ValidateGridConfiguration();
+        }
+        
+        /// <summary>
+        /// Validates the grid configuration and logs warnings for common issues.
+        /// </summary>
+        private void ValidateGridConfiguration()
+        {
+            int totalCells = _width * _height;
+            float walkablePercent = (float)WalkableCount / totalCells * 100f;
+            
+            // Check for suspiciously low walkable percentage
+            if (walkablePercent < 10f)
+            {
+                Debug.LogWarning($"[EasyPathGrid] WARNING: Only {walkablePercent:F1}% of cells are walkable ({WalkableCount}/{totalCells}).\n" +
+                    "This usually indicates a configuration issue:\n" +
+                    "1. Obstacle Layer may be detecting the ground plane - set to a specific layer (e.g., 'Obstacles')\n" +
+                    "2. Obstacle Check Height may be too low - try increasing it above ground level (default 0.5)\n" +
+                    "3. Obstacle Check Radius may be too large for your cell size");
+            }
+            else if (walkablePercent < 30f)
+            {
+                Debug.LogWarning($"[EasyPathGrid] Low walkable cell count: {walkablePercent:F1}% ({WalkableCount}/{totalCells}). " +
+                    "Pathfinding may be limited. Consider checking obstacle layer settings.");
+            }
+            
+            // Check if no obstacle layer is set (will detect everything)
+            if (_obstacleLayer.value == 0)
+            {
+                Debug.LogWarning("[EasyPathGrid] No Obstacle Layer set. Grid will treat all cells as walkable.\n" +
+                    "Set the Obstacle Layer to detect obstacles.");
+            }
+            else if (_obstacleLayer.value == -1 || _obstacleLayer.value == ~0)
+            {
+                Debug.LogWarning("[EasyPathGrid] Obstacle Layer is set to 'Everything'. This will detect ALL colliders including the ground!\n" +
+                    "Create a dedicated 'Obstacles' layer and assign obstacles to it.");
+            }
+            
+            // Check for very small or very large cell sizes
+            if (_cellSize < 0.1f)
+            {
+                Debug.LogWarning($"[EasyPathGrid] Cell size ({_cellSize}) is very small. This may cause performance issues.");
+            }
+            else if (_cellSize > 10f)
+            {
+                Debug.LogWarning($"[EasyPathGrid] Cell size ({_cellSize}) is very large. Pathfinding may be imprecise.");
+            }
+            
+            // Log successful configuration
+            if (walkablePercent >= 30f)
+            {
+                Debug.Log($"[EasyPathGrid] Grid built: {_width}x{_height}, {WalkableCount} walkable cells ({walkablePercent:F1}%)");
+            }
         }
         
         /// <summary>

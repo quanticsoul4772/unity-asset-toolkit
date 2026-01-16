@@ -1,20 +1,41 @@
-# Unity Asset Toolkit .gitignore  
-  
-# Unity  
-[Ll]ibrary/  
-[Tt]emp/  
-[Oo]bj/  
-[Bb]uild/  
-[Bb]uilds/  
-[Ll]ogs/  
-[Mm]emoryCaptures/  
-  
-# IDE  
-.idea/  
-.vs/  
-*.csproj  
-*.sln  
-  
-# OS  
-.DS_Store  
-Thumbs.db 
+# Unity Asset Toolkit .gitignore
+
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Uu]serSettings/
+
+# IDE
+.idea/
+.vs/
+*.csproj
+*.sln
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Crashlytics
+crashlyticsstore.build
+crashlytics-build.properties
+
+# Package Manager
+/[Pp]ackages/packages-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Local logs
+logs/
+*.log 

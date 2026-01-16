@@ -1,0 +1,72 @@
+{
+  "omnisharp.enableEditorConfigSupport": true,
+  "omnisharp.enableRoslynAnalyzers": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.renderWhitespace": "boundary",
+  "editor.rulers": [120],
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.associations": {
+    "*.asmdef": "json",
+    "*.asmref": "json",
+    "*.meta": "yaml"
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.vs": true,
+    "**/Library": true,
+    "**/Temp": true,
+    "**/obj": true,
+    "**/Logs": true,
+    "**/MemoryCaptures": true,
+    "**/*.csproj": true,
+    "**/*.sln": true
+  },
+  "search.exclude": {
+    "**/Library": true,
+    "**/Temp": true,
+    "**/obj": true,
+    "**/Logs": true,
+    "**/*.meta": true
+  },
+  "todohighlight.keywords": [
+    {
+      "text": "TODO:",
+      "color": "#fff",
+      "backgroundColor": "#ffbd2a",
+      "overviewRulerColor": "#ffbd2a"
+    },
+    {
+      "text": "FIXME:",
+      "color": "#fff",
+      "backgroundColor": "#f06292",
+      "overviewRulerColor": "#f06292"
+    },
+    {
+      "text": "HACK:",
+      "color": "#fff",
+      "backgroundColor": "#e040fb",
+      "overviewRulerColor": "#e040fb"
+    },
+    {
+      "text": "NOTE:",
+      "color": "#fff",
+      "backgroundColor": "#00bcd4",
+      "overviewRulerColor": "#00bcd4"
+    }
+  ],
+  "powershell.codeFormatting.preset": "OTBS",
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    }
+  }
+}
