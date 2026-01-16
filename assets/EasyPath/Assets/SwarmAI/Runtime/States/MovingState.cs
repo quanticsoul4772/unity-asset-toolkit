@@ -70,7 +70,12 @@ namespace SwarmAI
             // Stuck for too long?
             if (_stuckTime >= _stuckTimeLimit)
             {
-                Debug.LogWarning($"[MovingState] Agent {Agent.AgentId} stuck, returning to idle.");
+                // Only log warning if debug visualization is enabled
+                if (SwarmManager.HasInstance && SwarmManager.Instance.Settings != null &&
+                    SwarmManager.Instance.Settings.EnableDebugVisualization)
+                {
+                    Debug.LogWarning($"[MovingState] Agent {Agent.AgentId} stuck, returning to idle.");
+                }
                 return new IdleState();
             }
             

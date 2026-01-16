@@ -111,7 +111,10 @@ namespace SwarmAI
             // Singleton setup
             if (_instance != null && _instance != this)
             {
-                Debug.LogWarning("[SwarmManager] Multiple instances detected. Destroying duplicate.");
+                if (_showDebugInfo)
+                {
+                    Debug.LogWarning("[SwarmManager] Multiple instances detected. Destroying duplicate.");
+                }
                 Destroy(gameObject);
                 return;
             }
