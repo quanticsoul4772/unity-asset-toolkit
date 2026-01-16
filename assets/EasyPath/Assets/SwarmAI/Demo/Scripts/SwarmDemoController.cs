@@ -72,8 +72,9 @@ namespace SwarmAI.Demo
         
         /// <summary>
         /// Remove null entries from agents list (handles destroyed agents).
+        /// Override in subclasses to clean up additional data structures.
         /// </summary>
-        protected void CleanupStaleAgents()
+        protected virtual void CleanupStaleAgents()
         {
             _agents.RemoveAll(a => a == null);
         }

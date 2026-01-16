@@ -61,7 +61,7 @@ namespace SwarmAI.Demo
         /// <summary>
         /// Override to also clean up behavior dictionaries when agents are destroyed.
         /// </summary>
-        protected new void CleanupStaleAgents()
+        protected override void CleanupStaleAgents()
         {
             // First, clean up our dictionaries of any destroyed agents
             var staleAgents = new List<SwarmAgent>();
