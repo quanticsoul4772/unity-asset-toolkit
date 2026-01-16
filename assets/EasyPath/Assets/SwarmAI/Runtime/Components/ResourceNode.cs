@@ -290,10 +290,22 @@ namespace SwarmAI
         #region Static Helpers
         
         /// <summary>
+        /// Clean up any stale/destroyed entries from the registry.
+        /// Called automatically before lookups to handle edge cases where OnDisable wasn't called.
+        /// </summary>
+        private static void CleanupStaleEntries()
+        {
+            _allNodes.RemoveAll(n => n == null);
+        }
+        
+        /// <summary>
         /// Find the nearest resource node matching a predicate.
         /// </summary>
         private static ResourceNode FindNearestWhere(Vector3 position, System.Func<ResourceNode, bool> predicate, string resourceType, float maxDistance)
         {
+            // Clean up any stale entries first (handles destroyed-while-disabled edge case)
+            CleanupStaleEntries();
+            
             ResourceNode nearest = null;
             float nearestDistSq = maxDistance * maxDistance;
             

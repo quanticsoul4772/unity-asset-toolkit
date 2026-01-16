@@ -17,6 +17,12 @@ namespace SwarmAI
         private List<SwarmAgent> _members;
         private SwarmFormation _formation;
         
+        // Cached list for broadcast iteration to avoid allocations
+        private readonly List<SwarmAgent> _broadcastCache = new List<SwarmAgent>();
+        
+        // Cached list for broadcast iteration to avoid allocations
+        private readonly List<SwarmAgent> _broadcastCache = new List<SwarmAgent>();
+        
         #region Properties
         
         /// <summary>
@@ -363,9 +369,11 @@ namespace SwarmAI
         /// </summary>
         public void BroadcastToMembers(SwarmMessage message)
         {
-            // Iterate over a copy to avoid issues if handlers modify the list
-            var membersCopy = new List<SwarmAgent>(_members);
-            foreach (var member in membersCopy)
+            // Use cached list to avoid allocation on every broadcast
+            _broadcastCache.Clear();
+            _broadcastCache.AddRange(_members);
+            
+            foreach (var member in _broadcastCache)
             {
                 if (member != null && member.gameObject != null)
                 {
