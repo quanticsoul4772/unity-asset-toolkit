@@ -16,6 +16,7 @@ namespace SwarmAI.Demo
         [SerializeField] private float _cohesionWeight = 1.0f;
         [SerializeField] private float _wanderWeight = 0.3f;
         [SerializeField] private float _obstacleAvoidanceWeight = 2.0f;
+        [SerializeField] private float _seekWeight = 1.5f;
         [SerializeField] private float _neighborRadius = 5f;
         
         [Header("Flock Target")]
@@ -27,6 +28,9 @@ namespace SwarmAI.Demo
         
         // Behaviors for each agent
         private Dictionary<SwarmAgent, List<IBehavior>> _agentBehaviors = new Dictionary<SwarmAgent, List<IBehavior>>();
+        
+        // Seek behaviors (one per agent) for click-to-move
+        private Dictionary<SwarmAgent, SeekBehavior> _agentSeekBehaviors = new Dictionary<SwarmAgent, SeekBehavior>();
         
         // Current target position
         private Vector3 _targetPosition;
@@ -93,6 +97,12 @@ namespace SwarmAI.Demo
                 ToggleBehavior<ObstacleAvoidanceBehavior>();
             }
             
+            // 6 - Toggle Seek (target following)
+            if (SwarmDemoInput.Number6Pressed)
+            {
+                ToggleBehavior<SeekBehavior>();
+            }
+            
             // Space - Scatter (disable cohesion, increase separation)
             if (SwarmDemoInput.SpacePressed)
             {
@@ -121,19 +131,26 @@ namespace SwarmAI.Demo
                 var wander = new WanderBehavior();
                 var obstacleAvoidance = new ObstacleAvoidanceBehavior();
                 
+                // Create seek behavior for click-to-move (starts inactive until target is set)
+                var seek = new SeekBehavior();
+                seek.IsActive = false;
+                
                 agent.AddBehavior(separation, _separationWeight);
                 agent.AddBehavior(alignment, _alignmentWeight);
                 agent.AddBehavior(cohesion, _cohesionWeight);
                 agent.AddBehavior(wander, _wanderWeight);
                 agent.AddBehavior(obstacleAvoidance, _obstacleAvoidanceWeight);
+                agent.AddBehavior(seek, _seekWeight);
                 
                 behaviors.Add(separation);
                 behaviors.Add(alignment);
                 behaviors.Add(cohesion);
                 behaviors.Add(wander);
                 behaviors.Add(obstacleAvoidance);
+                behaviors.Add(seek);
                 
                 _agentBehaviors[agent] = behaviors;
+                _agentSeekBehaviors[agent] = seek;
             }
         }
         
@@ -175,11 +192,17 @@ namespace SwarmAI.Demo
             _targetPosition = position;
             _hasTarget = true;
             
-            // Add seek behavior toward target for all agents
+            // Update seek behavior target for all agents
             foreach (var agent in _agents)
             {
                 if (agent == null) continue;
-                agent.SetTarget(position);
+                
+                // Update the seek behavior's target and activate it
+                if (_agentSeekBehaviors.TryGetValue(agent, out var seekBehavior))
+                {
+                    seekBehavior.TargetPosition = position;
+                    seekBehavior.IsActive = true;
+                }
             }
             
             Debug.Log($"[FlockingDemo] Flock target set to {position}");
@@ -219,8 +242,16 @@ namespace SwarmAI.Demo
                         behavior.Weight = _separationWeight;
                 }
                 
-                agent.SetTarget(_boundsCenter);
+                // Update seek behavior to target center
+                if (_agentSeekBehaviors.TryGetValue(agent, out var seekBehavior))
+                {
+                    seekBehavior.TargetPosition = _boundsCenter;
+                    seekBehavior.IsActive = true;
+                }
             }
+            
+            _targetPosition = _boundsCenter;
+            _hasTarget = true;
             
             Debug.Log("[FlockingDemo] Flock gathering at center");
         }
@@ -265,6 +296,7 @@ namespace SwarmAI.Demo
             GUILayout.Label($"• 3 - Cohesion ({(IsBehaviorActive<CohesionBehavior>() ? "ON" : "OFF")})");
             GUILayout.Label($"• 4 - Wander ({(IsBehaviorActive<WanderBehavior>() ? "ON" : "OFF")})");
             GUILayout.Label($"• 5 - Obstacle Avoid ({(IsBehaviorActive<ObstacleAvoidanceBehavior>() ? "ON" : "OFF")})");
+            GUILayout.Label($"• 6 - Seek Target ({(IsBehaviorActive<SeekBehavior>() ? "ON" : "OFF")})");
             GUILayout.Label("• Space - Scatter flock");
             GUILayout.Label("• G - Gather at center");
         }
