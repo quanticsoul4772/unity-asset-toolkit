@@ -59,10 +59,7 @@ namespace SwarmAI
         [Tooltip("Speed multiplier when fleeing (1.0 = normal speed).")]
         [SerializeField] private float _fleeSpeedMultiplier = 1.5f;
         
-        [Header("Thresholds")]
-        [Tooltip("Squared distance threshold for considering two positions equal (used in Seek/Flee calculations).")]
-        [SerializeField] private float _positionEqualityThresholdSq = 0.0001f;
-        
+
         [Header("Debug")]
         [Tooltip("Enable debug visualization in Scene view.")]
         [SerializeField] private bool _enableDebugVisualization = true;
@@ -94,13 +91,8 @@ namespace SwarmAI
         public bool ShowVelocityVectors => _showVelocityVectors;
         
         /// <summary>
-        /// Squared distance threshold for considering two positions equal.
-        /// Default: 0.0001f (0.01 units).
-        /// </summary>
-        public float PositionEqualityThresholdSq => _positionEqualityThresholdSq;
-        
-        /// <summary>
-        /// Shared constant for position equality checks when SwarmSettings is not available.
+        /// Shared constant for position equality checks (squared distance threshold).
+        /// Value: 0.0001f (equivalent to 0.01 units distance).
         /// </summary>
         public const float DefaultPositionEqualityThresholdSq = 0.0001f;
         

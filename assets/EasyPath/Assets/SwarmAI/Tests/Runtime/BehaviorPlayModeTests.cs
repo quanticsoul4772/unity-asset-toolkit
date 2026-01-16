@@ -14,7 +14,7 @@ namespace SwarmAI.Tests
     {
         // Test implementation of BehaviorBase to expose protected methods
         // Note: This class is duplicated in BehaviorBaseTests.cs for test isolation.
-        // Both versions expose Seek/Flee for testing but run in different contexts (EditMode vs PlayMode).
+        // EditMode version also exposes Truncate; both run in different contexts.
         private class TestBehavior : BehaviorBase
         {
             public override string Name => "Test Behavior";
@@ -110,6 +110,20 @@ namespace SwarmAI.Tests
             var force = _behavior.TestFlee(null, Vector3.forward);
             
             Assert.AreEqual(Vector3.zero, force);
+        }
+        
+        [UnityTest]
+        public IEnumerator Flee_AtThreatPosition_ReturnsZeroForce()
+        {
+            _agentGO.transform.position = new Vector3(5, 0, 5);
+            yield return null; // Wait one frame for Awake/Start
+            
+            // Flee from same position as agent
+            var threat = new Vector3(5, 0, 5);
+            var force = _behavior.TestFlee(_agent, threat);
+            
+            // Force should be zero when at threat position
+            Assert.AreEqual(0f, force.magnitude, 0.01f, "Flee at threat position should return zero force");
         }
     }
 }

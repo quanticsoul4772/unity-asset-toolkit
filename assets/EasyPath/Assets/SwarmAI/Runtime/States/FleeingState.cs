@@ -78,7 +78,9 @@ namespace SwarmAI
             Vector3 toAgent = Agent.Position - _threatPosition;
             Vector3 fleeDirection;
             
-            // Handle case where agent is at exact threat position
+            // Handle case where agent is at exact threat position.
+            // Note: Unlike BehaviorBase.Flee() which returns zero force, the state machine
+            // uses a fallback direction because the agent must keep moving to escape.
             if (toAgent.sqrMagnitude < SwarmSettings.DefaultPositionEqualityThresholdSq)
             {
                 fleeDirection = Vector3.forward;
