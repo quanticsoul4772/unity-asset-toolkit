@@ -84,7 +84,23 @@ namespace SwarmAI.Demo
         
         private void Update()
         {
-            // Clear button press flags at START of frame (before other scripts read them)
+            // Update continuous values
+            if (_actions != null)
+            {
+                _panInput = _actions.Camera.Pan.ReadValue<Vector2>();
+                _scrollInput = _actions.Camera.Scroll.ReadValue<Vector2>();
+                _rotateButton = _actions.Camera.RotateButton.IsPressed();
+                _rotateDelta = _actions.Camera.RotateDelta.ReadValue<Vector2>();
+                _mousePosition = _actions.Demo.MousePosition.ReadValue<Vector2>();
+                _movement = _actions.Demo.Movement.ReadValue<Vector2>();
+            }
+        }
+        
+        private void LateUpdate()
+        {
+            // Clear button press flags at END of frame so they're available for the full frame
+            // Callbacks set these flags during the frame, and other scripts can read them
+            // Then LateUpdate clears them for the next frame
             _clickPressed = false;
             _resetPressed = false;
             _cancelPressed = false;
@@ -102,17 +118,6 @@ namespace SwarmAI.Demo
             _actionXPressed = false;
             _plusPressed = false;
             _minusPressed = false;
-            
-            // Update continuous values
-            if (_actions != null)
-            {
-                _panInput = _actions.Camera.Pan.ReadValue<Vector2>();
-                _scrollInput = _actions.Camera.Scroll.ReadValue<Vector2>();
-                _rotateButton = _actions.Camera.RotateButton.IsPressed();
-                _rotateDelta = _actions.Camera.RotateDelta.ReadValue<Vector2>();
-                _mousePosition = _actions.Demo.MousePosition.ReadValue<Vector2>();
-                _movement = _actions.Demo.Movement.ReadValue<Vector2>();
-            }
         }
         
         private void OnDestroy()
