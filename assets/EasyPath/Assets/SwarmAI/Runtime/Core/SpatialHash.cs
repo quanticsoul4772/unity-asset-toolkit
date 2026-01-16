@@ -138,11 +138,11 @@ namespace SwarmAI
         
         /// <summary>
         /// Query all items within a radius, using a pre-allocated list to reduce GC.
-        /// <para><b>Note:</b> The results list is cleared at the start of this method.</para>
+        /// Note: The results list is cleared at the start of this method.
         /// </summary>
         /// <param name="center">Center of the query sphere.</param>
         /// <param name="radius">Radius to search within.</param>
-        /// <param name="results">Pre-allocated list to fill with results. <b>Will be cleared first.</b></param>
+        /// <param name="results">Pre-allocated list to fill with results. Will be cleared first.</param>
         /// <param name="getPosition">Optional function to get position of an item for accurate Euclidean distance filtering. If null, all items in nearby cells are returned (faster but less accurate).</param>
         public void Query(Vector3 center, float radius, List<T> results, System.Func<T, Vector3> getPosition = null)
         {

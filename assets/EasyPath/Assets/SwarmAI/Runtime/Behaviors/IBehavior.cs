@@ -53,19 +53,31 @@ namespace SwarmAI
         
         /// <summary>
         /// Helper to calculate seek steering toward a target.
+        /// Returns zero if agent is null or already at target.
         /// </summary>
         protected Vector3 Seek(SwarmAgent agent, Vector3 targetPosition)
         {
-            Vector3 desired = (targetPosition - agent.Position).normalized * agent.MaxSpeed;
+            if (agent == null) return Vector3.zero;
+            
+            Vector3 toTarget = targetPosition - agent.Position;
+            if (toTarget.sqrMagnitude < 0.0001f) return Vector3.zero;
+            
+            Vector3 desired = toTarget.normalized * agent.MaxSpeed;
             return desired - agent.Velocity;
         }
         
         /// <summary>
         /// Helper to calculate flee steering away from a position.
+        /// Returns zero if agent is null or at the same position as threat.
         /// </summary>
         protected Vector3 Flee(SwarmAgent agent, Vector3 threatPosition)
         {
-            Vector3 desired = (agent.Position - threatPosition).normalized * agent.MaxSpeed;
+            if (agent == null) return Vector3.zero;
+            
+            Vector3 fromThreat = agent.Position - threatPosition;
+            if (fromThreat.sqrMagnitude < 0.0001f) return Vector3.forward * agent.MaxSpeed;
+            
+            Vector3 desired = fromThreat.normalized * agent.MaxSpeed;
             return desired - agent.Velocity;
         }
         

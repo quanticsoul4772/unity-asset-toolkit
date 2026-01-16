@@ -122,77 +122,7 @@ namespace SwarmAI.Tests
             Assert.AreEqual(vector, result);
         }
         
-        [Test]
-        public void Seek_ReturnsForceTowardTarget()
-        {
-            // Create a mock agent at origin
-            var go = new GameObject("TestAgent");
-            var agent = go.AddComponent<SwarmAgent>();
-            agent.transform.position = Vector3.zero;
-            
-            try
-            {
-                // Seek target at (10, 0, 0)
-                var target = new Vector3(10, 0, 0);
-                var force = _behavior.TestSeek(agent, target);
-                
-                // Force should point toward target (positive X)
-                Assert.Greater(force.x, 0f, "Seek force should point toward target");
-                Assert.AreEqual(0f, force.y, 0.001f);
-                Assert.AreEqual(0f, force.z, 0.001f);
-            }
-            finally
-            {
-                Object.DestroyImmediate(go);
-            }
-        }
-        
-        [Test]
-        public void Flee_ReturnsForceAwayFromThreat()
-        {
-            // Create a mock agent at origin
-            var go = new GameObject("TestAgent");
-            var agent = go.AddComponent<SwarmAgent>();
-            agent.transform.position = Vector3.zero;
-            
-            try
-            {
-                // Flee from threat at (10, 0, 0)
-                var threat = new Vector3(10, 0, 0);
-                var force = _behavior.TestFlee(agent, threat);
-                
-                // Force should point away from threat (negative X)
-                Assert.Less(force.x, 0f, "Flee force should point away from threat");
-                Assert.AreEqual(0f, force.y, 0.001f);
-                Assert.AreEqual(0f, force.z, 0.001f);
-            }
-            finally
-            {
-                Object.DestroyImmediate(go);
-            }
-        }
-        
-        [Test]
-        public void Seek_AtTarget_ReturnsZeroForce()
-        {
-            // Create a mock agent at the target position
-            var go = new GameObject("TestAgent");
-            var agent = go.AddComponent<SwarmAgent>();
-            agent.transform.position = new Vector3(5, 0, 5);
-            
-            try
-            {
-                // Seek same position
-                var target = new Vector3(5, 0, 5);
-                var force = _behavior.TestSeek(agent, target);
-                
-                // Force should be zero or near-zero
-                Assert.AreEqual(0f, force.magnitude, 0.01f, "Seek at target should return zero force");
-            }
-            finally
-            {
-                Object.DestroyImmediate(go);
-            }
-        }
+        // Note: Seek/Flee tests that require GameObjects are in PlayMode tests
+        // See: Tests/Runtime/BehaviorPlayModeTests.cs
     }
 }
