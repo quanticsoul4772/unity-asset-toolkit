@@ -60,10 +60,21 @@ namespace SwarmAI
             if (agent == null) return Vector3.zero;
             
             Vector3 toTarget = targetPosition - agent.Position;
-            if (toTarget.sqrMagnitude < SwarmSettings.DefaultPositionEqualityThresholdSq) return Vector3.zero;
+            float distSq = toTarget.sqrMagnitude;
+            
+            if (distSq < SwarmSettings.DefaultPositionEqualityThresholdSq)
+            {
+                // Debug.Log($"[BehaviorBase.Seek] Agent at target (distSq={distSq} < threshold={SwarmSettings.DefaultPositionEqualityThresholdSq})");
+                return Vector3.zero;
+            }
             
             Vector3 desired = toTarget.normalized * agent.MaxSpeed;
-            return desired - agent.Velocity;
+            Vector3 result = desired - agent.Velocity;
+            
+            // Uncomment for per-frame debug (very verbose!):
+            // Debug.Log($"[BehaviorBase.Seek] toTarget={toTarget}, desired={desired}, agentVel={agent.Velocity}, result={result}");
+            
+            return result;
         }
         
         /// <summary>

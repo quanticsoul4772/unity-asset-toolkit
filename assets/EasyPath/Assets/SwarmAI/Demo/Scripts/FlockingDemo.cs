@@ -26,6 +26,9 @@ namespace SwarmAI.Demo
         [SerializeField] private Vector3 _boundsCenter = new Vector3(0, 0, 0);
         [SerializeField] private Vector3 _boundsSize = new Vector3(30, 10, 30);
         
+        [Header("Debug")]
+        [SerializeField] private bool _verboseDebug = true;
+        
         // Behaviors for each agent
         private Dictionary<SwarmAgent, List<IBehavior>> _agentBehaviors = new Dictionary<SwarmAgent, List<IBehavior>>();
         
@@ -43,8 +46,22 @@ namespace SwarmAI.Demo
             
             base.Start();
             
+            if (_verboseDebug)
+            {
+                Debug.Log($"[FlockingDemo] Start() called. Found {_agents.Count} agents in _agents list");
+                foreach (var agent in _agents)
+                {
+                    Debug.Log($"[FlockingDemo]   - Agent: {(agent != null ? agent.name : "NULL")}");
+                }
+            }
+            
             // Setup behaviors for all agents
             SetupAgentBehaviors();
+            
+            if (_verboseDebug)
+            {
+                Debug.Log($"[FlockingDemo] After SetupAgentBehaviors: {_agentBehaviors.Count} agents have behaviors, {_agentSeekBehaviors.Count} have seek behaviors");
+            }
         }
         
         protected override void Update()
@@ -103,6 +120,12 @@ namespace SwarmAI.Demo
         
         private void HandleFlockingInput()
         {
+            // D - Toggle verbose debug on all agents
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                ToggleVerboseDebug();
+            }
+            
             // Left click - Set flock target
             if (_useClickTarget && SwarmDemoInput.ClickPressed && Camera.main != null)
             {
@@ -178,6 +201,11 @@ namespace SwarmAI.Demo
         {
             if (agent == null || _agentBehaviors.ContainsKey(agent)) return;
             
+            if (_verboseDebug)
+            {
+                Debug.Log($"[FlockingDemo] Setting up behaviors for agent: {agent.name}");
+            }
+            
             var behaviors = new List<IBehavior>();
             
             // Create and add behaviors
@@ -214,6 +242,11 @@ namespace SwarmAI.Demo
             
             _agentBehaviors[agent] = behaviors;
             _agentSeekBehaviors[agent] = seek;
+            
+            if (_verboseDebug)
+            {
+                Debug.Log($"[FlockingDemo] Agent {agent.name}: Added {behaviors.Count} behaviors. Seek active: {seek.IsActive}, target: {seek.TargetPosition}");
+            }
         }
         
         private void ToggleBehavior<T>() where T : IBehavior
@@ -267,7 +300,18 @@ namespace SwarmAI.Demo
                 }
             }
             
-            Debug.Log($"[FlockingDemo] Flock target set to {position}");
+            Debug.Log($"[FlockingDemo] Flock target set to {position}. Updated {_agentSeekBehaviors.Count} seek behaviors.");
+            
+            if (_verboseDebug)
+            {
+                foreach (var kvp in _agentSeekBehaviors)
+                {
+                    if (kvp.Key != null)
+                    {
+                        Debug.Log($"[FlockingDemo]   - {kvp.Key.name}: SeekBehavior.IsActive={kvp.Value.IsActive}, TargetPosition={kvp.Value.TargetPosition}");
+                    }
+                }
+            }
         }
         
         private void ScatterFlock()
@@ -326,6 +370,26 @@ namespace SwarmAI.Demo
             Debug.Log("[FlockingDemo] Flock gathering at center");
         }
         
+        private void ToggleVerboseDebug()
+        {
+            _verboseDebug = !_verboseDebug;
+            
+            // Also enable/disable on all agents via reflection or serialized field
+            foreach (var agent in _agents)
+            {
+                if (agent == null) continue;
+                
+                // Use reflection to set _verboseDebug on agents
+                var field = typeof(SwarmAgent).GetField("_verboseDebug", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(agent, _verboseDebug);
+                }
+            }
+            
+            Debug.Log($"[FlockingDemo] Verbose debug {(_verboseDebug ? "ENABLED" : "DISABLED")} for FlockingDemo and {_agents.Count} agents");
+        }
+        
         private void UpdateBoundaryAvoidance()
         {
             // Keep agents within bounds by applying steering force when near edges
@@ -369,6 +433,7 @@ namespace SwarmAI.Demo
             GUILayout.Label($"• 6 - Seek Target ({(IsBehaviorActive<SeekBehavior>() ? "ON" : "OFF")})");
             GUILayout.Label("• Space - Scatter flock");
             GUILayout.Label("• G - Gather at center");
+            GUILayout.Label($"• D - Toggle Debug ({(_verboseDebug ? "ON" : "OFF")})");
         }
         
         protected override void DrawStats()

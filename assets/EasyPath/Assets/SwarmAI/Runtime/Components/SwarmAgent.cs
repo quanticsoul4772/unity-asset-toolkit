@@ -23,8 +23,13 @@ namespace SwarmAI
         
         [Header("Debug")]
         [SerializeField] private bool _showDebugGizmos = true;
+        [SerializeField] private bool _verboseDebug = false;
         [SerializeField] private Color _velocityColor = Color.green;
         [SerializeField] private Color _neighborColor = new Color(1f, 1f, 0f, 0.3f);
+        
+        // Debug logging throttle
+        private float _lastDebugLogTime;
+        private const float DebugLogInterval = 1f; // Log every 1 second
         
         // Internal state
         private int _agentId = -1;
@@ -278,14 +283,34 @@ namespace SwarmAI
         {
             _steeringForce = Vector3.zero;
             
+            bool shouldLog = _verboseDebug && (Time.time - _lastDebugLogTime >= DebugLogInterval);
+            
+            if (shouldLog)
+            {
+                Debug.Log($"[SwarmAgent {name}] CalculateSteering: {_behaviors.Count} behaviors registered");
+            }
+            
             // Calculate behavior forces
+            int activeCount = 0;
             foreach (var wb in _behaviors)
             {
                 if (wb.Behavior.IsActive)
                 {
+                    activeCount++;
                     Vector3 force = wb.Behavior.CalculateForce(this);
-                    _steeringForce += force * wb.Weight * wb.Behavior.Weight;
+                    Vector3 weightedForce = force * wb.Weight * wb.Behavior.Weight;
+                    _steeringForce += weightedForce;
+                    
+                    if (shouldLog && force.sqrMagnitude > 0.001f)
+                    {
+                        Debug.Log($"[SwarmAgent {name}]   {wb.Behavior.Name}: force={force}, weight={wb.Weight}*{wb.Behavior.Weight}, weighted={weightedForce}");
+                    }
                 }
+            }
+            
+            if (shouldLog)
+            {
+                Debug.Log($"[SwarmAgent {name}]   Active behaviors: {activeCount}/{_behaviors.Count}, Total steering force: {_steeringForce}");
             }
             
             // Add seek force if we have a target and no pathfinding agent
@@ -319,20 +344,36 @@ namespace SwarmAI
             {
                 _steeringForce = _steeringForce.normalized * _maxForce;
             }
+            
+            if (shouldLog)
+            {
+                Debug.Log($"[SwarmAgent {name}]   Final steering force (after truncate): {_steeringForce}");
+            }
         }
         
         private void ApplyMovement()
         {
+            bool shouldLog = _verboseDebug && (Time.time - _lastDebugLogTime >= DebugLogInterval);
+            
             // Skip if using pathfinding agent for movement
             if (_pathAgent != null && _pathAgent.IsMoving)
             {
                 _velocity = (_pathAgent.Destination - Position).normalized * _pathAgent.Speed;
+                if (shouldLog)
+                {
+                    Debug.Log($"[SwarmAgent {name}] ApplyMovement: Using EasyPathAgent, velocity={_velocity}");
+                }
                 return;
             }
             
             // Apply steering force (F = ma, so a = F/m)
             Vector3 acceleration = _steeringForce / _mass;
             _velocity += acceleration * Time.deltaTime;
+            
+            if (shouldLog)
+            {
+                Debug.Log($"[SwarmAgent {name}] ApplyMovement: steeringForce={_steeringForce}, mass={_mass}, acceleration={acceleration}, velocity={_velocity}");
+            }
             
             // Truncate to max speed
             if (_velocity.sqrMagnitude > _maxSpeed * _maxSpeed)
@@ -344,7 +385,14 @@ namespace SwarmAI
             if (_velocity.sqrMagnitude > 0.001f)
             {
                 // Move
-                transform.position += _velocity * Time.deltaTime;
+                Vector3 movement = _velocity * Time.deltaTime;
+                transform.position += movement;
+                
+                if (shouldLog)
+                {
+                    Debug.Log($"[SwarmAgent {name}] ApplyMovement: MOVING! velocity={_velocity}, movement={movement}, newPos={transform.position}");
+                    _lastDebugLogTime = Time.time;
+                }
                 
                 // Rotate toward velocity
                 Vector3 flatVelocity = new Vector3(_velocity.x, 0, _velocity.z);
@@ -357,6 +405,11 @@ namespace SwarmAI
                         _rotationSpeed * Time.deltaTime
                     );
                 }
+            }
+            else if (shouldLog)
+            {
+                Debug.Log($"[SwarmAgent {name}] ApplyMovement: NOT moving, velocity too small: {_velocity.sqrMagnitude}");
+                _lastDebugLogTime = Time.time;
             }
         }
         
@@ -376,6 +429,11 @@ namespace SwarmAI
                 Behavior = behavior,
                 Weight = weight
             });
+            
+            if (_verboseDebug)
+            {
+                Debug.Log($"[SwarmAgent {name}] AddBehavior: {behavior.Name}, weight={weight}, total behaviors={_behaviors.Count}");
+            }
         }
         
         /// <summary>
