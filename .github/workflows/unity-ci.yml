@@ -130,6 +130,17 @@ jobs:
             Library-${{ env.PROJECT_PATH }}-
             Library-
 
+      - name: Verify License Secret Exists
+        run: |
+          if [ -z "${{ secrets.UNITY_LICENSE }}" ]; then
+            echo "ERROR: UNITY_LICENSE secret is empty or not set!"
+            exit 1
+          else
+            echo "UNITY_LICENSE secret is set (length: ${#UNITY_LICENSE} chars)"
+          fi
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
       - name: Build Windows Standalone
         uses: game-ci/unity-builder@v4
         env:
@@ -171,6 +182,17 @@ jobs:
             Library-${{ env.PROJECT_PATH }}-WebGL-
             Library-${{ env.PROJECT_PATH }}-
             Library-
+
+      - name: Verify License Secret Exists
+        run: |
+          if [ -z "${{ secrets.UNITY_LICENSE }}" ]; then
+            echo "ERROR: UNITY_LICENSE secret is empty or not set!"
+            exit 1
+          else
+            echo "UNITY_LICENSE secret is set (length: ${#UNITY_LICENSE} chars)"
+          fi
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
 
       - name: Build WebGL
         uses: game-ci/unity-builder@v4
