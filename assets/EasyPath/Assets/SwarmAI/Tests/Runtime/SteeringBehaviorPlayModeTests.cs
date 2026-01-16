@@ -203,7 +203,8 @@ namespace SwarmAI.Tests
         
         #endregion
         
-        #region Flocking Behavior Tests (require multiple agents)
+        #region Flocking Behavior Tests (single agent - no neighbors)
+        // Note: Multi-agent flocking tests with actual neighbors are in FlockingIntegrationTests.cs
         
         [UnityTest]
         public IEnumerator SeparationBehavior_NoNeighbors_ReturnsZero()
