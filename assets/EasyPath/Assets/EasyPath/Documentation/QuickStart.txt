@@ -1,0 +1,94 @@
+================================================================================
+                              EasyPath Quick Start
+================================================================================
+
+Thank you for purchasing EasyPath! This guide will help you get started with
+A* pathfinding in just a few minutes.
+
+--------------------------------------------------------------------------------
+1. SETUP (5 minutes)
+--------------------------------------------------------------------------------
+
+Step 1: Create a Grid
+   - In the Unity menu, go to: GameObject > EasyPath > Create Grid
+   - Position the grid at your desired location
+   - Adjust Width, Height, and Cell Size in the Inspector
+   - Set the "Obstacle Layer" to match your obstacle objects
+   - Click "Rebuild Grid" to generate the pathfinding data
+
+Step 2: Create an Agent
+   - Go to: GameObject > EasyPath > Create Agent
+   - Position the agent on your grid
+   - Adjust Speed and Stopping Distance as needed
+
+Step 3: Add Movement Logic
+   - Create a new script or use the included ClickToMove.cs
+   - Call agent.SetDestination(targetPosition) to start pathfinding
+
+--------------------------------------------------------------------------------
+2. BASIC USAGE
+--------------------------------------------------------------------------------
+
+// Find path and move agent to destination
+EasyPathAgent agent = GetComponent<EasyPathAgent>();
+agent.SetDestination(targetPosition);
+
+// Check if agent is moving
+if (agent.IsMoving)
+{
+    Debug.Log("Agent is on the move!");
+}
+
+// Stop the agent
+agent.Stop();
+
+// Pause and resume
+agent.Pause();
+agent.Resume();
+
+// Get remaining distance
+float distance = agent.RemainingDistance;
+
+// Subscribe to events
+agent.OnPathComplete += () => Debug.Log("Arrived!");
+agent.OnPathFailed += () => Debug.Log("No path found!");
+
+--------------------------------------------------------------------------------
+3. GRID API
+--------------------------------------------------------------------------------
+
+EasyPathGrid grid = FindObjectOfType<EasyPathGrid>();
+
+// Rebuild grid (after adding/removing obstacles)
+grid.BuildGrid();
+
+// Check if a position is walkable
+bool canWalk = grid.IsWalkable(worldPosition);
+
+// Find a path manually
+List<Vector3> path = grid.FindPath(startPos, endPos);
+
+// Set/toggle walkability
+grid.SetWalkable(x, y, false);  // Block a cell
+grid.ToggleWalkable(x, y);       // Toggle a cell
+
+--------------------------------------------------------------------------------
+4. DEMO SCENES
+--------------------------------------------------------------------------------
+
+Check out the demo scenes in EasyPath/Demo/Scenes/:
+
+- Demo_BasicSetup.unity    - Simple pathfinding example
+- Demo_ClickToMove.unity   - Click-to-move gameplay
+
+--------------------------------------------------------------------------------
+5. SUPPORT
+--------------------------------------------------------------------------------
+
+For documentation, tutorials, and support:
+- Email: support@yourdomain.com
+- Unity Forum: [Asset Store Page]
+
+================================================================================
+                              Happy Pathfinding!
+================================================================================

@@ -1,0 +1,16 @@
+{
+    "name": "EasyPath.Demo",
+    "rootNamespace": "EasyPath.Demo",
+    "references": [
+        "GUID:32e8732f4adef96408db2fc8a96644eb"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

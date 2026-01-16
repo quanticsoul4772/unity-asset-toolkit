@@ -3,7 +3,9 @@
 A collection of AI and pathfinding tools for the Unity Asset Store. 
  
 ## Project Status 
-Planning Phase - January 2026 
+**EasyPath - In Development** (January 2026)
+
+✅ A* pathfinding working and tested in Unity 6 
  
 ## Development Environment 
 - Unity 7 LTS 
@@ -27,5 +29,6 @@ Planning Phase - January 2026
  
 ## Getting Started 
 1. Open Unity Hub 
-2. Add project from assets/ folder 
-3. Open in Visual Studio 2022
+2. Add project from `assets/EasyPath` folder 
+3. In Unity: **EasyPath → Create Demo Scene → Multi-Agent Demo (5 Agents)**
+4. Press **Play** and left-click to move agents!

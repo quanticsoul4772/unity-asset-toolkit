@@ -1,0 +1,55 @@
+================================================================================
+                              EasyPath Changelog
+================================================================================
+
+--------------------------------------------------------------------------------
+Version 1.0.0 (January 2026) - Initial Release
+--------------------------------------------------------------------------------
+
+Features:
+  [+] A* pathfinding algorithm implementation
+  [+] Grid-based navigation system
+  [+] EasyPathGrid component for scene setup
+  [+] EasyPathAgent component for agent movement
+  [+] Custom Inspector for Grid with edit mode
+  [+] Custom Inspector for Agent with live stats
+  [+] Editor Debug Window (Window > EasyPath > Debug Window)
+  [+] Click-to-move demo script
+  [+] Gizmo visualization for debugging
+  [+] 8-directional movement support
+  [+] Diagonal corner-cutting prevention
+  [+] Dynamic obstacle detection
+  [+] Path events (OnPathComplete, OnPathFailed)
+  [+] Assembly definitions for fast compilation
+
+Demo Scenes:
+  [+] Demo_BasicSetup - Simple pathfinding example
+  [+] Demo_ClickToMove - Interactive click-to-move demo
+
+Documentation:
+  [+] QuickStart.txt - Getting started guide
+  [+] Changelog.txt - Version history
+  [+] README.md - Overview and links
+
+--------------------------------------------------------------------------------
+Planned for Version 1.1.0
+--------------------------------------------------------------------------------
+
+  [ ] Async pathfinding for large grids
+  [ ] Path smoothing (Catmull-Rom splines)
+  [ ] Movement cost penalties (terrain types)
+  [ ] Path caching system
+  [ ] NavMesh integration option
+  [ ] Jump Point Search optimization
+
+--------------------------------------------------------------------------------
+Planned for Version 1.2.0
+--------------------------------------------------------------------------------
+
+  [ ] Dynamic grid updates
+  [ ] Multi-agent coordination
+  [ ] Formation movement
+  [ ] Local avoidance
+  [ ] 3D pathfinding (multi-floor buildings)
+
+================================================================================

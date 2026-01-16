@@ -1,0 +1,19 @@
+{
+    "name": "EasyPath.Editor",
+    "rootNamespace": "EasyPath.Editor",
+    "references": [
+        "GUID:32e8732f4adef96408db2fc8a96644eb",
+        "GUID:9485adf895dab1a4492c71fc321779b2"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

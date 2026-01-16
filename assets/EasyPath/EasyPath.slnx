@@ -1,0 +1,5 @@
+﻿<Solution>
+  <Project Path="EasyPath.Editor.csproj" />
+  <Project Path="EasyPath.Runtime.csproj" />
+  <Project Path="EasyPath.Demo.csproj" />
+</Solution>
