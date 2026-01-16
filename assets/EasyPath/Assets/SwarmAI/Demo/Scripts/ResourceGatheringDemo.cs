@@ -6,6 +6,7 @@ namespace SwarmAI.Demo
     /// <summary>
     /// Demo showcasing resource gathering: GatheringState, ReturningState, and ResourceNode.
     /// Simulates a colony/RTS resource collection loop.
+    /// Uses the new Unity Input System.
     /// </summary>
     public class ResourceGatheringDemo : SwarmDemoController
     {
@@ -155,25 +156,25 @@ namespace SwarmAI.Demo
         private void HandleGatheringInput()
         {
             // G - Send all workers to gather
-            if (Input.GetKeyDown(KeyCode.G))
+            if (SwarmDemoInput.ActionGPressed)
             {
                 SendAllToGather();
             }
             
             // H - Send all workers home
-            if (Input.GetKeyDown(KeyCode.H))
+            if (SwarmDemoInput.ActionHPressed)
             {
                 SendAllHome();
             }
             
             // Left Click - Send clicked worker to clicked resource
-            if (Input.GetMouseButtonDown(0) && Camera.main != null)
+            if (SwarmDemoInput.ClickPressed && Camera.main != null)
             {
                 HandleClickAssignment();
             }
             
             // N - Spawn new resource node at random position
-            if (Input.GetKeyDown(KeyCode.N))
+            if (SwarmDemoInput.ActionNPressed)
             {
                 Vector3 randomPos = _basePosition + new Vector3(
                     Random.Range(-15f, 15f),
@@ -226,7 +227,7 @@ namespace SwarmAI.Demo
         {
             if (Camera.main == null) return;
             
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            Ray ray = Camera.main.ScreenPointToRay(SwarmDemoInput.MousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit, 100f))
             {
                 // Check if clicked on a resource node

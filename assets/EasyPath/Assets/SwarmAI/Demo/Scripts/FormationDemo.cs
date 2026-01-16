@@ -6,6 +6,7 @@ namespace SwarmAI.Demo
     /// <summary>
     /// Demo showcasing formation system: Line, Circle, Wedge, V, Box formations.
     /// Demonstrates leader-follower patterns and formation movement.
+    /// Uses the new Unity Input System.
     /// </summary>
     public class FormationDemo : SwarmDemoController
     {
@@ -102,45 +103,45 @@ namespace SwarmAI.Demo
         private void HandleFormationInput()
         {
             // Formation type selection
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            if (SwarmDemoInput.Number1Pressed)
             {
                 SetFormationType(FormationType.Line);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha2))
+            if (SwarmDemoInput.Number2Pressed)
             {
                 SetFormationType(FormationType.Column);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha3))
+            if (SwarmDemoInput.Number3Pressed)
             {
                 SetFormationType(FormationType.Circle);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha4))
+            if (SwarmDemoInput.Number4Pressed)
             {
                 SetFormationType(FormationType.Wedge);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha5))
+            if (SwarmDemoInput.Number5Pressed)
             {
                 SetFormationType(FormationType.V);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha6))
+            if (SwarmDemoInput.Number6Pressed)
             {
                 SetFormationType(FormationType.Box);
             }
             
             // Spacing adjustments
-            if (Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.Plus))
+            if (SwarmDemoInput.PlusPressed)
             {
                 AdjustSpacing(0.5f);
             }
-            if (Input.GetKeyDown(KeyCode.Minus))
+            if (SwarmDemoInput.MinusPressed)
             {
                 AdjustSpacing(-0.5f);
             }
             
             // Click to move formation
-            if (Input.GetMouseButtonDown(0) && Camera.main != null)
+            if (SwarmDemoInput.ClickPressed && Camera.main != null)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Ray ray = Camera.main.ScreenPointToRay(SwarmDemoInput.MousePosition);
                 if (Physics.Raycast(ray, out RaycastHit hit, 100f))
                 {
                     MoveFormationTo(hit.point);
@@ -148,14 +149,14 @@ namespace SwarmAI.Demo
             }
             
             // F - Follow leader toggle
-            if (Input.GetKeyDown(KeyCode.F))
+            if (SwarmDemoInput.ActionFPressed)
             {
                 _group?.FollowLeader();
                 Debug.Log("[FormationDemo] Followers following leader");
             }
             
             // X - Stop formation
-            if (Input.GetKeyDown(KeyCode.X))
+            if (SwarmDemoInput.ActionXPressed)
             {
                 _group?.Stop();
                 Debug.Log("[FormationDemo] Formation stopped");
@@ -166,12 +167,9 @@ namespace SwarmAI.Demo
         {
             if (_leader == null) return;
             
-            Vector3 moveDir = Vector3.zero;
-            
-            if (Input.GetKey(KeyCode.W)) moveDir.z += 1;
-            if (Input.GetKey(KeyCode.S)) moveDir.z -= 1;
-            if (Input.GetKey(KeyCode.A)) moveDir.x -= 1;
-            if (Input.GetKey(KeyCode.D)) moveDir.x += 1;
+            // Get movement from WASD via Input System
+            Vector2 moveInput = SwarmDemoInput.Movement;
+            Vector3 moveDir = new Vector3(moveInput.x, 0f, moveInput.y);
             
             if (moveDir.sqrMagnitude > 0.01f)
             {

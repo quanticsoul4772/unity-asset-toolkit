@@ -6,6 +6,7 @@ namespace SwarmAI.Demo
     /// <summary>
     /// Demo showcasing flocking behaviors: Separation, Alignment, Cohesion, Wander, and Obstacle Avoidance.
     /// Agents flock together like birds or fish with smooth emergent behavior.
+    /// Uses the new Unity Input System.
     /// </summary>
     public class FlockingDemo : SwarmDemoController
     {
@@ -23,7 +24,6 @@ namespace SwarmAI.Demo
         [Header("Bounds")]
         [SerializeField] private Vector3 _boundsCenter = new Vector3(0, 0, 0);
         [SerializeField] private Vector3 _boundsSize = new Vector3(30, 10, 30);
-        [SerializeField] private float _boundaryAvoidanceWeight = 1.5f;
         
         // Behaviors for each agent
         private Dictionary<SwarmAgent, List<IBehavior>> _agentBehaviors = new Dictionary<SwarmAgent, List<IBehavior>>();
@@ -54,9 +54,9 @@ namespace SwarmAI.Demo
         private void HandleFlockingInput()
         {
             // Left click - Set flock target
-            if (_useClickTarget && Input.GetMouseButtonDown(0) && Camera.main != null)
+            if (_useClickTarget && SwarmDemoInput.ClickPressed && Camera.main != null)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Ray ray = Camera.main.ScreenPointToRay(SwarmDemoInput.MousePosition);
                 if (Physics.Raycast(ray, out RaycastHit hit, 100f))
                 {
                     SetFlockTarget(hit.point);
@@ -64,43 +64,43 @@ namespace SwarmAI.Demo
             }
             
             // 1 - Toggle Separation
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            if (SwarmDemoInput.Number1Pressed)
             {
                 ToggleBehavior<SeparationBehavior>();
             }
             
             // 2 - Toggle Alignment
-            if (Input.GetKeyDown(KeyCode.Alpha2))
+            if (SwarmDemoInput.Number2Pressed)
             {
                 ToggleBehavior<AlignmentBehavior>();
             }
             
             // 3 - Toggle Cohesion
-            if (Input.GetKeyDown(KeyCode.Alpha3))
+            if (SwarmDemoInput.Number3Pressed)
             {
                 ToggleBehavior<CohesionBehavior>();
             }
             
             // 4 - Toggle Wander
-            if (Input.GetKeyDown(KeyCode.Alpha4))
+            if (SwarmDemoInput.Number4Pressed)
             {
                 ToggleBehavior<WanderBehavior>();
             }
             
             // 5 - Toggle Obstacle Avoidance
-            if (Input.GetKeyDown(KeyCode.Alpha5))
+            if (SwarmDemoInput.Number5Pressed)
             {
                 ToggleBehavior<ObstacleAvoidanceBehavior>();
             }
             
             // Space - Scatter (disable cohesion, increase separation)
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (SwarmDemoInput.SpacePressed)
             {
                 ScatterFlock();
             }
             
             // G - Gather (enable cohesion, set target to center)
-            if (Input.GetKeyDown(KeyCode.G))
+            if (SwarmDemoInput.ActionGPressed)
             {
                 GatherFlock();
             }

@@ -6,6 +6,7 @@ namespace SwarmAI.Demo
     /// <summary>
     /// Base controller for SwarmAI demonstration scenes.
     /// Provides common UI, agent management, and input handling.
+    /// Uses the new Unity Input System.
     /// </summary>
     public class SwarmDemoController : MonoBehaviour
     {
@@ -35,6 +36,9 @@ namespace SwarmAI.Demo
         
         protected virtual void Start()
         {
+            // Initialize input system
+            SwarmDemoInput.Initialize();
+            
             // Ensure SwarmManager exists
             var manager = SwarmManager.Instance;
             
@@ -77,13 +81,13 @@ namespace SwarmAI.Demo
         protected virtual void HandleCommonInput()
         {
             // R - Reset agents to spawn positions
-            if (Input.GetKeyDown(KeyCode.R))
+            if (SwarmDemoInput.ResetPressed)
             {
                 ResetAgents();
             }
             
             // Escape - Stop all agents
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (SwarmDemoInput.CancelPressed)
             {
                 StopAllAgents();
             }

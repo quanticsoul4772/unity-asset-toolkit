@@ -5,6 +5,7 @@ namespace SwarmAI.Demo
     /// <summary>
     /// Simple camera controller for SwarmAI demo scenes.
     /// Supports panning, zooming, and orbiting.
+    /// Uses the new Unity Input System.
     /// </summary>
     public class CameraController : MonoBehaviour
     {
@@ -28,6 +29,9 @@ namespace SwarmAI.Demo
         
         private void Start()
         {
+            // Initialize input system
+            SwarmDemoInput.Initialize();
+            
             // Initialize from current rotation
             Vector3 euler = transform.eulerAngles;
             _currentYaw = euler.y;
@@ -48,13 +52,9 @@ namespace SwarmAI.Demo
         
         private void HandlePanning()
         {
-            Vector3 panDirection = Vector3.zero;
-            
-            // Arrow keys for panning
-            if (Input.GetKey(KeyCode.UpArrow)) panDirection.z += 1;
-            if (Input.GetKey(KeyCode.DownArrow)) panDirection.z -= 1;
-            if (Input.GetKey(KeyCode.LeftArrow)) panDirection.x -= 1;
-            if (Input.GetKey(KeyCode.RightArrow)) panDirection.x += 1;
+            // Get pan input from arrow keys (Vector2: x = left/right, y = up/down)
+            Vector2 panInput = SwarmDemoInput.PanInput;
+            Vector3 panDirection = new Vector3(panInput.x, 0f, panInput.y);
             
             if (panDirection.sqrMagnitude > 0.01f)
             {
@@ -74,7 +74,8 @@ namespace SwarmAI.Demo
         
         private void HandleZoom()
         {
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            // Get scroll input (y component is vertical scroll)
+            float scroll = SwarmDemoInput.ScrollInput.y / 120f; // Normalize scroll value
             
             if (Mathf.Abs(scroll) > 0.01f)
             {
@@ -87,10 +88,11 @@ namespace SwarmAI.Demo
         private void HandleRotation()
         {
             // Right mouse button + drag to rotate
-            if (Input.GetMouseButton(1))
+            if (SwarmDemoInput.RotateButton)
             {
-                float mouseX = Input.GetAxis("Mouse X");
-                float mouseY = Input.GetAxis("Mouse Y");
+                Vector2 delta = SwarmDemoInput.RotateDelta;
+                float mouseX = delta.x * 0.1f; // Scale down the delta
+                float mouseY = delta.y * 0.1f;
                 
                 _currentYaw += mouseX * _rotationSpeed * Time.deltaTime;
                 _currentPitch -= mouseY * _rotationSpeed * Time.deltaTime;
