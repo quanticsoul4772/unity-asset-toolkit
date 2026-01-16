@@ -51,8 +51,54 @@ namespace SwarmAI.Demo
         {
             base.Update();
             
+            // Ensure any new agents have behaviors set up
+            EnsureAgentBehaviors();
+            
             HandleFlockingInput();
             UpdateBoundaryAvoidance();
+        }
+        
+        /// <summary>
+        /// Override to also clean up behavior dictionaries when agents are destroyed.
+        /// </summary>
+        protected new void CleanupStaleAgents()
+        {
+            // First, clean up our dictionaries of any destroyed agents
+            var staleAgents = new List<SwarmAgent>();
+            foreach (var agent in _agentBehaviors.Keys)
+            {
+                if (agent == null)
+                {
+                    staleAgents.Add(agent);
+                }
+            }
+            
+            foreach (var staleAgent in staleAgents)
+            {
+                _agentBehaviors.Remove(staleAgent);
+                _agentSeekBehaviors.Remove(staleAgent);
+            }
+            
+            // Then call base cleanup
+            base.CleanupStaleAgents();
+        }
+        
+        /// <summary>
+        /// Ensure all agents in the list have behaviors set up.
+        /// Handles dynamically spawned agents that weren't present at Start().
+        /// </summary>
+        private void EnsureAgentBehaviors()
+        {
+            foreach (var agent in _agents)
+            {
+                if (agent == null) continue;
+                
+                // If this agent doesn't have behaviors yet, set them up
+                if (!_agentBehaviors.ContainsKey(agent))
+                {
+                    SetupAgentBehavior(agent);
+                }
+            }
         }
         
         private void HandleFlockingInput()
@@ -121,37 +167,53 @@ namespace SwarmAI.Demo
             foreach (var agent in _agents)
             {
                 if (agent == null) continue;
-                
-                var behaviors = new List<IBehavior>();
-                
-                // Create and add behaviors
-                var separation = new SeparationBehavior(_neighborRadius);
-                var alignment = new AlignmentBehavior(_neighborRadius);
-                var cohesion = new CohesionBehavior(_neighborRadius);
-                var wander = new WanderBehavior();
-                var obstacleAvoidance = new ObstacleAvoidanceBehavior();
-                
-                // Create seek behavior for click-to-move (starts inactive until target is set)
-                var seek = new SeekBehavior();
-                seek.IsActive = false;
-                
-                agent.AddBehavior(separation, _separationWeight);
-                agent.AddBehavior(alignment, _alignmentWeight);
-                agent.AddBehavior(cohesion, _cohesionWeight);
-                agent.AddBehavior(wander, _wanderWeight);
-                agent.AddBehavior(obstacleAvoidance, _obstacleAvoidanceWeight);
-                agent.AddBehavior(seek, _seekWeight);
-                
-                behaviors.Add(separation);
-                behaviors.Add(alignment);
-                behaviors.Add(cohesion);
-                behaviors.Add(wander);
-                behaviors.Add(obstacleAvoidance);
-                behaviors.Add(seek);
-                
-                _agentBehaviors[agent] = behaviors;
-                _agentSeekBehaviors[agent] = seek;
+                SetupAgentBehavior(agent);
             }
+        }
+        
+        /// <summary>
+        /// Set up behaviors for a single agent. Used both at Start() and for dynamically spawned agents.
+        /// </summary>
+        private void SetupAgentBehavior(SwarmAgent agent)
+        {
+            if (agent == null || _agentBehaviors.ContainsKey(agent)) return;
+            
+            var behaviors = new List<IBehavior>();
+            
+            // Create and add behaviors
+            var separation = new SeparationBehavior(_neighborRadius);
+            var alignment = new AlignmentBehavior(_neighborRadius);
+            var cohesion = new CohesionBehavior(_neighborRadius);
+            var wander = new WanderBehavior();
+            var obstacleAvoidance = new ObstacleAvoidanceBehavior();
+            
+            // Create seek behavior for click-to-move (starts inactive until target is set)
+            var seek = new SeekBehavior();
+            seek.IsActive = false;
+            
+            // If we have an active target, set it up immediately
+            if (_hasTarget)
+            {
+                seek.TargetPosition = _targetPosition;
+                seek.IsActive = true;
+            }
+            
+            agent.AddBehavior(separation, _separationWeight);
+            agent.AddBehavior(alignment, _alignmentWeight);
+            agent.AddBehavior(cohesion, _cohesionWeight);
+            agent.AddBehavior(wander, _wanderWeight);
+            agent.AddBehavior(obstacleAvoidance, _obstacleAvoidanceWeight);
+            agent.AddBehavior(seek, _seekWeight);
+            
+            behaviors.Add(separation);
+            behaviors.Add(alignment);
+            behaviors.Add(cohesion);
+            behaviors.Add(wander);
+            behaviors.Add(obstacleAvoidance);
+            behaviors.Add(seek);
+            
+            _agentBehaviors[agent] = behaviors;
+            _agentSeekBehaviors[agent] = seek;
         }
         
         private void ToggleBehavior<T>() where T : IBehavior
