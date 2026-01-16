@@ -120,8 +120,8 @@ namespace SwarmAI.Demo
         
         private void HandleFlockingInput()
         {
-            // D - Toggle verbose debug on all agents
-            if (Input.GetKeyDown(KeyCode.D))
+            // Backtick/tilde - Toggle verbose debug on all agents
+            if (SwarmDemoInput.BackquotePressed)
             {
                 ToggleVerboseDebug();
             }
@@ -433,7 +433,7 @@ namespace SwarmAI.Demo
             GUILayout.Label($"• 6 - Seek Target ({(IsBehaviorActive<SeekBehavior>() ? "ON" : "OFF")})");
             GUILayout.Label("• Space - Scatter flock");
             GUILayout.Label("• G - Gather at center");
-            GUILayout.Label($"• D - Toggle Debug ({(_verboseDebug ? "ON" : "OFF")})");
+            GUILayout.Label($"• ` (backtick) - Toggle Debug ({(_verboseDebug ? "ON" : "OFF")})");
         }
         
         protected override void DrawStats()

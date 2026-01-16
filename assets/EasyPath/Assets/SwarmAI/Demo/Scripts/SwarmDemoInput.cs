@@ -40,6 +40,7 @@ namespace SwarmAI.Demo
         private static bool _actionXPressed;
         private static bool _plusPressed;
         private static bool _minusPressed;
+        private static bool _backquotePressed;
         
         /// <summary>
         /// Ensures the input system is initialized. Call from any demo script's Awake or Start.
@@ -78,6 +79,7 @@ namespace SwarmAI.Demo
             _actions.Demo.ActionX.performed += _ => _actionXPressed = true;
             _actions.Demo.Plus.performed += _ => _plusPressed = true;
             _actions.Demo.Minus.performed += _ => _minusPressed = true;
+            _actions.Demo.Backquote.performed += _ => _backquotePressed = true;
             
             _isInitialized = true;
         }
@@ -118,6 +120,7 @@ namespace SwarmAI.Demo
             _actionXPressed = false;
             _plusPressed = false;
             _minusPressed = false;
+            _backquotePressed = false;
         }
         
         private void OnDestroy()
@@ -365,6 +368,16 @@ namespace SwarmAI.Demo
             {
                 EnsureInitialized();
                 return _minusPressed;
+            }
+        }
+        
+        /// <summary>True the frame backtick/tilde key was pressed (debug toggle).</summary>
+        public static bool BackquotePressed
+        {
+            get
+            {
+                EnsureInitialized();
+                return _backquotePressed;
             }
         }
         
