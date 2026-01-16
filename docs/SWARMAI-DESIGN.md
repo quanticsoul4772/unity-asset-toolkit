@@ -202,8 +202,8 @@ public class SpatialHash<T>
 - [x] Leader-follower patterns
 
 ### Phase 4: Polish & Demo (Week 4) [Complete]
-- [ ] Custom inspectors for all components
-- [ ] Debug visualization window
+- [x] Custom inspectors for all components (Phase 6)
+- [x] Debug visualization window (Phase 6)
 - [x] Demo scenes (3 minimum)
   - [x] FlockingDemo - Separation, Alignment, Cohesion, Wander, Obstacle Avoidance
   - [x] FormationDemo - Line, Column, Circle, Wedge, V, Box formations
@@ -219,6 +219,14 @@ public class SpatialHash<T>
 - [x] BEHAVIORS.md - Steering behavior guide with diagrams
 - [x] STATES.md - Agent state documentation with transitions
 - [x] EXAMPLES.md - Code samples for common use cases
+
+### Phase 6: Editor Tools (Week 4) [Complete]
+- [x] SwarmAgentEditor - Custom inspector with runtime info, behaviors, scene handles
+- [x] SwarmManagerEditor - Custom inspector with agent list, commands
+- [x] SwarmFormationEditor - Custom inspector with formation preview
+- [x] ResourceNodeEditor - Custom inspector with progress bar, status
+- [x] SwarmSettingsEditor - Organized foldout sections
+- [x] SwarmDebugWindow - EditorWindow with agent list, visualization, commands, stats
 
 ## Integration with EasyPath
 

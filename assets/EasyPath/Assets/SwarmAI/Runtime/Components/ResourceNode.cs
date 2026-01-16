@@ -269,6 +269,27 @@ namespace SwarmAI
         }
         
         /// <summary>
+        /// Deplete the resource node immediately (for testing/editor use).
+        /// </summary>
+        public void Deplete()
+        {
+            _currentAmount = 0f;
+            
+            // Update visual scale if enabled
+            if (_scaleWithAmount)
+            {
+                transform.localScale = _initialScale * _minScale;
+            }
+            
+            OnDepleted?.Invoke();
+            
+            if (_respawns)
+            {
+                _respawnTimer = 0f;
+            }
+        }
+        
+        /// <summary>
         /// Respawn the resource node to full.
         /// </summary>
         public void Respawn()
