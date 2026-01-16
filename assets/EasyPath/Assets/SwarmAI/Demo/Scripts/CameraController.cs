@@ -13,6 +13,7 @@ namespace SwarmAI.Demo
         [SerializeField] private float _panSpeed = 20f;
         [SerializeField] private float _zoomSpeed = 10f;
         [SerializeField] private float _rotationSpeed = 100f;
+        [SerializeField] private float _scrollNormalization = 120f;
         
         [Header("Limits")]
         [SerializeField] private float _minHeight = 5f;
@@ -75,7 +76,8 @@ namespace SwarmAI.Demo
         private void HandleZoom()
         {
             // Get scroll input (y component is vertical scroll)
-            float scroll = SwarmDemoInput.ScrollInput.y / 120f; // Normalize scroll value
+            // Note: 120 is the typical Windows scroll delta, but this may vary by platform
+            float scroll = SwarmDemoInput.ScrollInput.y / _scrollNormalization;
             
             if (Mathf.Abs(scroll) > 0.01f)
             {

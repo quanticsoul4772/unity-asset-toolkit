@@ -21,7 +21,6 @@ namespace SwarmAI.Demo
         
         [Header("Movement")]
         [SerializeField] private bool _wasdControl = true;
-        [SerializeField] private float _clickMoveSpeed = 5f;
         
         // Formation component
         private SwarmFormation _formation;

@@ -27,8 +27,6 @@ namespace SwarmAI.Demo
         // Tracked objects
         private List<ResourceNode> _resourceNodes = new List<ResourceNode>();
         private GameObject _baseObject;
-        private float _totalDeposited = 0f;
-        private int _tripCount = 0;
         
         protected override void Start()
         {
