@@ -39,6 +39,33 @@ namespace SwarmAI
         [Tooltip("Default weight for cohesion behavior.")]
         [SerializeField] private float _cohesionWeight = 1.0f;
         
+        [Header("Wander Behavior")]
+        [Tooltip("Radius of the wander circle.")]
+        [SerializeField] private float _wanderRadius = 4f;
+        
+        [Tooltip("Distance of the wander circle from the agent.")]
+        [SerializeField] private float _wanderDistance = 6f;
+        
+        [Tooltip("Maximum random displacement per frame for wander.")]
+        [SerializeField] private float _wanderJitter = 1f;
+        
+        [Header("Obstacle Avoidance")]
+        [Tooltip("How far ahead to look for obstacles.")]
+        [SerializeField] private float _obstacleDetectionDistance = 5f;
+        
+        [Tooltip("Angle of the side whiskers in degrees.")]
+        [SerializeField] private float _obstacleWhiskerAngle = 45f;
+        
+        [Tooltip("Number of rays to cast for obstacle detection.")]
+        [SerializeField] private int _obstacleRayCount = 3;
+        
+        [Header("Arrive Behavior")]
+        [Tooltip("Default slowing radius for arrive behavior.")]
+        [SerializeField] private float _arriveSlowingRadius = 5f;
+        
+        [Tooltip("Default arrival radius for arrive behavior.")]
+        [SerializeField] private float _arriveArrivalRadius = 0.5f;
+        
         [Header("Performance")]
         [Tooltip("Maximum number of agents to process per frame for neighbor updates.")]
         [SerializeField] private int _maxAgentsPerFrame = 50;
@@ -79,6 +106,14 @@ namespace SwarmAI
         public float SeparationWeight => _separationWeight;
         public float AlignmentWeight => _alignmentWeight;
         public float CohesionWeight => _cohesionWeight;
+        public float WanderRadius => _wanderRadius;
+        public float WanderDistance => _wanderDistance;
+        public float WanderJitter => _wanderJitter;
+        public float ObstacleDetectionDistance => _obstacleDetectionDistance;
+        public float ObstacleWhiskerAngle => _obstacleWhiskerAngle;
+        public int ObstacleRayCount => _obstacleRayCount;
+        public float ArriveSlowingRadius => _arriveSlowingRadius;
+        public float ArriveArrivalRadius => _arriveArrivalRadius;
         public int MaxAgentsPerFrame => _maxAgentsPerFrame;
         public float SpatialHashUpdateInterval => _spatialHashUpdateInterval;
         public float StuckThreshold => _stuckThreshold;

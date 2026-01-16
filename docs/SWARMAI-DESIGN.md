@@ -187,12 +187,12 @@ public class SpatialHash<T>
 - [ ] Unit tests for core systems
 
 ### Phase 2: Steering Behaviors (Week 2)
-- [ ] IBehavior interface
-- [ ] Seek, Flee, Arrive behaviors
-- [ ] Wander behavior
-- [ ] Flocking (Separation, Alignment, Cohesion)
-- [ ] Obstacle avoidance
-- [ ] Behavior blending/prioritization
+- [x] IBehavior interface
+- [x] Seek, Flee, Arrive behaviors
+- [x] Wander behavior
+- [x] Flocking (Separation, Alignment, Cohesion)
+- [x] Obstacle avoidance
+- [x] Behavior blending/prioritization
 
 ### Phase 3: Advanced Features (Week 3)
 - [ ] Inter-agent messaging system
