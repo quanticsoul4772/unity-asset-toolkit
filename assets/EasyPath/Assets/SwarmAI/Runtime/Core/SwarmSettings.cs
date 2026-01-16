@@ -59,7 +59,6 @@ namespace SwarmAI
         [Tooltip("Speed multiplier when fleeing (1.0 = normal speed).")]
         [SerializeField] private float _fleeSpeedMultiplier = 1.5f;
         
-
         [Header("Debug")]
         [Tooltip("Enable debug visualization in Scene view.")]
         [SerializeField] private bool _enableDebugVisualization = true;

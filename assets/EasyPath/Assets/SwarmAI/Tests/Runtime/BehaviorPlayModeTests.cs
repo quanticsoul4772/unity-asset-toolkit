@@ -113,7 +113,7 @@ namespace SwarmAI.Tests
         }
         
         [UnityTest]
-        public IEnumerator Flee_AtThreatPosition_ReturnsZeroForce()
+        public IEnumerator Flee_AtThreat_ReturnsZeroForce()
         {
             _agentGO.transform.position = new Vector3(5, 0, 5);
             yield return null; // Wait one frame for Awake/Start
