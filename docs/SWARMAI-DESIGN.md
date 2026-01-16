@@ -194,14 +194,14 @@ public class SpatialHash<T>
 - [x] Obstacle avoidance
 - [x] Behavior blending/prioritization
 
-### Phase 3: Advanced Features (Week 3) ✅
+### Phase 3: Advanced Features (Week 3) [Complete]
 - [x] Inter-agent messaging system (enhanced SwarmMessage with formation/group/resource types)
 - [x] Formation system (line, column, circle, wedge, V, box, custom)
 - [x] Resource gathering behavior (GatheringState, ReturningState, ResourceNode)
 - [x] Group coordination (SwarmGroup, FollowLeaderBehavior, FollowingState)
 - [x] Leader-follower patterns
 
-### Phase 4: Polish & Demo (Week 4) ✅
+### Phase 4: Polish & Demo (Week 4) [Complete]
 - [ ] Custom inspectors for all components
 - [ ] Debug visualization window
 - [x] Demo scenes (3 minimum)
@@ -212,7 +212,7 @@ public class SpatialHash<T>
 - [ ] Performance optimization
 - [ ] Asset Store submission prep
 
-### Phase 5: Documentation (Week 4) ✅
+### Phase 5: Documentation (Week 4) [Complete]
 - [x] README.md - Overview, features, installation, quick start guide
 - [x] GETTING-STARTED.md - Step-by-step tutorials for all features
 - [x] API-REFERENCE.md - Complete class/method documentation

@@ -4,11 +4,11 @@
 **Unity Compatibility:** Unity 2021.3+ (LTS), Unity 2022.x, Unity 6+  
 **License:** Asset Store EULA
 
-SwarmAI is a powerful Unity asset for creating intelligent swarm behaviors, multi-agent coordination, and emergent AI systems. Built from real competition experience (MIT Battlecode 2026), it offers production-ready patterns for RTS games, colony simulators, and AI-driven experiences.
+SwarmAI is a Unity asset for creating swarm behaviors, multi-agent coordination, and emergent AI systems. Built from MIT Battlecode 2026 experience, it provides patterns for RTS games, colony simulators, and AI-driven projects.
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Features](#features)
 - [Installation](#installation)
@@ -20,7 +20,7 @@ SwarmAI is a powerful Unity asset for creating intelligent swarm behaviors, mult
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Systems
 - **SwarmManager** - Central coordinator with spatial partitioning for efficient neighbor queries
@@ -56,7 +56,7 @@ SwarmAI is a powerful Unity asset for creating intelligent swarm behaviors, mult
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### From Unity Asset Store
 1. Purchase and download SwarmAI from the Asset Store
@@ -77,7 +77,7 @@ SwarmAI uses assembly definitions for clean compilation:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Step 1: Create a SwarmManager
 
@@ -173,7 +173,7 @@ public class SwarmDemo : MonoBehaviour
 
 ---
 
-## 🧠 Core Concepts
+## Core Concepts
 
 ### SwarmManager
 The central coordinator that manages all agents. It provides:
@@ -203,7 +203,7 @@ FSM states that control agent logic:
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -215,7 +215,7 @@ FSM states that control agent logic:
 
 ---
 
-## 🎮 Demo Scenes
+## Demo Scenes
 
 SwarmAI includes three demo scenes showcasing key features:
 
@@ -264,7 +264,7 @@ RTS-style resource collection with:
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### SwarmSettings (ScriptableObject)
 
@@ -283,7 +283,7 @@ Create custom settings via **Assets → Create → SwarmAI → Swarm Settings**
 
 ---
 
-## ⚡ Performance Tips
+## Performance Tips
 
 1. **Use appropriate cell size** - Set `SpatialHashCellSize` to ~2x agent radius
 2. **Limit behaviors** - Use only necessary behaviors per agent
@@ -298,7 +298,7 @@ Create custom settings via **Assets → Create → SwarmAI → Swarm Settings**
 
 ---
 
-## 🆘 Support
+## Support
 
 - **Documentation:** See the `/Documentation` folder
 - **Demo Scenes:** SwarmAI → Create Demo Scene
@@ -307,7 +307,7 @@ Create custom settings via **Assets → Create → SwarmAI → Swarm Settings**
 
 ---
 
-## 📝 Changelog
+## Changelog
 
 ### Version 1.0.0
 - Initial release
@@ -321,4 +321,4 @@ Create custom settings via **Assets → Create → SwarmAI → Swarm Settings**
 
 ---
 
-*SwarmAI - Create intelligent swarms with ease!*
+
