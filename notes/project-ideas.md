@@ -23,20 +23,29 @@ Features:
 - [ ] Documentation 
 - [ ] Unit tests 
  
-## Option 2: SwarmAI 
+## Option 2: SwarmAI ← NEXT PROJECT
 **Multi-agent coordination (like Battlecode rats)** 
  
 - Price: $45 
 - Target: RTS/colony sim developers 
 - Complexity: Medium-High (3-4 weeks) 
 - Unique selling point: Built from real competition experience 
+- **Status:** 📋 Design complete, folder structure ready, ready to implement!
+- **Design Doc:** docs/SWARMAI-DESIGN.md
  
 Features: 
-- Multi-agent state machines 
-- Coordinated movement 
-- Resource gathering behaviors 
-- Threat avoidance 
-- ID-based agent differentiation 
+- [x] Design document complete
+- [x] Folder structure created
+- [x] Assembly definitions configured
+- [x] SwarmManager singleton
+- [x] SwarmAgent component
+- [x] State machine system (Idle, Moving, Seeking, Fleeing)
+- [x] Spatial partitioning (SpatialHash)
+- [x] Inter-agent messaging (SwarmMessage)
+- [ ] Steering behaviors (Seek, Flee, Flock, etc.)
+- [ ] Formation system
+- [ ] Demo scenes
+- [ ] Documentation 
  
 ## Option 3: NPCBrain 
 **All-in-one AI toolkit** 

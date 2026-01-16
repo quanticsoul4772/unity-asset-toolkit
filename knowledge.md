@@ -31,7 +31,9 @@ Unity Asset Store project for AI/pathfinding tools. C#, Unity 7 LTS, Visual Stud
 **Phase:** Development (January 2026) 
 **Current Project:** EasyPath - A* Pathfinding Asset 
 **Status:** ✅ Working! Pathfinding tested and functional in Unity 6 
-**Next Step:** Create more demo scenes, add unit tests, write documentation 
+**Next Project:** SwarmAI - Multi-Agent Coordination System
+**SwarmAI Status:** Phase 1 Complete! Core framework implemented.
+**Next Step:** SwarmAI Phase 2 - Steering Behaviors (see docs/SWARMAI-DESIGN.md) 
  
 ## Development Environment 
 
@@ -181,7 +183,27 @@ assets/EasyPath/Assets/EasyPath/
 |   +-- Inspectors/       # Custom inspectors for Grid/Agent
 |   +-- Windows/          # EasyPathDebugWindow
 +-- Demo/                 # Demo scripts (EasyPath.Demo.dll)
-    +-- Scripts/          # ClickToMove, DemoController
+|   +-- Scripts/          # ClickToMove, DemoController
++-- Tests/                # Unit tests
+    +-- Editor/           # EditMode tests (PathNodeTests, PriorityQueueTests, PerformanceBenchmarks)
+    +-- Runtime/          # PlayMode tests (PathfindingIntegrationTests)
+```
+
+## SwarmAI Asset Structure
+
+```
+assets/EasyPath/Assets/SwarmAI/
++-- Runtime/              # Core swarm system (SwarmAI.Runtime.dll)
+|   +-- Core/             # SwarmManager, AgentState, SwarmMessage
+|   +-- Components/       # SwarmAgent, SwarmSensor, SwarmFormation
+|   +-- Behaviors/        # IBehavior, Seek, Flee, Flock, Gather, etc.
++-- Editor/               # Editor tools (SwarmAI.Editor.dll)
+|   +-- Inspectors/       # Custom inspectors
+|   +-- Windows/          # SwarmDebugWindow
++-- Demo/                 # Demo scripts (SwarmAI.Demo.dll)
+|   +-- Scripts/          # Demo controllers
+|   +-- Scenes/           # BasicSwarm, ResourceGathering, CombatFormations
++-- Documentation/        # README, quickstart guide
 ```
 
 **Unity Menu Items:**
@@ -260,6 +282,28 @@ See: https://game.ci/docs/github/activation for license setup.
 **Commits:**
 - `8cc4d6c` - Add EasyPath pathfinding asset with working demo
 - `f6637c6` - Add development environment - CI/CD, Git LFS, pre-commit hooks, VS Code config
+- `440aa31` - Remove base64 decode step - license is already raw XML
+- `f074d68` - Fix CI/CD build - add demo scenes to EditorBuildSettings
+
+## Unit Testing
+
+### Test Assemblies
+- **EasyPath.Tests.Editor** - EditMode unit tests (PathNode, PriorityQueue, benchmarks)
+- **EasyPath.Tests.Runtime** - PlayMode integration tests (pathfinding scenarios)
+
+### Running Tests
+```powershell
+# Run all tests via CLI
+.\scripts\unity-cli.ps1 -Action test
+
+# Or in Unity Editor: Window → General → Test Runner
+```
+
+### Performance Benchmarks
+Benchmark tests are in `EasyPath.Tests.Editor.PerformanceBenchmarks`:
+- Small grid (20x20) pathfinding: target < 5ms
+- PriorityQueue operations: target < 500ms for 10k ops
+- Memory allocation per pathfind: target < 1MB for 100 paths
 
 ## VS Code Integration
 
