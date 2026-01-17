@@ -29,6 +29,9 @@ namespace SwarmAI.Demo
         private SwarmFormation _formation;
         private SwarmGroup _group;
         
+        // Leader's arrive behavior for click-to-move
+        private ArriveBehavior _leaderArriveBehavior;
+        
         // Track if formation has been set up (to prevent duplicate behavior adding)
         private bool _formationInitialized = false;
         
@@ -93,9 +96,17 @@ namespace SwarmAI.Demo
             _leader = _agents[0];
             SetLeaderVisual(_leader);
             
+            // Clear any existing behaviors on leader and add arrive behavior for click-to-move
+            _leader.ClearBehaviors();
+            _leaderArriveBehavior = new ArriveBehavior();
+            _leaderArriveBehavior.SlowingRadius = 3f;
+            _leaderArriveBehavior.ArrivalRadius = 0.5f;
+            _leaderArriveBehavior.IsActive = false; // Start inactive, activated on click
+            _leader.AddBehavior(_leaderArriveBehavior, 1.0f);
+            
             if (_verboseDebug)
             {
-                Debug.Log($"[FormationDemo] Leader assigned: {_leader.name}");
+                Debug.Log($"[FormationDemo] Leader assigned: {_leader.name} with ArriveBehavior");
             }
             
             // Create formation on leader
@@ -240,6 +251,11 @@ namespace SwarmAI.Demo
                 // Face movement direction
                 _leader.transform.rotation = Quaternion.LookRotation(moveDir);
                 
+                // Disable arrive behavior during manual control
+                if (_leaderArriveBehavior != null)
+                {
+                    _leaderArriveBehavior.IsActive = false;
+                }
                 _hasTarget = false;
                 
                 bool shouldLog = _verboseDebug && (Time.time - _lastDebugLogTime >= DebugLogInterval);
@@ -283,20 +299,29 @@ namespace SwarmAI.Demo
             _moveTarget = position;
             _hasTarget = true;
             
-            if (_formation != null)
+            if (_leader != null && _leaderArriveBehavior != null)
             {
-                _formation.MoveTo(position);
+                // Update arrive behavior target and activate it
+                _leaderArriveBehavior.TargetPosition = position;
+                _leaderArriveBehavior.IsActive = true;
+                
+                // Also update the formation if it exists
+                if (_formation != null)
+                {
+                    _formation.MoveTo(position);
+                }
+                
                 Debug.Log($"[FormationDemo] Moving formation to ({position.x:F1}, {position.z:F1})");
             }
             else if (_leader != null)
             {
                 _leader.SetTarget(position);
                 _leader.SetState(new SeekingState(position));
-                Debug.Log($"[FormationDemo] Moving leader to ({position.x:F1}, {position.z:F1}) - no formation component");
+                Debug.Log($"[FormationDemo] Moving leader to ({position.x:F1}, {position.z:F1}) - no arrive behavior");
             }
             else
             {
-                Debug.LogWarning("[FormationDemo] Cannot move - no formation or leader!");
+                Debug.LogWarning("[FormationDemo] Cannot move - no leader!");
             }
         }
         
@@ -351,6 +376,7 @@ namespace SwarmAI.Demo
                 // Clean up formation component (it was on the leader)
                 _formation = null;
                 _group = null;
+                _leaderArriveBehavior = null;
                 _formationInitialized = false;
                 
                 // Try to re-establish formation with remaining agents
