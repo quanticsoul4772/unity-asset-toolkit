@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Actions;
+using System;
 
 namespace NPCBrain.Tests.Runtime
 {
@@ -29,7 +30,7 @@ namespace NPCBrain.Tests.Runtime
         {
             if (_testObject != null)
             {
-                Object.Destroy(_testObject);
+                UnityEngine.Object.Destroy(_testObject);
             }
         }
         
@@ -70,8 +71,8 @@ namespace NPCBrain.Tests.Runtime
         public IEnumerator MoveTo_MovesTowardsTarget()
         {
             _testObject.transform.position = Vector3.zero;
-            Vector3 targetPos = new Vector3(10f, 0f, 0f);
-            var moveTo = new MoveTo(() => targetPos, 0.5f, 10f);
+            Func<Vector3> getTarget = () => new Vector3(10f, 0f, 0f);
+            var moveTo = new MoveTo(getTarget, 0.5f, 10f);
             
             moveTo.Execute(_brain);
             yield return new WaitForSeconds(0.1f);
@@ -84,8 +85,8 @@ namespace NPCBrain.Tests.Runtime
         public IEnumerator MoveTo_ReturnsSuccess_WhenReachesTarget()
         {
             _testObject.transform.position = new Vector3(9.8f, 0f, 0f);
-            Vector3 targetPos = new Vector3(10f, 0f, 0f);
-            var moveTo = new MoveTo(() => targetPos, 0.5f, 10f);
+            Func<Vector3> getTarget = () => new Vector3(10f, 0f, 0f);
+            var moveTo = new MoveTo(getTarget, 0.5f, 10f);
             
             NodeStatus status = NodeStatus.Running;
             for (int i = 0; i < 10 && status == NodeStatus.Running; i++)
