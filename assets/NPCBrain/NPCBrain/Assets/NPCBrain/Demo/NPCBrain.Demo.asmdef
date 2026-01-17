@@ -2,7 +2,8 @@
     "name": "NPCBrain.Demo",
     "rootNamespace": "NPCBrain.Demo",
     "references": [
-        "NPCBrain.Runtime"
+        "NPCBrain.Runtime",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
