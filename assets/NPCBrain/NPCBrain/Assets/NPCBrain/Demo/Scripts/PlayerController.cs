@@ -101,11 +101,27 @@ namespace NPCBrain.Demo
         {
             var playerObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             playerObj.name = "Player";
-            playerObj.tag = "Player";
+            
+            // Set Player tag - handle case where tag doesn't exist
+            try
+            {
+                playerObj.tag = "Player";
+            }
+            catch (UnityException)
+            {
+                // Player tag not defined in Tag Manager - log warning but continue
+                Debug.LogWarning("Player tag not defined in Tag Manager. Guards may not detect the player. " +
+                    "Add 'Player' tag in Edit > Project Settings > Tags and Layers.");
+            }
+            
             playerObj.transform.position = position;
             
-            // Remove default collider and add CharacterController
-            Object.Destroy(playerObj.GetComponent<CapsuleCollider>());
+            // Keep the CapsuleCollider for SightSensor detection (Physics.OverlapSphere)
+            // but set it to trigger so it doesn't block movement
+            var capsuleCollider = playerObj.GetComponent<CapsuleCollider>();
+            capsuleCollider.isTrigger = true;
+            
+            // Add CharacterController for movement
             var controller = playerObj.AddComponent<CharacterController>();
             controller.height = 2f;
             controller.radius = 0.5f;

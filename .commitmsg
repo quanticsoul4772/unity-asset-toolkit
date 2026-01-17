@@ -1,1 +1,1 @@
-Add Unity.InputSystem reference to Demo assembly  
+Fix player detection - keep CapsuleCollider for SightSensor, handle missing Player tag  
