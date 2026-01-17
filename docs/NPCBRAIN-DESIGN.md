@@ -1,6 +1,6 @@
 # NPCBrain Design Document
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** Planning  
 **Last Updated:** January 2026
 
@@ -12,22 +12,82 @@ NPCBrain is an all-in-one AI toolkit that combines decision-making systems (Beha
 **Price:** $60  
 **Timeline:** 4-6 weeks
 
+---
+
+## Research Summary
+
+### Behavior Tree Best Practices (2025-2026)
+
+| Pattern | Description | Implementation |
+|---------|-------------|----------------|
+| **ScriptableObject Trees** | Save nodes as assets for reusability | BTNodeAsset base class |
+| **Blackboard System** | Shared data storage between nodes | Generic dictionary with type safety |
+| **Event-Driven Ticks** | Avoid full tree traversal every frame | Tick only when state changes |
+| **Conditional Aborts** | Interrupt running nodes when conditions change | AbortType enum (None, Self, LowerPriority, Both) |
+| **Status Returns** | Running/Success/Failure for flow control | NodeStatus enum |
+| **Node Pooling** | Reduce GC allocations | Object pool pattern from SwarmAI |
+
+### Utility AI Best Practices
+
+| Concept | Description | Example |
+|---------|-------------|---------|
+| **Response Curves** | Map inputs to 0-1 scores | Linear, Exponential, Logistic, Step |
+| **Considerations** | Individual scoring factors | Health, Distance, Ammo, Threat |
+| **Action Scoring** | Multiply considerations for final score | Attack = 0.8 * health * 1.0 * inRange |
+| **Normalization** | All inputs scaled to 0-1 | Distance: 1 - (dist/maxDist) |
+| **Cheap Checks First** | Evaluate fast considerations first | HasAmmo before CalculateDistance |
+
+### Perception System Best Practices
+
+| Technique | Purpose | Performance |
+|-----------|---------|-------------|
+| **Layered Checks** | Distance → Cone → Raycast | Fastest first |
+| **Fuzzy Detection** | Percentage-based, not binary | More realistic |
+| **Memory Decay** | Forget targets over time | 10-30 second default |
+| **Sound Spheres** | Radius-based hearing | Use SpatialHash |
+| **Vision Cones** | Field of view detection | Dot product + raycast |
+
+---
+
 ## Market Analysis
 
 ### Competitors
 | Asset | Price | Strengths | Weaknesses |
 |-------|-------|-----------|------------|
-| Behavior Designer | $80 | Visual editor, many tasks | Complex, steep learning curve |
-| NodeCanvas | $75 | Behavior Trees + FSM | Overkill for simple games |
-| RAIN AI | Free (discontinued) | Was comprehensive | No longer maintained |
-| Emerald AI | $50 | Combat-focused | Limited decision systems |
+| Behavior Designer | $80 | Visual editor, many tasks, DOTS support | Complex, steep learning curve |
+| NodeCanvas | $75 | BT + FSM + Dialogue, full source | Overkill for simple games |
+| Emerald AI | $50 | Combat-focused, animation viewer | Limited decision systems |
+| RAIN AI | Free | Was comprehensive | Discontinued |
 
-### Our Differentiator
-- **Integrated ecosystem** - Works seamlessly with EasyPath (pathfinding) and SwarmAI (steering)
-- **Multiple AI paradigms** - Behavior Trees AND Utility AI (choose what fits)
-- **Pre-built archetypes** - Ready-to-use NPC types (Guard, Patrol, Civilian, Enemy)
-- **Simple API** - Get started in 5 minutes, not 5 hours
-- **Full source code** - Learn and customize everything
+### What Customers Want (Priority Order)
+
+| Must-Have | High Priority | Nice-to-Have |
+|-----------|---------------|--------------|
+| Blackboard system | Perception (sight/hearing) | Visual BT editor |
+| Pre-built BT nodes | Utility AI hybrid | Animation viewer |
+| Runtime visualizer | Integration w/ pathfinding | Multiplayer support |
+| Full source code | Zero allocations | Cover system |
+| Good documentation | Event system | GOAP (v2.0) |
+
+### Our Differentiators
+1. **Only AI asset integrating pathfinding + steering + decisions** (EasyPath + SwarmAI + NPCBrain)
+2. **Two AI paradigms** - Behavior Trees for structure, Utility AI for organic behavior
+3. **4 ready-to-use archetypes** - Guard, Patrol, Civilian, Enemy
+4. **Code-first with runtime visualization** - Easy to learn, debug, customize
+5. **Performance-focused** - Same architecture patterns as SwarmAI (Jobs/Burst ready)
+
+---
+
+## Reusable Patterns from SwarmAI
+
+| SwarmAI Pattern | NPCBrain Usage |
+|-----------------|----------------|
+| `SpatialHash<T>` | PerceptionSystem target detection |
+| `AgentState` lifecycle | BTNode OnEnter/OnExit/Execute |
+| `SwarmMessage` | Inter-NPC communication events |
+| `IBehavior` interface | BTNode design (Name, IsActive, Weight) |
+| `BehaviorBase` helpers | Seek/Flee as BTAction utilities |
+| Object pooling | BTNode allocation optimization |
 
 ---
 
@@ -39,11 +99,16 @@ NPCBrain/
 │   ├── Core/
 │   │   ├── NPCBrain.cs              # Main component (attach to NPC)
 │   │   ├── Blackboard.cs            # Shared knowledge storage
-│   │   └── NPCBrainSettings.cs      # ScriptableObject settings
+│   │   ├── NPCBrainSettings.cs      # ScriptableObject settings
+│   │   ├── WaypointPath.cs          # Patrol waypoints (NEW)
+│   │   └── NPCEvents.cs             # Event definitions (NEW)
 │   │
 │   ├── BehaviorTree/
-│   │   ├── BehaviorTree.cs          # Tree executor
-│   │   ├── BTNode.cs                # Base node class
+│   │   ├── Core/
+│   │   │   ├── BehaviorTree.cs      # Tree executor
+│   │   │   ├── BTNode.cs            # Base node class
+│   │   │   ├── NodeStatus.cs        # Running/Success/Failure
+│   │   │   └── AbortType.cs         # Conditional abort types (NEW)
 │   │   ├── Composites/
 │   │   │   ├── Selector.cs          # Run until one succeeds
 │   │   │   ├── Sequence.cs          # Run until one fails
@@ -54,34 +119,55 @@ NPCBrain/
 │   │   │   ├── Repeater.cs          # Repeat N times
 │   │   │   ├── Succeeder.cs         # Always succeed
 │   │   │   ├── UntilFail.cs         # Repeat until failure
-│   │   │   └── Cooldown.cs          # Rate limit execution
+│   │   │   ├── Cooldown.cs          # Rate limit execution
+│   │   │   └── ConditionalAbort.cs  # Abort on condition change (NEW)
+│   │   ├── Conditions/              # NEW folder
+│   │   │   ├── CheckBlackboard.cs   # Check blackboard value
+│   │   │   ├── CheckDistance.cs     # Distance comparison
+│   │   │   ├── CheckHealth.cs       # Health threshold
+│   │   │   ├── CheckTargetVisible.cs# Perception check
+│   │   │   └── CheckHeardSound.cs   # Audio perception
 │   │   └── Actions/
 │   │       ├── MoveTo.cs            # Navigate to position
+│   │       ├── MoveToWaypoint.cs    # Follow waypoint path (NEW)
 │   │       ├── Wait.cs              # Wait for duration
 │   │       ├── PlayAnimation.cs     # Trigger animation
 │   │       ├── SetBlackboard.cs     # Store value
 │   │       ├── Log.cs               # Debug logging
-│   │       └── SendMessage.cs       # Inter-NPC communication
+│   │       ├── SendMessage.cs       # Inter-NPC communication
+│   │       ├── LookAt.cs            # Face target (NEW)
+│   │       └── Investigate.cs       # Go to last known position (NEW)
 │   │
 │   ├── UtilityAI/
-│   │   ├── UtilityBrain.cs          # Action selector
-│   │   ├── Action.cs                # Base action class
-│   │   ├── Consideration.cs         # Scoring factor
-│   │   ├── ResponseCurve.cs         # Score mapping curves
+│   │   ├── Core/
+│   │   │   ├── UtilityBrain.cs      # Action selector
+│   │   │   ├── UtilityAction.cs     # Base action class
+│   │   │   ├── Consideration.cs     # Scoring factor
+│   │   │   └── ResponseCurve.cs     # Score mapping curves
+│   │   ├── Curves/                  # NEW folder
+│   │   │   ├── LinearCurve.cs
+│   │   │   ├── ExponentialCurve.cs
+│   │   │   ├── LogisticCurve.cs
+│   │   │   ├── StepCurve.cs
+│   │   │   └── BellCurve.cs
 │   │   └── Actions/
 │   │       ├── IdleAction.cs
 │   │       ├── PatrolAction.cs
 │   │       ├── ChaseAction.cs
 │   │       ├── AttackAction.cs
 │   │       ├── FleeAction.cs
-│   │       └── InvestigateAction.cs
+│   │       ├── InvestigateAction.cs
+│   │       ├── HealAction.cs        # NEW
+│   │       └── TakeCoverAction.cs   # NEW
 │   │
 │   ├── Perception/
 │   │   ├── PerceptionSystem.cs      # Main perception manager
 │   │   ├── SightSensor.cs           # Vision cone detection
 │   │   ├── HearingSensor.cs         # Sound detection
 │   │   ├── ProximitySensor.cs       # Range-based detection
-│   │   └── Memory.cs                # Remember past detections
+│   │   ├── Memory.cs                # Remember past detections
+│   │   ├── TargetSelector.cs        # Priority-based targeting (NEW)
+│   │   └── SoundEmitter.cs          # Emit sounds for AI to hear (NEW)
 │   │
 │   ├── Archetypes/                  # Pre-built NPC behaviors
 │   │   ├── GuardNPC.cs              # Stand guard, investigate, alert
@@ -90,24 +176,47 @@ NPCBrain/
 │   │   └── EnemyNPC.cs              # Chase, attack, search
 │   │
 │   └── Integration/
-│       ├── EasyPathIntegration.cs   # Pathfinding bridge
-│       └── SwarmAIIntegration.cs    # Steering bridge
+│       ├── EasyPathBridge.cs        # Pathfinding integration
+│       ├── SwarmAIBridge.cs         # Steering behaviors integration
+│       └── AnimatorBridge.cs        # Animation control (NEW)
 │
 ├── Editor/
-│   ├── NPCBrainEditor.cs            # Custom inspector
-│   ├── BehaviorTreeWindow.cs        # Visual BT editor (stretch goal)
-│   ├── BlackboardEditor.cs          # Blackboard visualization
-│   └── PerceptionDebugger.cs        # Gizmo visualization
+│   ├── Inspectors/
+│   │   ├── NPCBrainEditor.cs        # Custom inspector
+│   │   ├── BlackboardEditor.cs      # Blackboard visualization
+│   │   └── WaypointPathEditor.cs    # Waypoint editing (NEW)
+│   ├── Windows/
+│   │   ├── NPCBrainDebugWindow.cs   # Runtime visualizer (NEW - CRITICAL)
+│   │   └── BehaviorTreeWindow.cs    # Visual BT editor (v2.0 stretch goal)
+│   └── Gizmos/
+│       ├── PerceptionGizmos.cs      # Vision cones, hearing spheres
+│       └── WaypointGizmos.cs        # Waypoint visualization
 │
 ├── Demo/
 │   ├── Scripts/
 │   │   ├── DemoSetup.cs
-│   │   └── PlayerController.cs      # Simple player for demos
+│   │   ├── PlayerController.cs      # Simple player for demos
+│   │   └── DemoUI.cs                # On-screen instructions
+│   ├── Prefabs/
+│   │   ├── GuardNPC.prefab
+│   │   ├── PatrolNPC.prefab
+│   │   ├── CivilianNPC.prefab
+│   │   └── EnemyNPC.prefab
 │   └── Scenes/
-│       ├── GuardDemo.unity          # Stealth game scenario
-│       ├── PatrolDemo.unity         # Patrol and investigate
-│       ├── CombatDemo.unity         # Combat AI showcase
-│       └── TownDemo.unity           # Multiple NPC types
+│       ├── PatrolDemo.unity         # Week 2 milestone
+│       ├── GuardDemo.unity          # Week 3 milestone
+│       ├── CombatDemo.unity         # Week 4 milestone
+│       └── TownDemo.unity           # Week 5 milestone
+│
+├── Tests/
+│   ├── Editor/
+│   │   ├── BlackboardTests.cs
+│   │   ├── BehaviorTreeTests.cs
+│   │   ├── UtilityAITests.cs
+│   │   └── PerceptionTests.cs
+│   └── Runtime/
+│       ├── NPCBrainPlayModeTests.cs
+│       └── IntegrationTests.cs
 │
 └── Documentation/
     ├── README.md
@@ -115,6 +224,7 @@ NPCBrain/
     ├── BEHAVIOR-TREES.md
     ├── UTILITY-AI.md
     ├── PERCEPTION.md
+    ├── ARCHETYPES.md               # NEW
     └── API-REFERENCE.md
 ```
 
@@ -124,16 +234,23 @@ NPCBrain/
 
 ### 1. Blackboard (Knowledge System)
 
-Shared data storage for NPC decision-making.
+Shared data storage for NPC decision-making, inspired by industry standard implementations.
 
 ```csharp
 public class Blackboard
 {
-    // Store any type of data by key
+    private Dictionary<string, object> _data = new();
+    
+    // Core operations
     public void Set<T>(string key, T value);
     public T Get<T>(string key, T defaultValue = default);
+    public bool TryGet<T>(string key, out T value);
     public bool Has(string key);
     public void Remove(string key);
+    public void Clear();
+    
+    // Events for reactive updates
+    public event Action<string, object> OnValueChanged;
     
     // Common keys (constants)
     public static class Keys
@@ -142,312 +259,343 @@ public class Blackboard
         public const string LastKnownPosition = "lastKnownPosition";
         public const string AlertLevel = "alertLevel";
         public const string HomePosition = "homePosition";
-        public const string PatrolPoints = "patrolPoints";
+        public const string PatrolWaypoints = "patrolWaypoints";
+        public const string Health = "health";
+        public const string Ammo = "ammo";
+        public const string ThreatLevel = "threatLevel";
     }
 }
 ```
 
 ### 2. Behavior Tree
 
-Node-based decision tree with Running/Success/Failure states.
+Node-based decision tree with Running/Success/Failure states and conditional aborts.
 
 ```csharp
 public enum NodeStatus { Running, Success, Failure }
 
+public enum AbortType 
+{ 
+    None,           // Never abort
+    Self,           // Abort this subtree when condition changes
+    LowerPriority,  // Abort lower priority siblings
+    Both            // Abort both self and lower priority
+}
+
 public abstract class BTNode
 {
+    public string Name { get; protected set; }
+    public BTNode Parent { get; internal set; }
+    public AbortType AbortType { get; set; } = AbortType.None;
+    
     public abstract NodeStatus Tick(NPCBrain brain);
     public virtual void OnEnter(NPCBrain brain) { }
     public virtual void OnExit(NPCBrain brain) { }
+    public virtual void OnAbort(NPCBrain brain) { }  // NEW: Handle interruption
 }
 
-// Example: Guard Behavior Tree
+// Example: Guard Behavior Tree with Conditional Aborts
 var guardTree = new Selector(
-    new Sequence(                           // If enemy visible
-        new CheckEnemyVisible(),
-        new Selector(
-            new Sequence(                   // Attack if in range
-                new CheckInAttackRange(),
-                new Attack()
-            ),
-            new ChaseTarget()               // Otherwise chase
+    // High priority: React to visible enemy (aborts patrol if enemy appears)
+    new ConditionalAbort(AbortType.LowerPriority, new CheckTargetVisible(),
+        new Sequence(
+            new CheckTargetVisible(),
+            new Selector(
+                new Sequence(new CheckInAttackRange(), new Attack()),
+                new ChaseTarget()
+            )
         )
     ),
-    new Sequence(                           // If heard something
+    // Medium priority: Investigate sounds
+    new Sequence(
         new CheckHeardSound(),
-        new InvestigateSound()
+        new Investigate()
     ),
-    new Patrol()                            // Default: patrol
+    // Low priority: Default patrol
+    new Patrol()
 );
 ```
 
 ### 3. Utility AI
 
-Score-based action selection for more organic behavior.
+Score-based action selection for organic, emergent behavior.
 
 ```csharp
 public class UtilityAction
 {
     public string Name;
+    public float BasePriority = 1f;           // Multiplier for this action type
     public List<Consideration> Considerations;
+    public float CooldownTime = 0f;           // Prevent spamming
     
     public float Score(NPCBrain brain)
     {
-        float score = 1f;
+        if (IsOnCooldown) return 0f;
+        
+        float score = BasePriority;
         foreach (var c in Considerations)
-            score *= c.Evaluate(brain);
-        return score;
+        {
+            float considerationScore = c.Evaluate(brain);
+            if (considerationScore <= 0f) return 0f;  // Instant disqualification
+            score *= considerationScore;
+        }
+        
+        // Compensation factor for multiple considerations
+        // Prevents actions with many considerations from being unfairly penalized
+        float modFactor = 1f - (1f / Considerations.Count);
+        float makeUpValue = (1f - score) * modFactor;
+        return score + (makeUpValue * score);
     }
 }
 
-public class Consideration
+public abstract class ResponseCurve
 {
-    public string InputKey;           // Blackboard key
-    public ResponseCurve Curve;       // How input maps to score
-    
-    public float Evaluate(NPCBrain brain)
-    {
-        float input = brain.Blackboard.Get<float>(InputKey);
-        return Curve.Evaluate(input);
-    }
+    public abstract float Evaluate(float input);  // Input: 0-1, Output: 0-1
 }
 
-// Example considerations for "Attack" action:
-// - Distance to target (closer = higher score)
-// - My health (lower health = lower score)
-// - Target health (lower = higher score, finish them!)
-// - Ammo count (no ammo = 0 score)
+// Built-in curves
+public class LinearCurve : ResponseCurve { /* y = mx + b */ }
+public class ExponentialCurve : ResponseCurve { /* y = x^exponent */ }
+public class LogisticCurve : ResponseCurve { /* S-curve for thresholds */ }
+public class StepCurve : ResponseCurve { /* Binary threshold */ }
+public class BellCurve : ResponseCurve { /* Peak at center value */ }
 ```
 
 ### 4. Perception System
 
-Modular sensors with memory.
+Modular sensors with memory and priority-based target selection.
 
 ```csharp
+public class PerceptionSystem : MonoBehaviour
+{
+    public SightSensor Sight;
+    public HearingSensor Hearing;
+    public Memory Memory;
+    public TargetSelector TargetSelector;
+    
+    // Aggregate all sensory input
+    public List<PerceivedTarget> GetAllPerceivedTargets();
+    public PerceivedTarget GetHighestPriorityTarget();
+}
+
 public class SightSensor
 {
     public float ViewDistance = 20f;
     public float ViewAngle = 120f;
+    public float PeripheralAngle = 180f;      // Wider but less accurate
     public LayerMask TargetLayers;
     public LayerMask ObstacleLayers;
+    public int RaycastsPerTarget = 3;         // Head, torso, feet
     
-    public List<GameObject> GetVisibleTargets();
-    public bool CanSee(GameObject target);
+    // Returns visibility percentage (0-1) based on how exposed target is
+    public float GetVisibility(GameObject target);
+    public List<PerceivedTarget> GetVisibleTargets();
 }
 
 public class HearingSensor
 {
     public float HearingRange = 15f;
+    public float SuspicionThreshold = 0.3f;   // Min loudness to trigger investigation
     
-    public void OnSoundEmitted(Vector3 position, float loudness, GameObject source);
-    public List<SoundEvent> GetRecentSounds();
+    public void OnSoundEmitted(SoundEvent sound);
+    public List<SoundEvent> GetRecentSounds(float withinSeconds = 5f);
 }
 
 public class Memory
 {
-    public float MemoryDuration = 10f;
+    public float MemoryDuration = 10f;        // How long before forgetting
+    public int MaxMemories = 10;              // Limit tracked targets
     
-    public void Remember(GameObject target, Vector3 position);
+    public void Remember(GameObject target, Vector3 position, float confidence);
     public MemoryRecord GetMemory(GameObject target);
-    public List<MemoryRecord> GetAllMemories();
+    public Vector3? GetLastKnownPosition(GameObject target);
     public void Forget(GameObject target);
 }
+
+public class TargetSelector
+{
+    // Scoring factors for target prioritization
+    public float DistanceWeight = 1f;
+    public float ThreatWeight = 2f;
+    public float VisibilityWeight = 1.5f;
+    public float HealthWeight = 0.5f;         // Prefer wounded targets
+    
+    public PerceivedTarget SelectBestTarget(List<PerceivedTarget> targets);
+}
+```
+
+### 5. Event System (NEW)
+
+Decoupled communication between NPC systems.
+
+```csharp
+public static class NPCEvents
+{
+    // Perception events
+    public static event Action<NPCBrain, GameObject> OnTargetDetected;
+    public static event Action<NPCBrain, GameObject> OnTargetLost;
+    public static event Action<NPCBrain, SoundEvent> OnSoundHeard;
+    
+    // Combat events
+    public static event Action<NPCBrain, float> OnDamageTaken;
+    public static event Action<NPCBrain, GameObject> OnAttackStarted;
+    public static event Action<NPCBrain> OnDeath;
+    
+    // State events
+    public static event Action<NPCBrain, string> OnStateChanged;
+    public static event Action<NPCBrain, string, object> OnBlackboardChanged;
+}
 ```
 
 ---
 
-## Development Phases
+## Development Phases (Detailed)
 
 ### Phase 1: Core Framework (Week 1)
-- [ ] NPCBrain component
-- [ ] Blackboard system
+**Milestone:** Simple patrol NPC works with basic movement
+
+- [ ] Create folder structure and assembly definitions
+- [ ] NPCBrain component with tick throttling
+- [ ] Blackboard system with events
 - [ ] NPCBrainSettings ScriptableObject
-- [ ] Assembly definitions
-- [ ] Basic unit tests
+- [ ] WaypointPath component for patrols
+- [ ] Basic unit tests for Blackboard
+- [ ] Integration hooks (optional EasyPath/SwarmAI detection)
+
+**Deliverable:** NPC that can store/retrieve data and follow waypoints
 
 ### Phase 2: Behavior Trees (Week 2)
-- [ ] BTNode base class with Running/Success/Failure
-- [ ] Composite nodes: Selector, Sequence, Parallel
-- [ ] Decorator nodes: Inverter, Repeater, Cooldown
-- [ ] Action nodes: MoveTo, Wait, Log
+**Milestone:** Patrol Demo complete with BT-driven behavior
+
+- [ ] BTNode base class with lifecycle (Enter/Exit/Tick)
+- [ ] NodeStatus enum and tree traversal
+- [ ] Composite nodes: Selector, Sequence, Parallel, RandomSelector
+- [ ] Decorator nodes: Inverter, Repeater, Cooldown, Succeeder, UntilFail
+- [ ] Action nodes: MoveTo, MoveToWaypoint, Wait, Log, SetBlackboard
 - [ ] Condition nodes: CheckBlackboard, CheckDistance
-- [ ] Unit tests for all nodes
+- [ ] Conditional aborts (Self, LowerPriority, Both)
+- [ ] NPCBrainDebugWindow for runtime visualization
+- [ ] Unit tests for all node types
+- [ ] **Patrol Demo scene**
+
+**Deliverable:** NPCs patrol waypoints, stop, look around, continue
 
 ### Phase 3: Perception System (Week 3)
-- [ ] SightSensor with cone detection
+**Milestone:** Guard Demo with vision cones and investigation
+
+- [ ] PerceptionSystem component
+- [ ] SightSensor with cone detection and raycasts
 - [ ] HearingSensor with sound events
-- [ ] ProximitySensor for range checks
+- [ ] SoundEmitter component (for player footsteps, gunshots)
 - [ ] Memory system with decay
-- [ ] Gizmo visualization
-- [ ] Integration with Blackboard
+- [ ] TargetSelector with priority scoring
+- [ ] Perception Gizmos (vision cones, hearing spheres)
+- [ ] BT Conditions: CheckTargetVisible, CheckHeardSound
+- [ ] BT Actions: Investigate, LookAt
+- [ ] Unit tests for perception
+- [ ] **Guard Demo scene**
+
+**Deliverable:** Guards detect player in vision cone, investigate sounds, lose/remember targets
 
 ### Phase 4: Utility AI (Week 4)
+**Milestone:** Combat Demo with dynamic decision-making
+
 - [ ] UtilityBrain action selector
-- [ ] Consideration system
-- [ ] Response curves (Linear, Exponential, Logistic, etc.)
-- [ ] Pre-built actions (Idle, Patrol, Chase, Attack, Flee)
-- [ ] Hybrid BT + Utility support
+- [ ] Consideration system with response curves
+- [ ] Response curves: Linear, Exponential, Logistic, Step, Bell
+- [ ] Pre-built actions: Idle, Patrol, Chase, Attack, Flee, Heal, TakeCover
+- [ ] Hybrid mode: BT structure with Utility AI action selection
+- [ ] Action cooldowns and history
+- [ ] Utility debugging in NPCBrainDebugWindow
+- [ ] Unit tests for utility scoring
+- [ ] **Combat Demo scene**
+
+**Deliverable:** Enemies make tactical decisions (attack, retreat, heal) based on context
 
 ### Phase 5: Integration & Archetypes (Week 5)
-- [ ] EasyPath integration (MoveTo uses pathfinding)
-- [ ] SwarmAI integration (steering behaviors)
-- [ ] GuardNPC archetype
-- [ ] PatrolNPC archetype
-- [ ] CivilianNPC archetype
-- [ ] EnemyNPC archetype
+**Milestone:** All 4 NPC archetypes working
 
-### Phase 6: Demo & Polish (Week 6)
-- [ ] Guard Demo scene (stealth game)
-- [ ] Patrol Demo scene
-- [ ] Combat Demo scene
-- [ ] Town Demo (multiple NPC types)
-- [ ] Documentation
-- [ ] Custom editors
-- [ ] Performance optimization
+- [ ] EasyPathBridge (optional pathfinding)
+- [ ] SwarmAIBridge (optional steering behaviors)
+- [ ] AnimatorBridge (animation parameters/triggers)
+- [ ] GuardNPC archetype (patrol, investigate, chase, return)
+- [ ] PatrolNPC archetype (waypoints, idle animations)
+- [ ] CivilianNPC archetype (wander, flee, cower)
+- [ ] EnemyNPC archetype (hunt, attack, retreat, search)
+- [ ] Archetype prefabs
+- [ ] **Town Demo scene** (multiple NPC types)
 
----
+**Deliverable:** Drop-in NPC prefabs that work out of the box
 
-## Integration Points
+### Phase 6: Polish & Documentation (Week 6)
+**Milestone:** Asset Store ready
 
-### With EasyPath
-```csharp
-// MoveTo action uses EasyPath for navigation
-public class MoveTo : BTAction
-{
-    public override NodeStatus Tick(NPCBrain brain)
-    {
-        var target = brain.Blackboard.Get<Vector3>(targetKey);
-        var agent = brain.GetComponent<EasyPathAgent>();
-        
-        if (!agent.HasPath)
-            agent.SetDestination(target);
-            
-        return agent.HasReachedDestination ? NodeStatus.Success : NodeStatus.Running;
-    }
-}
-```
-
-### With SwarmAI
-```csharp
-// FleeAction uses SwarmAI steering
-public class FleeAction : UtilityAction
-{
-    public override void Execute(NPCBrain brain)
-    {
-        var swarmAgent = brain.GetComponent<SwarmAgent>();
-        var threat = brain.Blackboard.Get<Transform>("threat");
-        
-        swarmAgent.AddBehavior(new FleeBehavior { Target = threat });
-    }
-}
-```
+- [ ] Performance optimization (tick throttling, pooling)
+- [ ] Custom inspectors for all components
+- [ ] Complete NPCBrainDebugWindow
+- [ ] Documentation: README, Getting Started, API Reference
+- [ ] Documentation: Behavior Trees guide with examples
+- [ ] Documentation: Utility AI guide with examples
+- [ ] Documentation: Perception guide
+- [ ] Documentation: Archetypes customization guide
+- [ ] Final testing pass
+- [ ] Asset Store screenshots and promotional materials
 
 ---
 
-## Demo Scenes
+## Performance Considerations
 
-### 1. Guard Demo
-**Scenario:** Stealth game with guards and player  
-**Features demonstrated:**
-- Vision cone detection
-- Investigation behavior
-- Alert states
-- Return to patrol
-
-### 2. Patrol Demo
-**Scenario:** Guards patrolling waypoints  
-**Features demonstrated:**
-- Waypoint following
-- Hearing detection
-- Memory (last known position)
-- Search patterns
-
-### 3. Combat Demo
-**Scenario:** Enemy NPCs vs player  
-**Features demonstrated:**
-- Utility AI for combat decisions
-- Cover-seeking behavior
-- Flanking
-- Retreat when low health
-
-### 4. Town Demo
-**Scenario:** Living town with multiple NPC types  
-**Features demonstrated:**
-- Civilians wandering
-- Guards patrolling
-- Shopkeepers at stations
-- Reactions to player actions
+| Technique | Purpose | Implementation |
+|-----------|---------|----------------|
+| **Tick Throttling** | Don't update every frame | Configurable tick rate (default: 10 ticks/sec) |
+| **Staggered Updates** | Spread load across frames | Use agent ID % frameCount |
+| **Spatial Partitioning** | Fast neighbor queries | Reuse SwarmAI's SpatialHash |
+| **Object Pooling** | Reduce GC | Pool BT nodes, perception results |
+| **Cheap Checks First** | Fail fast | Distance before raycast in perception |
+| **Jobs/Burst Ready** | Future optimization | Data-oriented perception queries |
 
 ---
 
-## API Examples
+## Risk Analysis
 
-### Quick Start
-```csharp
-// Minimal setup - just add component
-var npc = gameObject.AddComponent<NPCBrain>();
-npc.SetArchetype(NPCArchetype.Guard);
-// Done! NPC now guards, investigates sounds, chases intruders
-```
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Users expect visual editor | High | Medium | Market as "code-first" + runtime visualizer, visual editor is v2.0 |
+| Performance with 100+ NPCs | Medium | High | Tick throttling, staggered updates, benchmark tests |
+| Integration complexity | Medium | Medium | Make EasyPath/SwarmAI optional, NPCBrain works standalone |
+| Scope creep | High | High | Strict phase milestones, cut features for v2.0 |
+| Documentation takes too long | Medium | Medium | Write docs as we build, not at the end |
 
-### Custom Behavior Tree
-```csharp
-var brain = GetComponent<NPCBrain>();
+---
 
-brain.BehaviorTree = new BehaviorTree(
-    new Selector(
-        // Priority 1: Flee if health low
-        new Sequence(
-            new CheckHealth(threshold: 0.2f, comparison: Comparison.LessThan),
-            new Flee()
-        ),
-        // Priority 2: Attack if enemy visible
-        new Sequence(
-            new CheckEnemyVisible(),
-            new Attack()
-        ),
-        // Priority 3: Patrol
-        new Patrol()
-    )
-);
-```
+## Future Expansion (v2.0+)
 
-### Custom Utility AI
-```csharp
-var brain = GetComponent<NPCBrain>();
-
-brain.UtilityBrain.AddAction(new UtilityAction {
-    Name = "Heal",
-    Action = new UseHealthPotion(),
-    Considerations = new List<Consideration> {
-        new Consideration {
-            InputKey = "healthPercent",
-            Curve = ResponseCurve.InverseLinear  // Lower health = higher score
-        },
-        new Consideration {
-            InputKey = "hasPotions",
-            Curve = ResponseCurve.Boolean  // Must have potions
-        }
-    }
-});
-```
+| Feature | Description | Price |
+|---------|-------------|-------|
+| **Visual BT Editor** | Node-based tree building in Unity | +$20 |
+| **GOAP Planner** | Goal-oriented action planning | +$20 |
+| **NavMesh Integration** | Unity NavMesh support | Included |
+| **Multiplayer AI** | Network-synced decisions | +$15 |
+| **Machine Learning** | Train behaviors from examples | +$25 |
 
 ---
 
 ## Success Criteria
 
-1. **5-minute setup** - New users can have a working NPC in 5 minutes
-2. **Flexible** - Supports both Behavior Trees and Utility AI
-3. **Integrated** - Works seamlessly with EasyPath and SwarmAI
-4. **Visual debugging** - Easy to see what NPCs are thinking
-5. **Performance** - Handle 100+ NPCs at 60 FPS
-6. **Well-documented** - Clear examples for every feature
+1. ✅ **5-minute setup** - New users can have a working NPC in 5 minutes
+2. ✅ **Flexible** - Supports both Behavior Trees and Utility AI
+3. ✅ **Integrated** - Works seamlessly with EasyPath and SwarmAI
+4. ✅ **Visual debugging** - Runtime visualizer shows NPC decision-making
+5. ✅ **Performance** - Handle 100+ NPCs at 60 FPS
+6. ✅ **Well-documented** - Clear examples for every feature
+7. ✅ **4 Archetypes** - Guard, Patrol, Civilian, Enemy ready to use
 
 ---
 
 ## Next Steps
 
-1. Create folder structure and assembly definitions
-2. Implement Blackboard system
-3. Implement basic Behavior Tree nodes
-4. Create first demo (Guard Demo)
+1. ☐ Create folder structure and assembly definitions
+2. ☐ Implement Blackboard system with events
+3. ☐ Implement BTNode base class and core composites
+4. ☐ Create WaypointPath component
+5. ☐ Build first demo (Patrol Demo)
