@@ -49,6 +49,7 @@ namespace SwarmAI.Demo
         // State
         private int _selectedTeam = 1; // 1 or 2
         private Vector3 _boundsCenter = Vector3.zero;
+        private bool _isAttacking = false;
         
         protected override void Start()
         {
@@ -283,7 +284,7 @@ namespace SwarmAI.Demo
         {
             _isAttacking = true;
             
-            // Get enemy team center
+            // Get enemy team center - use _attackRange for future proximity checks
             Vector3 enemyCenter = GetTeamCenter(_selectedTeam == 1 ? _team2 : _team1);
             MoveSelectedTeam(enemyCenter);
             
@@ -294,7 +295,7 @@ namespace SwarmAI.Demo
         {
             _isAttacking = false;
             
-            // Retreat to starting position
+            // Retreat to starting position - use _retreatDistance for future retreat logic
             Vector3 retreatPos = _selectedTeam == 1 
                 ? _boundsCenter - Vector3.right * _teamSpacing / 2f
                 : _boundsCenter + Vector3.right * _teamSpacing / 2f;
