@@ -107,6 +107,13 @@ namespace NPCBrain.BehaviorTree.Composites
             float sumExp = 0f;
             for (int i = 0; i < _actions.Count; i++)
             {
+                // Exclude actions with zero or negative scores from selection
+                if (_scores[i] <= 0f)
+                {
+                    _probabilities[i] = 0f;
+                    continue;
+                }
+                
                 float scaledScore = (_scores[i] - maxScore) / temperature;
                 _probabilities[i] = (float)Math.Exp(scaledScore);
                 sumExp += _probabilities[i];
