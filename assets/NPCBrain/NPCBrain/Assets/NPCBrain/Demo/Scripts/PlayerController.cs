@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace NPCBrain.Demo
 {
     /// <summary>
     /// Simple WASD player controller for demo scenes.
     /// The player can be detected by GuardNPC's SightSensor.
+    /// Uses the new Input System package.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
@@ -42,21 +44,24 @@ namespace NPCBrain.Demo
         
         private void HandleMovement()
         {
-            // Get input
+            // Get input using new Input System
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+            
             float horizontal = 0f;
             float vertical = 0f;
             
-            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) vertical += 1f;
-            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) vertical -= 1f;
-            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) horizontal -= 1f;
-            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) horizontal += 1f;
+            if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) vertical += 1f;
+            if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) vertical -= 1f;
+            if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) horizontal -= 1f;
+            if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) horizontal += 1f;
             
             // Calculate movement direction (relative to world, top-down style)
             Vector3 moveDirection = new Vector3(horizontal, 0f, vertical).normalized;
             
             // Apply sprint
             float speed = _moveSpeed;
-            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+            if (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed)
             {
                 speed *= _sprintMultiplier;
             }

@@ -1,1 +1,1 @@
-Fix WaypointPath.Count property name in PatrolDemoSetup  
+Update PlayerController to use new Input System package  
