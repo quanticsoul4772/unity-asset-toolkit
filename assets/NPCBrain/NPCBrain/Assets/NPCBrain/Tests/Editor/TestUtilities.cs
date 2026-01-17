@@ -6,26 +6,20 @@ namespace NPCBrain.Tests.Editor
 {
     /// <summary>
     /// Test brain that allows direct initialization without relying on Awake().
-    /// Uses protected setters instead of reflection for cleaner test setup.
+    /// Overrides Awake() to prevent automatic initialization, giving tests full control.
     /// </summary>
     public class TestBrain : NPCBrainController
     {
+        protected override void Awake()
+        {
+            // Don't call base.Awake() - tests control initialization via InitializeForTests()
+        }
+        
         public void InitializeForTests()
         {
+            // Protected setters are accessible from derived classes
             Blackboard = new Blackboard();
             Criticality = new CriticalityController();
-        }
-        
-        public new Blackboard Blackboard
-        {
-            get => base.Blackboard;
-            set => base.Blackboard = value;
-        }
-        
-        public new CriticalityController Criticality
-        {
-            get => base.Criticality;
-            set => base.Criticality = value;
         }
     }
     

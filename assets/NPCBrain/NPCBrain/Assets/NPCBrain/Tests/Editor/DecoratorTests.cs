@@ -16,10 +16,7 @@ namespace NPCBrain.Tests.Editor
         {
             _testObject = new GameObject("TestNPC");
             _brain = _testObject.AddComponent<TestBrain>();
-            if (_brain.Blackboard == null)
-            {
-                _brain.InitializeForTests();
-            }
+            _brain.InitializeForTests();
         }
         
         [TearDown]
