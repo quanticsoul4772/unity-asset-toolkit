@@ -1,45 +1,44 @@
 # NPCBrain Demo Scenes
 
-## Week 3: Utility AI + Criticality Validation
+This folder contains demo scripts for testing and showcasing NPCBrain functionality.
 
-### TestScene
+## Demo Scripts
 
-The TestScene demonstrates the core Week 3 functionality:
+### TestNPC.cs
+**Purpose:** Basic behavior tree demo with target chasing and waypoint patrol.
 
-1. **Utility AI Action Selection** - NPCs choose between Patrol, Wander, and Idle based on utility scores
-2. **Criticality Temperature** - Affects the randomness of action selection via softmax
-3. **Entropy Tracking** - System monitors action variety and adjusts temperature automatically
-4. **Behavior Variation** - Watch NPCs naturally vary their behavior over time
+**Features:**
+- Uses `Selector` to choose between chasing targets and patrolling
+- Demonstrates `CheckBlackboard`, `MoveTo`, `Wait`, and `AdvanceWaypoint` nodes
+- Configurable via Inspector (wait time, move speed, arrival distance)
 
-### Creating the Test Scene
+### TestSceneSetup.cs
+**Purpose:** Quickly generates a test scene with ground, waypoints, and a patrol NPC.
 
-1. In Unity, go to **NPCBrain → Create Test Scene**
-2. Press **Play** to start the simulation
-3. Observe the debug panel showing each NPC's:
-   - Current action
-   - Temperature (randomness level)
-   - Entropy (action variety measurement)
-   - Inertia (tendency to stick with current action)
+**Usage:**
+1. Create an empty GameObject
+2. Add `TestSceneSetup` component
+3. Enable "Auto Generate" or use Context Menu → "Generate Test Scene"
 
-### What to Look For
+### TestSceneController.cs
+**Purpose:** Week 3 validation demo for Utility AI + Criticality.
 
-- **Low Entropy**: When an NPC repeatedly chooses the same action, entropy drops and temperature increases
-- **Temperature Rise**: Higher temperature makes the NPC more likely to try different actions
-- **Natural Variation**: Over time, the system self-balances between exploitation and exploration
+**Features:**
+- Spawns multiple `UtilityTestNPC` instances
+- NPCs choose between Patrol, Wander, and Idle using `UtilitySelector`
+- On-screen debug display shows Temperature, Entropy, and Inertia
+- Visual indicators change color based on current action
 
-### Color Coding
+## NPC Classes
 
-- 🔵 Blue sphere = Patrol action
-- 🟡 Yellow sphere = Wander action  
-- ⚪ Gray sphere = Idle action
+| Class | Location | Purpose |
+|-------|----------|--------|
+| `TestNPC` | TestNPC.cs | Target chase + waypoint patrol |
+| `PatrolNPC` | TestSceneSetup.cs | Simple waypoint patrol |
+| `UtilityTestNPC` | TestSceneController.cs | Utility AI with Criticality |
 
-## Running Integration Tests
+## Related Editor Tools
 
-```
-Window → General → Test Runner → PlayMode → Run All
-```
-
-Key test files:
-- `BehaviorTreeIntegrationTests.cs` - Full BT execution tests
-- `PerceptionIntegrationTests.cs` - SightSensor detection tests
-- `UtilityCriticalityIntegrationTests.cs` - Week 3 specific tests
+- **NPCBrain → Create Test Scene:** Creates a new test scene via `TestSceneGenerator`
+- **NPCBrain → Open Test Scene:** Opens an existing test scene
+- **Window → NPCBrain → Debug Window:** Opens the debug window (Week 4)

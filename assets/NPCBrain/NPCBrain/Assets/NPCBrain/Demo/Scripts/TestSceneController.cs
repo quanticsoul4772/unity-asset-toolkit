@@ -101,9 +101,17 @@ namespace NPCBrain.Demo
     }
     
     /// <summary>
-    /// Utility Test NPC that uses UtilitySelector for action selection.
-    /// Named UtilityTestNPC to avoid conflict with TestNPC in TestNPC.cs
+    /// Demo NPC using Utility AI for dynamic action selection.
+    /// Chooses between Patrol, Wander, and Idle based on utility scores.
     /// </summary>
+    /// <remarks>
+    /// <para>This NPC demonstrates Week 3 functionality:</para>
+    /// <list type="bullet">
+    ///   <item><description>Utility-based action selection via <see cref="UtilitySelector"/></description></item>
+    ///   <item><description>Temperature-controlled exploration via <see cref="Criticality.CriticalityController"/></description></item>
+    ///   <item><description>Visual feedback showing current action and criticality state</description></item>
+    /// </list>
+    /// </remarks>
     public class UtilityTestNPC : NPCBrainController
     {
         private UtilitySelector _utilitySelector;
@@ -114,11 +122,24 @@ namespace NPCBrain.Demo
         private readonly Color _wanderColor = Color.yellow;
         private readonly Color _idleColor = Color.gray;
         
+        /// <summary>Name of the currently executing action.</summary>
         public string CurrentActionName => _currentActionName;
+        
+        /// <summary>Current temperature from the criticality system.</summary>
         public float Temperature => Criticality?.Temperature ?? 1f;
+        
+        /// <summary>Current entropy from the criticality system.</summary>
         public float Entropy => Criticality?.Entropy ?? 0f;
+        
+        /// <summary>Current inertia from the criticality system.</summary>
         public float Inertia => Criticality?.Inertia ?? 0.5f;
         
+        /// <summary>
+        /// Initializes the NPC with the specified behavior weights.
+        /// </summary>
+        /// <param name="patrolWeight">Utility weight for patrol behavior.</param>
+        /// <param name="wanderWeight">Utility weight for wander behavior.</param>
+        /// <param name="idleWeight">Utility weight for idle behavior.</param>
         public void Initialize(float patrolWeight, float wanderWeight, float idleWeight)
         {
             // Get indicator renderer

@@ -6,6 +6,14 @@ using NPCBrain.BehaviorTree.Actions;
 
 namespace NPCBrain.Demo
 {
+    /// <summary>
+    /// Sets up a basic test scene with ground, waypoints, and a patrol NPC.
+    /// Use this to quickly test behavior tree functionality.
+    /// </summary>
+    /// <remarks>
+    /// <para>Attach to an empty GameObject and enable Auto Generate, or use the
+    /// context menu "Generate Test Scene" to create the scene manually.</para>
+    /// </remarks>
     public class TestSceneSetup : MonoBehaviour
     {
         [Header("Scene Settings")]
@@ -25,6 +33,9 @@ namespace NPCBrain.Demo
             }
         }
         
+        /// <summary>
+        /// Creates the complete test scene with ground, waypoints, and NPC.
+        /// </summary>
         [ContextMenu("Generate Test Scene")]
         public void GenerateTestScene()
         {
@@ -124,8 +135,13 @@ namespace NPCBrain.Demo
         }
     }
     
+    /// <summary>
+    /// Simple patrol NPC that loops through waypoints.
+    /// Used by <see cref="TestSceneSetup"/> for basic testing.
+    /// </summary>
     public class PatrolNPC : NPCBrainController
     {
+        /// <inheritdoc/>
         protected override BTNode CreateBehaviorTree()
         {
             var tree = new Sequence(

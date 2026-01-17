@@ -6,6 +6,17 @@ using NPCBrain.BehaviorTree.Conditions;
 
 namespace NPCBrain.Demo
 {
+    /// <summary>
+    /// Demo NPC that patrols waypoints or chases targets.
+    /// Demonstrates basic behavior tree usage with Selector and Sequence nodes.
+    /// </summary>
+    /// <remarks>
+    /// <para>Behavior priority:</para>
+    /// <list type="number">
+    ///   <item><description>If "hasTarget" is set in blackboard, move to "targetPosition"</description></item>
+    ///   <item><description>Otherwise, patrol through waypoints</description></item>
+    /// </list>
+    /// </remarks>
     public class TestNPC : NPCBrainController
     {
         [Header("Test Settings")]
@@ -13,9 +24,11 @@ namespace NPCBrain.Demo
         [SerializeField] private float _moveSpeed = 5f;
         [SerializeField] private float _arrivalDistance = 0.5f;
         
+        /// <inheritdoc/>
         protected override BTNode CreateBehaviorTree()
         {
             return new Selector(
+                // Priority 1: Chase target if we have one
                 new Sequence(
                     new CheckBlackboard("hasTarget"),
                     new MoveTo(
@@ -24,6 +37,7 @@ namespace NPCBrain.Demo
                         _moveSpeed
                     )
                 ),
+                // Priority 2: Patrol waypoints
                 new Sequence(
                     new MoveTo(
                         () => GetCurrentWaypoint(),
@@ -34,23 +48,6 @@ namespace NPCBrain.Demo
                     new AdvanceWaypoint()
                 )
             );
-        }
-    }
-    
-    public class AdvanceWaypoint : BTNode
-    {
-        public AdvanceWaypoint()
-        {
-            Name = "AdvanceWaypoint";
-        }
-        
-        protected override NodeStatus Tick(NPCBrainController brain)
-        {
-            if (brain.WaypointPath != null)
-            {
-                brain.WaypointPath.Advance();
-            }
-            return NodeStatus.Success;
         }
     }
 }
