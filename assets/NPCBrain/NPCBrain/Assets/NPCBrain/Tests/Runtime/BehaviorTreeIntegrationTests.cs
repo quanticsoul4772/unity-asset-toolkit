@@ -122,16 +122,16 @@ namespace NPCBrain.Tests.Runtime
         [UnityTest]
         public IEnumerator UtilitySelector_SelectsHighestScoringAction()
         {
-            var lowAction = new UtilityAction("Low", new Wait(0.01f), new ConstantConsideration(0.2f));
+            var lowAction = new UtilityAction("Low", new Wait(0.01f), new ConstantConsideration(0.1f));
             var highAction = new UtilityAction("High", new Wait(0.01f), new ConstantConsideration(0.9f));
             
             var selector = new UtilitySelector(42, lowAction, highAction); // Seeded for determinism
             
-            // With low temperature (default 1.0), high scoring action should be heavily favored
+            // With low temperature, high scoring action should be heavily favored
             _brain.Criticality.SetTemperature(0.5f); // Low temp = more deterministic
             
             int highCount = 0;
-            int iterations = 20;
+            int iterations = 50; // More iterations for statistical significance
             
             for (int i = 0; i < iterations; i++)
             {
@@ -145,8 +145,8 @@ namespace NPCBrain.Tests.Runtime
                 yield return null;
             }
             
-            // With low temperature and big score difference, high should be selected most of the time
-            Assert.Greater(highCount, iterations / 2, "High scoring action should be selected more often");
+            // With low temperature and 9x score difference, high should be selected at least 60% of the time
+            Assert.Greater(highCount, iterations * 0.6f, $"High scoring action should be selected >60%. Got {highCount}/{iterations}");
         }
         
         [UnityTest]
