@@ -7,9 +7,9 @@ A collection of AI and pathfinding tools for the Unity Asset Store.
 ## Project Status 
 **NPCBrain - Ready to Build** (January 2026)
 
-- EasyPath ✅ Complete - A* pathfinding working and tested
-- SwarmAI ✅ Complete - Multi-agent coordination with Jobs/Burst
-- NPCBrain 🔄 Ready to Build - All-in-one AI toolkit (4-week MVP)  
+- EasyPath: Complete - A* pathfinding working and tested
+- SwarmAI: Complete - Multi-agent coordination with Jobs/Burst
+- NPCBrain: Ready to Build - All-in-one AI toolkit (4-week MVP)  
  
 ## Development Environment 
 - Unity 6 (6000.3.4f1) 
@@ -21,9 +21,9 @@ A collection of AI and pathfinding tools for the Unity Asset Store.
 ## Products 
 | Asset | Description | Price | Status |
 |-------|-------------|-------|--------|
-| EasyPath | Simple A* pathfinding for beginners | $35 | ✅ Complete |
-| SwarmAI | Multi-agent coordination system | $45 | ✅ Complete |
-| NPCBrain | All-in-one AI toolkit | $60 | 🔄 In Development |
+| EasyPath | Simple A* pathfinding for beginners | $35 |  Complete |
+| SwarmAI | Multi-agent coordination system | $45 |  Complete |
+| NPCBrain | All-in-one AI toolkit | $60 |  In Development |
  
 ## Project Structure 
 ```
