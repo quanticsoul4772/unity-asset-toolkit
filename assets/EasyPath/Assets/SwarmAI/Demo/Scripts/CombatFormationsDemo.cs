@@ -22,8 +22,8 @@ namespace SwarmAI.Demo
     public class CombatFormationsDemo : SwarmDemoController
     {
         [Header("Team Settings")]
-        [SerializeField] private int _agentsPerTeam = 5;
 #pragma warning disable CS0414 // Field is assigned but never used - reserved for future combat features
+        [SerializeField] private int _agentsPerTeam = 5;
         [SerializeField] private float _teamSpacing = 15f;
         [SerializeField] private Color _team1Color = new Color(0.2f, 0.4f, 1f); // Blue
         [SerializeField] private Color _team2Color = new Color(1f, 0.3f, 0.2f); // Red
