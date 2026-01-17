@@ -311,7 +311,7 @@ namespace SwarmAI
         /// Set the steering force from Jobs system (replaces existing force).
         /// Used by SwarmJobSystem to apply parallel-computed flocking forces.
         /// </summary>
-        internal void SetJobsSteeringForce(Vector3 force)
+        public void SetJobsSteeringForce(Vector3 force)
         {
             _steeringForce = force;
         }
