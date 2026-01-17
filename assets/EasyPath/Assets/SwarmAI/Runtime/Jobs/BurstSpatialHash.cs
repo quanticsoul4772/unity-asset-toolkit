@@ -15,7 +15,7 @@ namespace SwarmAI.Jobs
         public float CellSize;
         
         /// <summary>Hash map storing agent indices per cell.</summary>
-        public NativeMultiHashMap<int, int> CellToAgents;
+        public NativeParallelMultiHashMap<int, int> CellToAgents;
         
         /// <summary>Whether this spatial hash has been created.</summary>
         public bool IsCreated => CellToAgents.IsCreated;
@@ -30,7 +30,7 @@ namespace SwarmAI.Jobs
         {
             CellSize = math.max(0.1f, cellSize);
             // Each agent might be in multiple cells for border cases, so allocate extra
-            CellToAgents = new NativeMultiHashMap<int, int>(capacity * 2, allocator);
+            CellToAgents = new NativeParallelMultiHashMap<int, int>(capacity * 2, allocator);
         }
         
         /// <summary>
@@ -108,7 +108,7 @@ namespace SwarmAI.Jobs
     public struct BuildSpatialHashJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<AgentData> Agents;
-        public NativeMultiHashMap<int, int>.ParallelWriter CellToAgents;
+        public NativeParallelMultiHashMap<int, int>.ParallelWriter CellToAgents;
         public float CellSize;
         
         public void Execute(int index)

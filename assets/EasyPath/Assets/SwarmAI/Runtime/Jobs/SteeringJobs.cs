@@ -16,7 +16,7 @@ namespace SwarmAI.Jobs
         [ReadOnly] public NativeArray<AgentData> Agents;
         
         /// <summary>Spatial hash for neighbor queries.</summary>
-        [ReadOnly] public NativeMultiHashMap<int, int> SpatialHash;
+        [ReadOnly] public NativeParallelMultiHashMap<int, int> SpatialHash;
         
         /// <summary>Behavior weights.</summary>
         [ReadOnly] public BehaviorWeights Weights;
