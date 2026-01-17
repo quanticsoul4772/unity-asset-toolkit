@@ -6,7 +6,6 @@ using EasyPath;
 using EasyPath.Demo;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace EasyPath.Editor
 {
@@ -40,6 +39,90 @@ namespace EasyPath.Editor
         public static void CreateStressTestScene()
         {
             CreateDemoScene("EasyPath_StressTest", 20, 20);
+        }
+
+        [MenuItem("EasyPath/Fix Existing Demo Scenes", false, 150)]
+        public static void FixExistingDemoScenes()
+        {
+            // Ensure the Obstacles layer exists
+            int obstacleLayer = GetOrCreateLayer("Obstacles");
+            if (obstacleLayer == 0)
+            {
+                Debug.LogError("[EasyPath] Cannot fix scenes - failed to create 'Obstacles' layer. " +
+                    "Please manually create it in Edit > Project Settings > Tags and Layers.");
+                return;
+            }
+            
+            int obstacleLayerMask = 1 << obstacleLayer;
+            
+            // Find all EasyPath demo scenes
+            string[] scenePaths = new string[]
+            {
+                "Assets/EasyPath/Demo/Scenes/EasyPath_BasicDemo.unity",
+                "Assets/EasyPath/Demo/Scenes/EasyPath_MultiAgentDemo.unity",
+                "Assets/EasyPath/Demo/Scenes/EasyPath_StressTest.unity"
+            };
+            
+            int fixedCount = 0;
+            
+            foreach (string scenePath in scenePaths)
+            {
+                if (!File.Exists(scenePath))
+                {
+                    continue;
+                }
+                
+                // Open the scene
+                Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                
+                // Find the EasyPathGrid in the scene
+                EasyPathGrid[] grids = Object.FindObjectsByType<EasyPathGrid>(FindObjectsSortMode.None);
+                bool sceneModified = false;
+                
+                foreach (EasyPathGrid grid in grids)
+                {
+                    SerializedObject so = new SerializedObject(grid);
+                    SerializedProperty obstacleLayerProp = so.FindProperty("_obstacleLayer");
+                    
+                    // Check if it's set to Everything (-1 or ~0)
+                    if (obstacleLayerProp.intValue == -1 || obstacleLayerProp.intValue == ~0)
+                    {
+                        obstacleLayerProp.intValue = obstacleLayerMask;
+                        so.ApplyModifiedProperties();
+                        sceneModified = true;
+                        Debug.Log($"[EasyPath] Fixed obstacle layer on grid in {scenePath}");
+                    }
+                }
+                
+                // Find all obstacles and assign them to the Obstacles layer
+                GameObject obstaclesParent = GameObject.Find("Environment/Obstacles");
+                if (obstaclesParent != null)
+                {
+                    foreach (Transform child in obstaclesParent.transform)
+                    {
+                        if (child.gameObject.layer != obstacleLayer)
+                        {
+                            child.gameObject.layer = obstacleLayer;
+                            sceneModified = true;
+                        }
+                    }
+                }
+                
+                if (sceneModified)
+                {
+                    EditorSceneManager.SaveScene(scene);
+                    fixedCount++;
+                }
+            }
+            
+            if (fixedCount > 0)
+            {
+                Debug.Log($"[EasyPath] Fixed {fixedCount} demo scene(s). Obstacle layer now set correctly.");
+            }
+            else
+            {
+                Debug.Log("[EasyPath] No demo scenes needed fixing (either already correct or not found).");
+            }
         }
 
         [MenuItem("EasyPath/Add Demo Scenes to Build Settings", false, 200)]
@@ -78,6 +161,18 @@ namespace EasyPath.Editor
 
         private static void CreateDemoScene(string sceneName, int agentCount, int obstacleCount)
         {
+            // Ensure the Obstacles layer exists ONCE at the start
+            int obstacleLayer = GetOrCreateLayer("Obstacles");
+            bool layerCreationFailed = (obstacleLayer == 0);
+            
+            if (layerCreationFailed)
+            {
+                Debug.LogWarning("[EasyPath] WARNING: Could not create 'Obstacles' layer. " +
+                    "Pathfinding will detect ALL colliders including the ground!\n" +
+                    "To fix: Create an 'Obstacles' layer in Edit > Project Settings > Tags and Layers, " +
+                    "then run EasyPath > Fix Existing Demo Scenes.");
+            }
+            
             // Create new scene
             Scene newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -89,12 +184,12 @@ namespace EasyPath.Editor
 
             // Setup environment
             CreateGround(environmentRoot.transform);
-            CreateObstacles(environmentRoot.transform, obstacleCount);
+            CreateObstacles(environmentRoot.transform, obstacleCount, obstacleLayer);
             CreateLighting();
             CreateCamera();
 
             // Setup pathfinding grid
-            GameObject gridObject = CreateGrid(pathfindingRoot.transform);
+            GameObject gridObject = CreateGrid(pathfindingRoot.transform, obstacleLayer);
             EasyPathGrid grid = gridObject.GetComponent<EasyPathGrid>();
 
             // Create agents
@@ -155,13 +250,10 @@ namespace EasyPath.Editor
             ground.tag = "Untagged";
         }
 
-        private static void CreateObstacles(Transform parent, int count)
+        private static void CreateObstacles(Transform parent, int count, int obstacleLayer)
         {
             GameObject obstaclesParent = new GameObject("Obstacles");
             obstaclesParent.transform.SetParent(parent);
-
-            // Ensure the "Obstacles" layer exists
-            int obstacleLayer = GetOrCreateLayer("Obstacles");
 
             // Predefined obstacle positions for a nice layout
             Vector3[] obstaclePositions = GenerateObstaclePositions(count);
@@ -229,7 +321,7 @@ namespace EasyPath.Editor
             return Vector3.Distance(new Vector3(pos.x, 0, pos.z), spawnCenter) < 4f;
         }
 
-        private static GameObject CreateGrid(Transform parent)
+        private static GameObject CreateGrid(Transform parent, int obstacleLayer)
         {
             GameObject gridObject = new GameObject("EasyPath Grid");
             gridObject.transform.SetParent(parent);
@@ -237,8 +329,7 @@ namespace EasyPath.Editor
 
             EasyPathGrid grid = gridObject.AddComponent<EasyPathGrid>();
             
-            // Ensure the "Obstacles" layer exists and get its mask
-            int obstacleLayer = GetOrCreateLayer("Obstacles");
+            // Convert layer index to layer mask
             int obstacleLayerMask = 1 << obstacleLayer;
             
             // Configure grid via serialized fields using SerializedObject
