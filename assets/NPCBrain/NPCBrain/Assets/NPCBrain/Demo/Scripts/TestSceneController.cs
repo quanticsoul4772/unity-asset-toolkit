@@ -26,7 +26,7 @@ namespace NPCBrain.Demo
         [Header("Debug")]
         [SerializeField] private bool _showDebugInfo = true;
         
-        private readonly List<TestNPC> _npcs = new List<TestNPC>();
+        private readonly List<UtilityTestNPC> _npcs = new List<UtilityTestNPC>();
         private float _lastDebugTime;
         
         private void Start()
@@ -42,7 +42,7 @@ namespace NPCBrain.Demo
                 spawnPos.y = 0f;
                 
                 var npcObject = CreateNPCObject($"NPC_{i}", spawnPos);
-                var npc = npcObject.AddComponent<TestNPC>();
+                var npc = npcObject.AddComponent<UtilityTestNPC>();
                 npc.Initialize(_patrolWeight, _wanderWeight, _idleWeight);
                 _npcs.Add(npc);
             }
@@ -101,9 +101,10 @@ namespace NPCBrain.Demo
     }
     
     /// <summary>
-    /// Test NPC that uses UtilitySelector for action selection.
+    /// Utility Test NPC that uses UtilitySelector for action selection.
+    /// Named UtilityTestNPC to avoid conflict with TestNPC in TestNPC.cs
     /// </summary>
-    public class TestNPC : NPCBrainController
+    public class UtilityTestNPC : NPCBrainController
     {
         private UtilitySelector _utilitySelector;
         private string _currentActionName = "None";

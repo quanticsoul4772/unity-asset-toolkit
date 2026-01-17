@@ -81,7 +81,6 @@ namespace NPCBrain.Tests.Runtime
         [UnityTest]
         public IEnumerator Sequence_ExecutesChildrenInOrder()
         {
-            int executionOrder = 0;
             bool firstExecuted = false;
             bool secondExecuted = false;
             
