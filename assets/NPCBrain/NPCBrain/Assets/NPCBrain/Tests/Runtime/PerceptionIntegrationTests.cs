@@ -27,6 +27,7 @@ namespace NPCBrain.Tests.Runtime
             
             // Create target with collider (required for Physics.OverlapSphere)
             _targetObject = new GameObject("Target");
+            _targetObject.tag = "Player"; // Required for SightSensor's default target tag filter
             var collider = _targetObject.AddComponent<SphereCollider>();
             collider.radius = 0.5f;
             _targetObject.layer = 0; // Default layer

@@ -1,1 +1,1 @@
-Fix Softmax_ExtremeScoreDifference test - adjust threshold to match actual softmax math  
+Fix SightSensor test - add Player tag to target for tag filter  
