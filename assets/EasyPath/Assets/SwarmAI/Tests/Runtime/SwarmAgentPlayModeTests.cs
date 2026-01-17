@@ -418,7 +418,7 @@ namespace SwarmAI.Tests
             Vector3 targetPos = new Vector3(10, 0, 0);
             
             var seekBehavior = new SeekBehavior();
-            seekBehavior.SetTarget(targetPos);
+            seekBehavior.TargetPosition = targetPos;
             _agent.AddBehavior(seekBehavior, 1f);
             
             // Wait a few frames for movement

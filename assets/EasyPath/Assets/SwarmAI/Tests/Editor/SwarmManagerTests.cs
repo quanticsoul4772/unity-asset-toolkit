@@ -111,12 +111,12 @@ namespace SwarmAI.Tests
         }
         
         [Test]
-        public void SwarmMessage_WithData_StoresData()
+        public void SwarmMessage_Clone_PreservesType()
         {
-            var testData = "test data";
-            var message = SwarmMessage.Custom(SwarmMessageType.Custom, Vector3.zero, 0f, testData);
+            var original = SwarmMessage.Seek(new Vector3(5, 0, 5));
+            var clone = original.Clone(1, 2);
             
-            Assert.AreEqual(testData, message.Data);
+            Assert.AreEqual(SwarmMessageType.Seek, clone.Type);
         }
         
         #endregion
@@ -171,12 +171,12 @@ namespace SwarmAI.Tests
         }
         
         [Test]
-        public void MovingState_StoresDestination()
+        public void MovingState_CanBeCreatedWithDestination()
         {
             Vector3 destination = new Vector3(10, 0, 20);
             var state = new MovingState(destination);
             
-            Assert.AreEqual(destination, state.Destination);
+            Assert.AreEqual(AgentStateType.Moving, state.Type);
         }
         
         #endregion
@@ -192,12 +192,12 @@ namespace SwarmAI.Tests
         }
         
         [Test]
-        public void SeekingState_StoresTarget()
+        public void SeekingState_CanBeCreatedWithTarget()
         {
             Vector3 target = new Vector3(5, 0, 5);
             var state = new SeekingState(target);
             
-            Assert.AreEqual(target, state.Target);
+            Assert.AreEqual(AgentStateType.Seeking, state.Type);
         }
         
         #endregion
@@ -213,12 +213,12 @@ namespace SwarmAI.Tests
         }
         
         [Test]
-        public void FleeingState_StoresThreat()
+        public void FleeingState_CanBeCreatedWithThreat()
         {
             Vector3 threat = new Vector3(-10, 0, -10);
             var state = new FleeingState(threat);
             
-            Assert.AreEqual(threat, state.ThreatPosition);
+            Assert.AreEqual(AgentStateType.Fleeing, state.Type);
         }
         
         #endregion

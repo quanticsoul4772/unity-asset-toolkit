@@ -2,10 +2,10 @@
   <Project Path="SwarmAI.Demo.csproj" />
   <Project Path="EasyPath.Editor.csproj" />
   <Project Path="SwarmAI.Runtime.csproj" />
+  <Project Path="SwarmAI.Tests.Runtime.csproj" />
   <Project Path="SwarmAI.Editor.csproj" />
   <Project Path="EasyPath.Runtime.csproj" />
   <Project Path="EasyPath.Demo.csproj" />
   <Project Path="SwarmAI.Tests.Editor.csproj" />
-  <Project Path="SwarmAI.Tests.Runtime.csproj" />
   <Project Path="EasyPath.Tests.Editor.csproj" />
 </Solution>

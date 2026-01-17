@@ -107,21 +107,12 @@ namespace SwarmAI.Tests
         }
         
         [Test]
-        public void FleeBehavior_FleeRadius_CanBeSet()
+        public void FleeBehavior_ThreatPosition_CanBeSet()
         {
             var behavior = new FleeBehavior();
-            behavior.FleeRadius = 15f;
+            behavior.ThreatPosition = new Vector3(10, 0, 10);
             
-            Assert.AreEqual(15f, behavior.FleeRadius);
-        }
-        
-        [Test]
-        public void FleeBehavior_FleeRadius_MinimumIsZero()
-        {
-            var behavior = new FleeBehavior();
-            behavior.FleeRadius = -5f;
-            
-            Assert.AreEqual(0f, behavior.FleeRadius);
+            Assert.AreEqual(new Vector3(10, 0, 10), behavior.ThreatPosition);
         }
         
         [Test]

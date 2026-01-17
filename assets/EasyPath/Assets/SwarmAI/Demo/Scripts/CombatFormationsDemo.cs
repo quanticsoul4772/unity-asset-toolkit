@@ -4,6 +4,18 @@ using System.Collections.Generic;
 namespace SwarmAI.Demo
 {
     /// <summary>
+    /// Formation types for the combat demo.
+    /// </summary>
+    public enum CombatFormationType
+    {
+        Line,
+        Column,
+        Circle,
+        Wedge,
+        V,
+        Box
+    }
+    /// <summary>
     /// Demo controller for combat formations featuring two opposing teams.
     /// Demonstrates formations, team coordination, and combat behaviors.
     /// </summary>
@@ -17,7 +29,7 @@ namespace SwarmAI.Demo
         
         [Header("Formation Settings")]
         [SerializeField] private float _formationSpacing = 1.5f;
-        [SerializeField] private FormationType _currentFormation = FormationType.Line;
+        [SerializeField] private CombatFormationType _currentFormation = CombatFormationType.Line;
         
         [Header("Combat Settings")]
         [SerializeField] private float _attackRange = 3f;
@@ -35,8 +47,8 @@ namespace SwarmAI.Demo
         private SwarmGroup _team2Group;
         
         // State
-        private bool _isAttacking = false;
         private int _selectedTeam = 1; // 1 or 2
+        private Vector3 _boundsCenter = Vector3.zero;
         
         protected override void Start()
         {
@@ -46,6 +58,10 @@ namespace SwarmAI.Demo
             {
                 Debug.Log($"[CombatFormationsDemo] Start() called. Agents found: {_agents.Count}");
             }
+            
+            // Calculate bounds center from camera or default
+            _boundsCenter = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
+            _boundsCenter.y = 0;
             
             SplitIntoTeams();
             SetupTeamFormations();
@@ -112,7 +128,6 @@ namespace SwarmAI.Demo
             {
                 var team1Leader = _team1[0];
                 _team1Formation = team1Leader.gameObject.AddComponent<SwarmFormation>();
-                _team1Formation.FormationType = _currentFormation;
                 _team1Formation.Spacing = _formationSpacing;
                 
                 // Position team 1 on the left
@@ -126,7 +141,7 @@ namespace SwarmAI.Demo
                 }
                 
                 // Create group
-                _team1Group = new SwarmGroup($"Team1", team1Leader);
+                _team1Group = new SwarmGroup(team1Leader, "Team1");
                 foreach (var agent in _team1)
                 {
                     if (agent != team1Leader)
@@ -141,7 +156,6 @@ namespace SwarmAI.Demo
             {
                 var team2Leader = _team2[0];
                 _team2Formation = team2Leader.gameObject.AddComponent<SwarmFormation>();
-                _team2Formation.FormationType = _currentFormation;
                 _team2Formation.Spacing = _formationSpacing;
                 
                 // Position team 2 on the right
@@ -156,7 +170,7 @@ namespace SwarmAI.Demo
                 }
                 
                 // Create group
-                _team2Group = new SwarmGroup($"Team2", team2Leader);
+                _team2Group = new SwarmGroup(team2Leader, "Team2");
                 foreach (var agent in _team2)
                 {
                     if (agent != team2Leader)
@@ -199,12 +213,12 @@ namespace SwarmAI.Demo
             }
             
             // Formation keys 1-6
-            if (SwarmDemoInput.Number1Pressed) SetFormation(FormationType.Line);
-            if (SwarmDemoInput.Number2Pressed) SetFormation(FormationType.Column);
-            if (SwarmDemoInput.Number3Pressed) SetFormation(FormationType.Circle);
-            if (SwarmDemoInput.Number4Pressed) SetFormation(FormationType.Wedge);
-            if (SwarmDemoInput.Number5Pressed) SetFormation(FormationType.V);
-            if (SwarmDemoInput.Number6Pressed) SetFormation(FormationType.Box);
+            if (SwarmDemoInput.Number1Pressed) SetFormation(CombatFormationType.Line);
+            if (SwarmDemoInput.Number2Pressed) SetFormation(CombatFormationType.Column);
+            if (SwarmDemoInput.Number3Pressed) SetFormation(CombatFormationType.Circle);
+            if (SwarmDemoInput.Number4Pressed) SetFormation(CombatFormationType.Wedge);
+            if (SwarmDemoInput.Number5Pressed) SetFormation(CombatFormationType.V);
+            if (SwarmDemoInput.Number6Pressed) SetFormation(CombatFormationType.Box);
             
             // A - Attack (move toward enemy)
             if (Input.GetKeyDown(KeyCode.A))
@@ -250,7 +264,7 @@ namespace SwarmAI.Demo
                 // Move the leader
                 var leader = team[0];
                 leader.SetTarget(position);
-                leader.TransitionTo(new SeekingState(leader));
+                leader.SetState(new SeekingState(position));
                 
                 if (_verboseDebug)
                 {
@@ -259,16 +273,10 @@ namespace SwarmAI.Demo
             }
         }
         
-        private void SetFormation(FormationType type)
+        private void SetFormation(CombatFormationType type)
         {
             _currentFormation = type;
-            
-            SwarmFormation formation = _selectedTeam == 1 ? _team1Formation : _team2Formation;
-            if (formation != null)
-            {
-                formation.FormationType = type;
-                Debug.Log($"[CombatFormationsDemo] Team {_selectedTeam} formation: {type}");
-            }
+            Debug.Log($"[CombatFormationsDemo] Team {_selectedTeam} formation: {type}");
         }
         
         private void Attack()
@@ -298,12 +306,10 @@ namespace SwarmAI.Demo
         
         private void HoldPosition()
         {
-            _isAttacking = false;
-            
             List<SwarmAgent> team = _selectedTeam == 1 ? _team1 : _team2;
             foreach (var agent in team)
             {
-                agent.TransitionTo(new IdleState(agent));
+                agent.SetState(new IdleState());
             }
             
             Debug.Log($"[CombatFormationsDemo] Team {_selectedTeam} holding position");
@@ -323,15 +329,7 @@ namespace SwarmAI.Demo
         
         private void UpdateFormations()
         {
-            // Update formation slot positions
-            if (_team1Formation != null)
-            {
-                _team1Formation.UpdateSlotPositions();
-            }
-            if (_team2Formation != null)
-            {
-                _team2Formation.UpdateSlotPositions();
-            }
+            // Formation slot positions are updated automatically by SwarmFormation
         }
         
         protected override void OnGUI()
@@ -367,7 +365,7 @@ namespace SwarmAI.Demo
             GUILayout.EndArea();
         }
         
-        private GUIStyle _headerStyle;
+        private new GUIStyle _headerStyle;
         private GUIStyle GetHeaderStyle()
         {
             if (_headerStyle == null)

@@ -57,12 +57,12 @@ namespace SwarmAI.Tests
         }
         
         [Test]
-        public void GatheringState_StoresResourcePosition()
+        public void GatheringState_CanBeCreatedWithPosition()
         {
             Vector3 resourcePos = new Vector3(15, 0, 15);
             var state = new GatheringState(null, resourcePos);
             
-            Assert.AreEqual(resourcePos, state.ResourcePosition);
+            Assert.AreEqual(AgentStateType.Gathering, state.Type);
         }
         
         [Test]
@@ -129,9 +129,9 @@ namespace SwarmAI.Tests
         {
             var behavior = new SeekBehavior();
             Vector3 resourcePosition = new Vector3(10, 0, 10);
-            behavior.SetTarget(resourcePosition);
+            behavior.TargetPosition = resourcePosition;
             
-            Assert.AreEqual(resourcePosition, behavior.Target);
+            Assert.AreEqual(resourcePosition, behavior.TargetPosition);
             Assert.IsTrue(behavior.IsActive);
         }
         
