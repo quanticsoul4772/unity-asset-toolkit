@@ -18,6 +18,12 @@ namespace NPCBrain
         public event Action<string, object> OnValueChanged;
         public event Action<string> OnValueExpired;
         
+        public void ClearEvents()
+        {
+            OnValueChanged = null;
+            OnValueExpired = null;
+        }
+        
         public void Set<T>(string key, T value)
         {
             _data[key] = new Entry { Value = value, HasExpiration = false };

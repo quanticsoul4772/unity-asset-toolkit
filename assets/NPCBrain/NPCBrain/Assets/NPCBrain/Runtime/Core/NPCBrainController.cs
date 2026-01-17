@@ -48,11 +48,7 @@ namespace NPCBrain
             OnBrainPaused = null;
             OnBrainResumed = null;
             
-            if (Blackboard != null)
-            {
-                Blackboard.OnValueChanged = null;
-                Blackboard.OnValueExpired = null;
-            }
+            Blackboard?.ClearEvents();
         }
         
         protected virtual BTNode CreateBehaviorTree()

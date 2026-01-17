@@ -1,4 +1,8 @@
 ﻿<Solution>
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="NPCBrain.Editor.csproj" />
+  <Project Path="NPCBrain.Runtime.csproj" />
+  <Project Path="NPCBrain.Demo.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="NPCBrain.Tests.Editor.csproj" />
 </Solution>
