@@ -2,7 +2,7 @@
     "name": "NPCBrain.Tests.Runtime",
     "rootNamespace": "NPCBrain.Tests.Runtime",
     "references": [
-        "NPCBrain.Runtime",
+        "GUID:6c4b0bf7896914248acfdeb6cfe4dae0",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
