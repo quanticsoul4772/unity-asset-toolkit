@@ -2,11 +2,12 @@ using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.Criticality;
 
-namespace NPCBrain.Tests.Editor
+namespace NPCBrain.Tests
 {
     /// <summary>
     /// Test brain that allows direct initialization without relying on Awake().
     /// Overrides Awake() to prevent automatic initialization, giving tests full control.
+    /// NOTE: This must be outside the Editor folder to be usable as a MonoBehaviour component.
     /// </summary>
     public class TestBrain : NPCBrainController
     {

@@ -4,6 +4,7 @@ using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.UtilityAI;
 using NPCBrain.UtilityAI.Curves;
+using NPCBrain.Tests;
 
 namespace NPCBrain.Tests.Editor
 {

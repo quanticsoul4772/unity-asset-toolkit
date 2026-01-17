@@ -3,6 +3,7 @@ using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Conditions;
+using NPCBrain.Tests;
 
 namespace NPCBrain.Tests.Editor
 {

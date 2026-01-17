@@ -3,6 +3,7 @@
     "rootNamespace": "NPCBrain.Tests.Editor",
     "references": [
         "NPCBrain.Runtime",
+        "NPCBrain.Tests.Shared",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

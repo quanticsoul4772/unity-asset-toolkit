@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Decorators;
+using NPCBrain.Tests;
 
 namespace NPCBrain.Tests.Editor
 {
