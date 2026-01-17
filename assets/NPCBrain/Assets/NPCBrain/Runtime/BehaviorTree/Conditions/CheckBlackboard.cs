@@ -49,7 +49,13 @@ namespace NPCBrain.BehaviorTree.Conditions
                 return NodeStatus.Failure;
             }
             
-            T value = brain.Blackboard.Get<T>(_key);
+            object rawValue = brain.Blackboard.Get<object>(_key);
+            if (!(rawValue is T))
+            {
+                return NodeStatus.Failure;
+            }
+            
+            T value = (T)rawValue;
             return _predicate(value) ? NodeStatus.Success : NodeStatus.Failure;
         }
     }
