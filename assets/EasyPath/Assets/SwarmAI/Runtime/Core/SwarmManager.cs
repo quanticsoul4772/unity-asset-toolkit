@@ -42,6 +42,10 @@ namespace SwarmAI
         // Cached collections to avoid allocation
         private HashSet<Vector2Int> _drawnCellsCache;
         
+        // Summary logging
+        private int _lastLoggedAgentCount = 0;
+        private bool _hasLoggedInitialSummary = false;
+        
         // Message wrapper for queued messages
         private struct QueuedMessage
         {
@@ -178,8 +182,25 @@ namespace SwarmAI
             _applicationQuitting = true;
         }
         
+        private void Start()
+        {
+            // Log summary after initial agent registration
+            if (_showDebugInfo && !_verboseLogging && !_hasLoggedInitialSummary && _agents.Count > 0)
+            {
+                _hasLoggedInitialSummary = true;
+                Debug.Log($"[SwarmManager] Swarm initialized with {_agents.Count} agents");
+            }
+        }
+        
         private void Update()
         {
+            // Log initial summary if we haven't yet (agents may register after Start)
+            if (_showDebugInfo && !_verboseLogging && !_hasLoggedInitialSummary && _agents.Count > 0)
+            {
+                _hasLoggedInitialSummary = true;
+                Debug.Log($"[SwarmManager] Swarm initialized with {_agents.Count} agents");
+            }
+            
             // Update spatial hash
             UpdateSpatialHash();
             
@@ -244,6 +265,13 @@ namespace SwarmAI
             if (_showDebugInfo && _verboseLogging)
             {
                 Debug.Log($"[SwarmManager] Registered agent {id} ({agent.name}). Total: {_agents.Count}");
+            }
+            
+            // Log summary at milestones (every 100 agents) when not using verbose logging
+            if (_showDebugInfo && !_verboseLogging && _agents.Count >= 100 && _agents.Count % 100 == 0 && _agents.Count > _lastLoggedAgentCount)
+            {
+                _lastLoggedAgentCount = _agents.Count;
+                Debug.Log($"[SwarmManager] Registered {_agents.Count} agents...");
             }
         }
         
