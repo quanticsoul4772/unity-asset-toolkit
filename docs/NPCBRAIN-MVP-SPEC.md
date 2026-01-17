@@ -135,7 +135,16 @@ NPCBrain/
 │   ├── GuardDemo.unity
 │   └── PatrolDemo.unity
 └── Tests/
-    └── TestScene.unity
+    ├── TestScene.unity
+    ├── Editor/
+    │   ├── BlackboardTests.cs
+    │   ├── BTNodeTests.cs
+    │   ├── UtilityAITests.cs
+    │   ├── CriticalityTests.cs
+    │   └── PerceptionTests.cs
+    └── Runtime/
+        ├── BehaviorTreeIntegrationTests.cs
+        └── PerceptionIntegrationTests.cs
 ```
 
 ---
@@ -150,6 +159,7 @@ NPCBrain/
 - [ ] WaypointPath
 - [ ] BTNode base + Selector, Sequence
 - [ ] Basic actions: MoveTo, Wait
+- [ ] Unit tests: BlackboardTests, BTNodeTests (Selector, Sequence)
 - [ ] Validate in TestScene: NPC moves between waypoints
 
 ### Week 2: Behavior Trees + Perception
@@ -158,6 +168,8 @@ NPCBrain/
 - [ ] Memory system
 - [ ] TargetSelector
 - [ ] Vision cone gizmo
+- [ ] Unit tests: BTNodeTests (decorators, conditions, actions), PerceptionTests
+- [ ] Integration tests: PerceptionIntegrationTests
 - [ ] Validate in TestScene: NPC detects player, chases, loses sight
 
 ### Week 3: Utility AI + Criticality
@@ -165,6 +177,8 @@ NPCBrain/
 - [ ] 3 response curves
 - [ ] CriticalityController (entropy -> temp/inertia)
 - [ ] Integration with Utility AI softmax
+- [ ] Unit tests: UtilityAITests, CriticalityTests
+- [ ] Integration tests: BehaviorTreeIntegrationTests
 - [ ] Validate in TestScene: NPC behavior varies naturally over time
 
 ### Week 4: Archetypes + Polish
@@ -312,8 +326,8 @@ Update() called every frame:
 | `NPCBrain.Runtime` | Core systems | Unity.InputSystem (optional) |
 | `NPCBrain.Editor` | Debug window, gizmos | NPCBrain.Runtime |
 | `NPCBrain.Demo` | Demo scripts | NPCBrain.Runtime |
-| `NPCBrain.Tests.Editor` | EditMode tests | NPCBrain.Runtime, NUnit |
-| `NPCBrain.Tests.Runtime` | PlayMode tests | NPCBrain.Runtime, NUnit |
+| `NPCBrain.Tests.Editor` | EditMode unit tests | NPCBrain.Runtime, NUnit |
+| `NPCBrain.Tests.Runtime` | PlayMode integration tests | NPCBrain.Runtime, NUnit |
 
 ### 5. Namespace Conventions
 
@@ -387,7 +401,28 @@ public class NPCBrain : MonoBehaviour
 | Memory per NPC | < 1KB (excluding Unity overhead) |
 | Perception raycasts | Max 3 per NPC per frame |
 
-### 10. Unity Compatibility
+### 10. Testing Strategy
+
+**Unit Tests (EditMode)** - Test logic without GameObjects:
+- Blackboard: Get/Set, missing keys, type safety, events
+- BTNode: Selector/Sequence logic, decorator behavior, status returns
+- UtilityAI: Score calculation, curve responses, softmax selection
+- Criticality: Entropy calculation, temperature/inertia adjustment
+- Perception: Memory decay math, target priority scoring
+
+**Integration Tests (PlayMode)** - Test with actual GameObjects:
+- BT + NPC: Full behavior tree execution over multiple frames
+- Perception: Raycast detection, target tracking, memory updates
+- Full loop: Perception -> Decision -> Action pipeline
+
+**Manual Testing (TestScene.unity):**
+- Visual validation of NPC behavior
+- Gizmo rendering
+- Edge cases that are hard to automate
+
+**Run tests:** `scripts/unity-cli.ps1 -Action test`
+
+### 11. Unity Compatibility
 
 - **Minimum:** Unity 2021.3 LTS
 - **Target:** Unity 6 (6000.x)
