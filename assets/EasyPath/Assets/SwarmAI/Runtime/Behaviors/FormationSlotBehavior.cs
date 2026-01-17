@@ -78,7 +78,7 @@ namespace SwarmAI
             if (agent == null) return Vector3.zero;
             
             // Read target from agent (set by SwarmFormation.UpdateSlotPositions)
-            Vector3 targetPosition = agent.Target;
+            Vector3 targetPosition = agent.TargetPosition;
             
             Vector3 toTarget = targetPosition - agent.Position;
             float distance = toTarget.magnitude;
