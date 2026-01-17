@@ -1,0 +1,16 @@
+{
+    "name": "NPCBrain.Demo",
+    "rootNamespace": "NPCBrain.Demo",
+    "references": [
+        "NPCBrain.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
