@@ -613,7 +613,7 @@ public class CriticalityDebugger : MonoBehaviour
 
 ## Success Criteria
 
-1. ✅ **Always On** - Core feature, no toggles needed
+1. ✅ **Core Feature** - Integrated into every NPCBrain
 2. ✅ **Lightweight** - <0.1ms overhead per NPC
 3. ✅ **Visible** - Clear debug visualization
 4. ✅ **Tunable** - ScriptableObject settings for target bands and weights

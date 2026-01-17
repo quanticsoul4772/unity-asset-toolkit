@@ -638,7 +638,7 @@ public CriticalitySettings settings; // Assign in inspector
 5. ✅ **Performance** - Handle 100+ NPCs at 60 FPS
 6. ✅ **Well-documented** - Clear examples for every feature
 7. ✅ **4 Archetypes** - Guard, Patrol, Civilian, Enemy ready to use
-8. ✅ **Adaptive Behavior** - Criticality system for emergent behavior (UNIQUE - always on)
+8. ✅ **Adaptive Behavior** - Criticality system for emergent behavior (UNIQUE)
 
 ---
 
