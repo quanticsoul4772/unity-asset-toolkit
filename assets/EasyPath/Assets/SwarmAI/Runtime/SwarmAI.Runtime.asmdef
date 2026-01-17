@@ -2,7 +2,7 @@
     "name": "SwarmAI.Runtime",
     "rootNamespace": "SwarmAI",
     "references": [
-        "GUID:32e8732f4adef96408db2fc8a96644eb"
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
