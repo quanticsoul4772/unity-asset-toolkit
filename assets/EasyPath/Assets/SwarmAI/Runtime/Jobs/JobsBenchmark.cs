@@ -21,11 +21,27 @@ namespace SwarmAI.Jobs
         private float _minFrameTime;
         private float _maxFrameTime;
         
+        // Cached texture for GUI to avoid allocation every frame
+        private Texture2D _boxTexture;
+        
         private void Awake()
         {
             _swarmManager = GetComponent<SwarmManager>();
             _jobSystem = GetComponent<SwarmJobSystem>();
             _frameTimes = new float[_sampleCount];
+            
+            // Create cached texture for GUI background
+            _boxTexture = MakeTexture(2, 2, new Color(0f, 0f, 0f, 0.7f));
+        }
+        
+        private void OnDestroy()
+        {
+            // Clean up cached texture
+            if (_boxTexture != null)
+            {
+                Destroy(_boxTexture);
+                _boxTexture = null;
+            }
         }
         
         private void Update()
@@ -63,7 +79,7 @@ namespace SwarmAI.Jobs
             GUILayout.BeginArea(new Rect(Screen.width - 260, 10, 250, 200));
             
             GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-            boxStyle.normal.background = MakeTexture(2, 2, new Color(0f, 0f, 0f, 0.7f));
+            boxStyle.normal.background = _boxTexture;
             
             GUILayout.BeginVertical(boxStyle);
             

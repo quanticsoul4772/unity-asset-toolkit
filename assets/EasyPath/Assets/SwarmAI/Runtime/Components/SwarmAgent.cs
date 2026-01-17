@@ -50,6 +50,10 @@ namespace SwarmAI
         private bool _isPositionDirty = true;
         private const float PositionDirtyThresholdSq = 0.25f; // 0.5 units squared
         
+        // Jobs system integration: when true, behavior calculations are skipped
+        // because the Jobs system handles flocking forces in parallel
+        private bool _useJobsSteering;
+        
         // Behavior wrapper with weight
         private struct WeightedBehavior
         {
@@ -144,6 +148,16 @@ namespace SwarmAI
         /// Used by SwarmManager to optimize spatial hash updates.
         /// </summary>
         public bool IsPositionDirty => _isPositionDirty;
+        
+        /// <summary>
+        /// Whether this agent's steering is being controlled by the Jobs system.
+        /// When true, behavior-based steering is skipped (Jobs handles flocking).
+        /// </summary>
+        public bool UseJobsSteering
+        {
+            get => _useJobsSteering;
+            set => _useJobsSteering = value;
+        }
         
         #endregion
         
@@ -286,47 +300,70 @@ namespace SwarmAI
         }
         
         /// <summary>
-        /// Apply an external force to the agent.
+        /// Apply an external force to the agent (adds to existing steering force).
         /// </summary>
         public void ApplyForce(Vector3 force)
         {
             _steeringForce += force;
         }
         
+        /// <summary>
+        /// Set the steering force from Jobs system (replaces existing force).
+        /// Used by SwarmJobSystem to apply parallel-computed flocking forces.
+        /// </summary>
+        internal void SetJobsSteeringForce(Vector3 force)
+        {
+            _steeringForce = force;
+        }
+        
         private void CalculateSteering()
         {
-            _steeringForce = Vector3.zero;
+            // When Jobs system is active, it will set _steeringForce directly via SetJobsSteeringForce()
+            // We only reset and calculate behavior forces if NOT using Jobs steering
+            if (!_useJobsSteering)
+            {
+                _steeringForce = Vector3.zero;
+            }
             
             bool shouldLog = _verboseDebug && (Time.time - _lastDebugLogTime >= DebugLogInterval);
             
             if (shouldLog)
             {
-                Debug.Log($"[SwarmAgent {name}] CalculateSteering: {_behaviors.Count} behaviors registered");
+                Debug.Log($"[SwarmAgent {name}] CalculateSteering: {_behaviors.Count} behaviors registered, UseJobsSteering={_useJobsSteering}");
             }
             
-            // Calculate behavior forces (use indexed loop to avoid enumerator allocation)
-            int activeCount = 0;
-            int behaviorCount = _behaviors.Count;
-            for (int i = 0; i < behaviorCount; i++)
+            // Skip behavior calculations if Jobs system is handling steering
+            // Jobs calculates flocking forces (separation, alignment, cohesion) in parallel
+            if (!_useJobsSteering)
             {
-                var wb = _behaviors[i];
-                if (wb.Behavior.IsActive)
+                // Calculate behavior forces (use indexed loop to avoid enumerator allocation)
+                int activeCount = 0;
+                int behaviorCount = _behaviors.Count;
+                for (int i = 0; i < behaviorCount; i++)
                 {
-                    activeCount++;
-                    Vector3 force = wb.Behavior.CalculateForce(this);
-                    Vector3 weightedForce = force * wb.Weight * wb.Behavior.Weight;
-                    _steeringForce += weightedForce;
-                    
-                    if (shouldLog && force.sqrMagnitude > 0.001f)
+                    var wb = _behaviors[i];
+                    if (wb.Behavior.IsActive)
                     {
-                        Debug.Log($"[SwarmAgent {name}]   {wb.Behavior.Name}: force={force}, weight={wb.Weight}*{wb.Behavior.Weight}, weighted={weightedForce}");
+                        activeCount++;
+                        Vector3 force = wb.Behavior.CalculateForce(this);
+                        Vector3 weightedForce = force * wb.Weight * wb.Behavior.Weight;
+                        _steeringForce += weightedForce;
+                        
+                        if (shouldLog && force.sqrMagnitude > 0.001f)
+                        {
+                            Debug.Log($"[SwarmAgent {name}]   {wb.Behavior.Name}: force={force}, weight={wb.Weight}*{wb.Behavior.Weight}, weighted={weightedForce}");
+                        }
                     }
                 }
+                
+                if (shouldLog)
+                {
+                    Debug.Log($"[SwarmAgent {name}]   Active behaviors: {activeCount}/{_behaviors.Count}, Total steering force: {_steeringForce}");
+                }
             }
-            
-            if (shouldLog)
+            else if (shouldLog)
             {
-                Debug.Log($"[SwarmAgent {name}]   Active behaviors: {activeCount}/{_behaviors.Count}, Total steering force: {_steeringForce}");
+                Debug.Log($"[SwarmAgent {name}]   Behaviors skipped (Jobs system active), steering force from Jobs: {_steeringForce}");
             }
             
             // Add seek force if we have a target and no pathfinding agent

@@ -45,6 +45,7 @@ namespace SwarmAI.Jobs
         private SwarmManager _swarmManager;
         private Dictionary<int, int> _agentIdToIndex;
         private List<SwarmAgent> _activeAgents;
+        private List<SwarmAgent> _tempAgentList; // Temp list for safe iteration
         
         // Stats
         private int _lastProcessedCount;
@@ -56,7 +57,15 @@ namespace SwarmAI.Jobs
         public bool UseJobs
         {
             get => _useJobs;
-            set => _useJobs = value;
+            set
+            {
+                if (_useJobs && !value && _activeAgents != null)
+                {
+                    // When disabling Jobs, clear steering flags so agents resume normal behavior
+                    ClearJobsSteeringFlags();
+                }
+                _useJobs = value;
+            }
         }
         
         /// <summary>Whether Jobs are currently being used (enabled and enough agents).</summary>
@@ -77,6 +86,7 @@ namespace SwarmAI.Jobs
             _swarmManager = GetComponent<SwarmManager>();
             _agentIdToIndex = new Dictionary<int, int>();
             _activeAgents = new List<SwarmAgent>();
+            _tempAgentList = new List<SwarmAgent>();
         }
         
         private void OnEnable()
@@ -93,6 +103,9 @@ namespace SwarmAI.Jobs
         {
             // Complete any pending jobs
             CompleteJobs();
+            
+            // Clear Jobs steering flag on all active agents
+            ClearJobsSteeringFlags();
             
             // Unsubscribe
             if (_swarmManager != null)
@@ -113,7 +126,12 @@ namespace SwarmAI.Jobs
             RefreshActiveAgents();
             
             // Only use jobs if we have enough agents
-            if (_activeAgents.Count < _minAgentsForJobs) return;
+            if (_activeAgents.Count < _minAgentsForJobs)
+            {
+                // Clear Jobs steering flag on all agents when falling below threshold
+                ClearJobsSteeringFlags();
+                return;
+            }
             
             float startTime = Time.realtimeSinceStartup;
             
@@ -152,12 +170,14 @@ namespace SwarmAI.Jobs
             _activeAgents.Clear();
             _agentIdToIndex.Clear();
             
-            if (_swarmManager.Agents == null) return;
+            // Use GetAllAgents with pre-allocated list to avoid dictionary enumerator allocation
+            _swarmManager.GetAllAgents(_tempAgentList);
             
+            int tempCount = _tempAgentList.Count;
             int index = 0;
-            foreach (var kvp in _swarmManager.Agents)
+            for (int i = 0; i < tempCount; i++)
             {
-                SwarmAgent agent = kvp.Value;
+                SwarmAgent agent = _tempAgentList[i];
                 if (agent != null && agent.gameObject.activeInHierarchy)
                 {
                     _activeAgents.Add(agent);
@@ -279,15 +299,17 @@ namespace SwarmAI.Jobs
                 
                 SteeringResult result = _steeringResults[i];
                 
-                // Apply the job-calculated steering force to the agent
+                // Convert job-calculated steering force to Vector3
                 Vector3 force = new Vector3(
                     result.SteeringForce.x,
                     result.SteeringForce.y,
                     result.SteeringForce.z
                 );
                 
-                // Apply force through the agent's public API
-                agent.ApplyForce(force);
+                // Mark agent as using Jobs steering so it skips behavior calculations
+                // and SET (not add) the force to prevent doubling
+                agent.UseJobsSteering = true;
+                agent.SetJobsSteeringForce(force);
             }
         }
         
@@ -318,6 +340,27 @@ namespace SwarmAI.Jobs
         
         #endregion
         
+        #region Helpers
+        
+        /// <summary>
+        /// Clear the UseJobsSteering flag on all active agents.
+        /// Called when Jobs processing is disabled or agent count falls below threshold.
+        /// </summary>
+        private void ClearJobsSteeringFlags()
+        {
+            int count = _activeAgents.Count;
+            for (int i = 0; i < count; i++)
+            {
+                SwarmAgent agent = _activeAgents[i];
+                if (agent != null)
+                {
+                    agent.UseJobsSteering = false;
+                }
+            }
+        }
+        
+        #endregion
+        
         #region Event Handlers
         
         private void OnAgentRegistered(SwarmAgent agent)
@@ -327,7 +370,11 @@ namespace SwarmAI.Jobs
         
         private void OnAgentUnregistered(SwarmAgent agent)
         {
-            // Agent list will be refreshed in next Update
+            // Clear Jobs steering flag when agent is unregistered
+            if (agent != null)
+            {
+                agent.UseJobsSteering = false;
+            }
         }
         
         #endregion
