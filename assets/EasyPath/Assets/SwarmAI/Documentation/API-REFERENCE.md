@@ -20,6 +20,7 @@ Complete API documentation for all SwarmAI classes, interfaces, and enums.
 - [Behaviors](#behaviors)
   - [IBehavior](#ibehavior)
   - [BehaviorBase](#behaviorbase)
+  - [FormationSlotBehavior](#formationslotbehavior)
 - [States](#states)
   - [AgentState](#agentstate)
   - [AgentStateType](#agentstatetype)
@@ -586,6 +587,51 @@ protected Vector3 Flee(SwarmAgent agent, Vector3 threatPosition)
 // Truncate vector to maximum length
 protected Vector3 Truncate(Vector3 vector, float maxLength)
 ```
+
+---
+
+### FormationSlotBehavior
+
+`namespace SwarmAI`
+
+Steering behavior for formation followers that moves toward the agent's target position with arrival damping.
+
+#### Constructor
+
+```csharp
+FormationSlotBehavior()
+FormationSlotBehavior(float slowingRadius, float arrivalRadius, float dampingFactor = 0.5f)
+```
+
+#### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `Name` | `string` | "Formation Slot" | Behavior name |
+| `SlowingRadius` | `float` | 3.0 | Distance at which agent starts slowing |
+| `ArrivalRadius` | `float` | 0.8 | Distance at which agent stops completely |
+| `DampingFactor` | `float` | 0.5 | Velocity damping when close to target (0-1) |
+
+#### Behavior
+
+- Reads target from `agent.TargetPosition` (set by `SwarmFormation.UpdateSlotPositions()`)
+- Uses quadratic speed falloff for smooth deceleration
+- Returns full brake force (`-agent.Velocity`) when within arrival radius
+- Includes division-by-zero protection
+
+#### Usage
+
+```csharp
+// For formation followers
+var slotBehavior = new FormationSlotBehavior(
+    slowingRadius: 2.5f,
+    arrivalRadius: 0.7f,
+    dampingFactor: 0.7f
+);
+agent.AddBehavior(slotBehavior, 1.0f);
+```
+
+**Note:** Use this behavior instead of `FollowLeaderBehavior` when agents are part of a `SwarmFormation`. The formation system updates each agent's target position, and this behavior is designed to work with that system.
 
 ---
 

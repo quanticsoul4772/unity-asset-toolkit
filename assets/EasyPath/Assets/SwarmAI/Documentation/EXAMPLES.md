@@ -208,11 +208,19 @@ public class FormationController : MonoBehaviour
         _group = new SwarmGroup(_leader, "Squad");
         _group.SetFormation(_formation);
         
-        // Add followers
+        // Add followers with FormationSlotBehavior for stable positioning
         for (int i = 1; i < agents.Length; i++)
         {
             _group.AddMember(agents[i]);
-            agents[i].SetState(new FollowingState(_leader));
+            
+            // Use FormationSlotBehavior instead of FollowingState
+            // This works with SwarmFormation which sets agent.TargetPosition
+            agents[i].ClearBehaviors();
+            agents[i].AddBehavior(new FormationSlotBehavior(
+                slowingRadius: 2.5f,
+                arrivalRadius: 0.7f,
+                dampingFactor: 0.7f
+            ), 1.0f);
         }
     }
     

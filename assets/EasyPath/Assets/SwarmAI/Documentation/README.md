@@ -42,6 +42,7 @@ SwarmAI is a Unity asset for creating swarm behaviors, multi-agent coordination,
 - **Alignment** - Match neighbor velocity
 - **Cohesion** - Move toward group center
 - **Follow Leader** - Smooth leader-follower patterns
+- **Formation Slot** - Stable formation position holding with damping
 
 ### State Machine
 - **Idle** - Default resting state
@@ -217,6 +218,7 @@ FSM states that control agent logic:
 | [Behaviors](BEHAVIORS.md) | Steering behavior guide |
 | [States](STATES.md) | Agent state documentation |
 | [Examples](EXAMPLES.md) | Code samples and patterns |
+| [Troubleshooting](TROUBLESHOOTING.md) | Common issues and solutions |
 
 ---
 
@@ -234,10 +236,11 @@ Demonstrates boids-style flocking with:
 - Click to set flock target
 
 **Controls:**
-- `1-5` - Toggle behaviors
+- `1-5` - Toggle behaviors (Separation, Alignment, Cohesion, Wander, Obstacle Avoidance)
+- `6` - Toggle Seek behavior
 - `Space` - Scatter flock
 - `G` - Gather at center
-- `Left Click` - Set target
+- `Left Click` - Set flock target
 
 ### Formation Demo
 **Menu:** SwarmAI → Create Demo Scene → Formation Demo
@@ -336,6 +339,15 @@ SwarmAI/
 ---
 
 ## Changelog
+
+### Version 1.1.0
+- Added FormationSlotBehavior for stable formations
+- Added SeekBehavior toggle (key 6) to Flocking Demo
+- Fixed singleton cleanup during scene teardown
+- Fixed Formation Demo movement and stability
+- Added verbose debug logging for demos
+- Migrated from legacy Input Manager to new Input System
+- Added troubleshooting guide
 
 ### Version 1.0.0
 - Initial release

@@ -306,11 +306,19 @@ public class FormationExample : MonoBehaviour
         _group = new SwarmGroup(_leader, "Squad Alpha");
         _group.SetFormation(_formation);
         
-        // Add followers
+        // Add followers with FormationSlotBehavior
         for (int i = 1; i < agents.Length; i++)
         {
             _group.AddMember(agents[i]);
-            agents[i].SetState(new FollowingState(_leader));
+            
+            // Clear existing behaviors and add FormationSlotBehavior
+            // This reads from agent.TargetPosition which is set by SwarmFormation
+            agents[i].ClearBehaviors();
+            agents[i].AddBehavior(new FormationSlotBehavior(
+                slowingRadius: 2.5f,
+                arrivalRadius: 0.7f,
+                dampingFactor: 0.7f
+            ), 1.0f);
         }
     }
     

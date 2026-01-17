@@ -19,6 +19,8 @@ Complete documentation for all steering behaviors in SwarmAI.
 - [Navigation Behaviors](#navigation-behaviors)
   - [ObstacleAvoidanceBehavior](#obstacleavoidancebehavior)
   - [FollowLeaderBehavior](#followleaderbehavior)
+- [Formation Behaviors](#formation-behaviors)
+  - [FormationSlotBehavior](#formationslotbehavior)
 - [Creating Custom Behaviors](#creating-custom-behaviors)
 
 ---
@@ -467,6 +469,67 @@ agent.AddBehavior(offsetFollow, 1.0f);
 
 ---
 
+## Formation Behaviors
+
+### FormationSlotBehavior
+
+Steers toward the agent's target position (set by SwarmFormation) with arrival damping for stable formations.
+
+#### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `SlowingRadius` | `float` | 3.0 | Distance at which agent starts slowing |
+| `ArrivalRadius` | `float` | 0.8 | Distance at which agent stops (dead zone) |
+| `DampingFactor` | `float` | 0.5 | Velocity damping when close to target (0-1) |
+
+#### Usage
+
+```csharp
+// Standard formation slot behavior
+var slotBehavior = new FormationSlotBehavior();
+agent.AddBehavior(slotBehavior, 1.0f);
+
+// Custom settings for tighter formations
+var tightSlot = new FormationSlotBehavior(
+    slowingRadius: 2.5f,
+    arrivalRadius: 0.7f,
+    dampingFactor: 0.7f
+);
+agent.AddBehavior(tightSlot, 1.0f);
+```
+
+#### How It Works
+
+1. Reads target position from `agent.TargetPosition` (set by SwarmFormation)
+2. Uses quadratic speed falloff for smooth deceleration
+3. Applies full braking when within arrival radius
+4. Includes velocity damping to prevent oscillation
+
+```
+                SlowingRadius
+        ←───────────────────────→
+        
+  Agent ●═══════════════════════════●  Slot
+           Speed decreases    │ Stop zone
+           quadratically      │ (ArrivalRadius)
+```
+
+#### Why Use This Instead of FollowLeaderBehavior?
+
+`FormationSlotBehavior` is specifically designed to work with `SwarmFormation`:
+
+| Aspect | FollowLeaderBehavior | FormationSlotBehavior |
+|--------|---------------------|----------------------|
+| Target source | Calculates own position behind leader | Uses `agent.TargetPosition` from formation |
+| Formation support | No (conflicts with formation slots) | Yes (designed for formations) |
+| Stability | Can oscillate | Has damping for stability |
+| Use case | Simple leader-following | Precise formation positions |
+
+**Note:** When using `SwarmFormation`, always use `FormationSlotBehavior` for followers, not `FollowLeaderBehavior`. The formation system calls `agent.SetTarget()` to set each agent's slot position, and `FormationSlotBehavior` is designed to read from this target.
+
+---
+
 ## Creating Custom Behaviors
 
 ### Option 1: Extend BehaviorBase
@@ -568,6 +631,7 @@ public class AttractToPointsBehavior : IBehavior
 | CohesionBehavior | Stay with group | 1.0 | NeighborRadius |
 | ObstacleAvoidanceBehavior | Avoid obstacles | 2.0+ | RayDistance, ObstacleLayer |
 | FollowLeaderBehavior | Follow a leader | 1.0 | Leader, FollowDistance, Offset |
+| FormationSlotBehavior | Hold formation position | 1.0 | SlowingRadius, ArrivalRadius, DampingFactor |
 
 ---
 
