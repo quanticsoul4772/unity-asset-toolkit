@@ -75,6 +75,7 @@ NPCBrain is an all-in-one AI toolkit that combines decision-making systems (Beha
 3. **4 ready-to-use archetypes** - Guard, Patrol, Civilian, Enemy
 4. **Code-first with runtime visualization** - Easy to learn, debug, customize
 5. **Performance-focused** - Same architecture patterns as SwarmAI (Jobs/Burst ready)
+6. **🆕 Adaptive Behavior (Criticality)** - UNIQUE: Self-tuning exploration/exploitation balance (see [NPCBRAIN-CRITICALITY.md](NPCBRAIN-CRITICALITY.md))
 
 ---
 
@@ -174,6 +175,18 @@ NPCBrain/
 │   │   ├── PatrolNPC.cs             # Follow waypoints
 │   │   ├── CivilianNPC.cs           # Wander, flee from danger
 │   │   └── EnemyNPC.cs              # Chase, attack, search
+│   │
+│   ├── Criticality/                 # NEW MODULE - Adaptive Behavior
+│   │   ├── Core/
+│   │   │   ├── CriticalityController.cs  # Main feedback controller
+│   │   │   ├── CriticalitySettings.cs    # ScriptableObject config
+│   │   │   └── CriticalityMetrics.cs     # Metric calculations
+│   │   ├── Telemetry/
+│   │   │   ├── ActionTelemetry.cs        # Track action history
+│   │   │   └── RingBuffer.cs             # Efficient rolling buffer
+│   │   └── Group/
+│   │       ├── GroupField.cs             # Shared coordination
+│   │       └── IntentBroadcast.cs        # Low-bandwidth signals
 │   │
 │   └── Integration/
 │       ├── EasyPathBridge.cs        # Pathfinding integration
@@ -568,6 +581,42 @@ public static class NPCEvents
 
 ---
 
+## Criticality System (Adaptive Behavior)
+
+**See full design:** [NPCBRAIN-CRITICALITY.md](NPCBRAIN-CRITICALITY.md)
+
+NPCBrain includes an **optional advanced module** that keeps NPC behavior at the "edge of chaos" - creating NPCs that are stable yet responsive, predictable yet surprising.
+
+### Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Order Parameters** | Metrics measuring behavior order/chaos (entropy, churn, surprise) |
+| **Target Band** | Desired range for chaos index (e.g., 0.40-0.55) |
+| **Control Knobs** | Temperature, inertia, attention width, coupling |
+| **Feedback Loop** | Controller adjusts knobs to stay in critical band |
+
+### Integration
+
+```csharp
+// Enable adaptive behavior (optional)
+brain.EnableAdaptiveBehavior = true;
+
+// The system automatically:
+// - Tracks action entropy, plan churn, surprise
+// - Adjusts softmax temperature for exploration/exploitation
+// - Tunes inertia for plan commitment
+// - Controls group coupling for coordination
+```
+
+### MVP Scope (2.5 days)
+- Temperature + inertia control
+- Action entropy + plan churn metrics
+- Basic debug visualization
+- Utility AI integration
+
+---
+
 ## Future Expansion (v2.0+)
 
 | Feature | Description | Price |
@@ -577,6 +626,7 @@ public static class NPCEvents
 | **NavMesh Integration** | Unity NavMesh support | Included |
 | **Multiplayer AI** | Network-synced decisions | +$15 |
 | **Machine Learning** | Train behaviors from examples | +$25 |
+| **Advanced Criticality** | Full group field, all metrics, coupling control | Included |
 
 ---
 
@@ -589,6 +639,7 @@ public static class NPCEvents
 5. ✅ **Performance** - Handle 100+ NPCs at 60 FPS
 6. ✅ **Well-documented** - Clear examples for every feature
 7. ✅ **4 Archetypes** - Guard, Patrol, Civilian, Enemy ready to use
+8. ✅ **Adaptive Behavior** - Optional criticality system for emergent behavior (UNIQUE)
 
 ---
 
