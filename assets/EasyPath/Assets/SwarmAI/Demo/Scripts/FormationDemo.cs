@@ -22,6 +22,9 @@ namespace SwarmAI.Demo
         [Header("Movement")]
         [SerializeField] private bool _wasdControl = true;
         
+        [Header("Debug")]
+        [SerializeField] private bool _verboseDebug = true;
+        
         // Formation component
         private SwarmFormation _formation;
         private SwarmGroup _group;
@@ -35,6 +38,11 @@ namespace SwarmAI.Demo
             _demoTitle = "SwarmAI - Formation Demo";
             
             base.Start();
+            
+            if (_verboseDebug)
+            {
+                Debug.Log($"[FormationDemo] Start() called. Agents found: {_agents.Count}");
+            }
             
             SetupFormation();
         }
@@ -53,11 +61,25 @@ namespace SwarmAI.Demo
         
         private void SetupFormation()
         {
-            if (_agents.Count == 0) return;
+            if (_agents.Count == 0)
+            {
+                Debug.LogWarning("[FormationDemo] SetupFormation() called but no agents found! Make sure agents exist in the scene.");
+                return;
+            }
+            
+            if (_verboseDebug)
+            {
+                Debug.Log($"[FormationDemo] Setting up formation with {_agents.Count} agents");
+            }
             
             // Designate first agent as leader
             _leader = _agents[0];
             SetLeaderVisual(_leader);
+            
+            if (_verboseDebug)
+            {
+                Debug.Log($"[FormationDemo] Leader assigned: {_leader.name}");
+            }
             
             // Create formation on leader
             _formation = _leader.gameObject.AddComponent<SwarmFormation>();
@@ -70,6 +92,7 @@ namespace SwarmAI.Demo
             _group.SetFormation(_formation);
             
             // Add followers to group (skip leader)
+            int followerCount = 0;
             for (int i = 1; i < _agents.Count; i++)
             {
                 var agent = _agents[i];
@@ -79,9 +102,20 @@ namespace SwarmAI.Demo
                 
                 // Set following state
                 agent.SetState(new FollowingState(_leader));
+                
+                // Add a follow behavior for smoother following
+                var followBehavior = new FollowLeaderBehavior();
+                followBehavior.Leader = _leader;
+                followBehavior.FollowDistance = _formationSpacing;
+                agent.AddBehavior(followBehavior, 1.0f);
+                
+                // Add separation to avoid crowding
+                agent.AddBehavior(new SeparationBehavior(_formationSpacing * 0.5f), 1.5f);
+                
+                followerCount++;
             }
             
-            Debug.Log($"[FormationDemo] Created {_currentFormation} formation with {_agents.Count} agents");
+            Debug.Log($"[FormationDemo] Created {_currentFormation} formation with 1 leader + {followerCount} followers");
         }
         
         private void SetLeaderVisual(SwarmAgent leader)
@@ -164,7 +198,14 @@ namespace SwarmAI.Demo
         
         private void HandleLeaderMovement()
         {
-            if (_leader == null) return;
+            if (_leader == null)
+            {
+                if (_verboseDebug && Time.frameCount % 60 == 0)
+                {
+                    Debug.LogWarning("[FormationDemo] HandleLeaderMovement: No leader assigned!");
+                }
+                return;
+            }
             
             // Get movement from WASD via Input System
             Vector2 moveInput = SwarmDemoInput.Movement;
@@ -180,6 +221,11 @@ namespace SwarmAI.Demo
                 _leader.transform.rotation = Quaternion.LookRotation(moveDir);
                 
                 _hasTarget = false;
+                
+                if (_verboseDebug && Time.frameCount % 30 == 0)
+                {
+                    Debug.Log($"[FormationDemo] Leader moving: input={moveInput}, pos={newPos}");
+                }
             }
         }
         
@@ -190,9 +236,12 @@ namespace SwarmAI.Demo
             if (_formation != null)
             {
                 _formation.Type = type;
+                Debug.Log($"[FormationDemo] Formation changed to {type}");
             }
-            
-            Debug.Log($"[FormationDemo] Formation changed to {type}");
+            else
+            {
+                Debug.LogWarning($"[FormationDemo] Cannot change formation - formation component is null!");
+            }
         }
         
         private void AdjustSpacing(float delta)
@@ -215,13 +264,18 @@ namespace SwarmAI.Demo
             if (_formation != null)
             {
                 _formation.MoveTo(position);
+                Debug.Log($"[FormationDemo] Moving formation to ({position.x:F1}, {position.z:F1})");
             }
             else if (_leader != null)
             {
                 _leader.SetTarget(position);
+                _leader.SetState(new SeekingState(position));
+                Debug.Log($"[FormationDemo] Moving leader to ({position.x:F1}, {position.z:F1}) - no formation component");
             }
-            
-            Debug.Log($"[FormationDemo] Moving formation to {position}");
+            else
+            {
+                Debug.LogWarning("[FormationDemo] Cannot move - no formation or leader!");
+            }
         }
         
         protected override void DrawDemoControls()
