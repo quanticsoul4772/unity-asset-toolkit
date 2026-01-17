@@ -308,14 +308,14 @@ namespace SwarmAI
         
         /// <summary>
         /// Generate a cache key from position and radius.
-        /// Uses discretized position to allow for some floating-point variance.
+        /// Uses finer granularity (0.1 units) to avoid cache collisions for nearby positions.
         /// </summary>
         private int GetCacheKey(Vector3 position, float radius)
         {
-            // Discretize position to cell boundaries for better cache hits
-            int px = Mathf.RoundToInt(position.x);
-            int py = Mathf.RoundToInt(position.y);
-            int pz = Mathf.RoundToInt(position.z);
+            // Discretize position with 0.1 unit precision to avoid cache collisions
+            int px = Mathf.RoundToInt(position.x * 10);
+            int py = Mathf.RoundToInt(position.y * 10);
+            int pz = Mathf.RoundToInt(position.z * 10);
             int r = Mathf.RoundToInt(radius * 10); // 0.1 precision
             
             // Combine into hash

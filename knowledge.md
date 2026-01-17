@@ -171,7 +171,9 @@ From Battlecode experience:
 - Unity Asset Store: https://assetstore.unity.com
 - Publisher Portal: https://publisher.unity.com
 - Unity Docs: https://docs.unity3d.com
-- C# Docs: https://docs.microsoft.com/en-us/dotnet/csharp/## File Descriptions 
+- C# Docs: https://docs.microsoft.com/en-us/dotnet/csharp/
+
+## File Descriptions 
 
 - **docs/SETUP.md** - Development environment setup guide
 - **docs/CHECKLIST.md** - Environment setup checklist with status
