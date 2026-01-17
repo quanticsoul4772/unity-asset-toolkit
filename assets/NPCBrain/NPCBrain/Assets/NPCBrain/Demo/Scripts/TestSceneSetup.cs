@@ -1,8 +1,6 @@
 using UnityEngine;
 using NPCBrain;
-using NPCBrain.BehaviorTree;
-using NPCBrain.BehaviorTree.Composites;
-using NPCBrain.BehaviorTree.Actions;
+using NPCBrain.Archetypes;
 
 namespace NPCBrain.Demo
 {
@@ -132,25 +130,6 @@ namespace NPCBrain.Demo
             }
             
             GUILayout.EndArea();
-        }
-    }
-    
-    /// <summary>
-    /// Simple patrol NPC that loops through waypoints.
-    /// Used by <see cref="TestSceneSetup"/> for basic testing.
-    /// </summary>
-    public class PatrolNPC : NPCBrainController
-    {
-        /// <inheritdoc/>
-        protected override BTNode CreateBehaviorTree()
-        {
-            var tree = new Sequence(
-                new MoveTo(() => GetCurrentWaypoint()),
-                new Wait(1f),
-                new AdvanceWaypoint()
-            );
-            tree.Name = "PatrolSequence";
-            return tree;
         }
     }
 }

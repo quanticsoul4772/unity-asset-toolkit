@@ -66,10 +66,10 @@ namespace NPCBrain.Tests.Runtime
                 yield return null;
             }
             
-            // With low temperature and score difference, high should be selected at least sometimes
-            // Very lenient - just verify the system is working (scores matter)
-            Assert.GreaterOrEqual(highCount, 1, 
-                $"High scoring action should be selected at least once. Got {highCount}/{totalRuns}");
+            // With low temperature and score difference, high should be selected more often
+            // Using >= totalRuns/3 as threshold - still lenient but proves scoring works
+            Assert.GreaterOrEqual(highCount, totalRuns / 3, 
+                $"High scoring action should be selected at least {totalRuns/3} times. Got {highCount}/{totalRuns}");
         }
         
         [UnityTest]

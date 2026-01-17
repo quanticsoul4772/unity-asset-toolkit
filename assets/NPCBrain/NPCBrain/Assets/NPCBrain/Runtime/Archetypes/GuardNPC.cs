@@ -166,7 +166,12 @@ namespace NPCBrain.Archetypes
                 new CheckBlackboard("target"),
                 new CheckBlackboard<float>("alertLevel", level => level > 0.2f),
                 // Check target is within chase range
-                new CheckTargetInRange(this, _maxChaseDistance),
+                new Conditions.CheckDistance(
+                    brain => brain.transform.position,
+                    brain => GetTargetPositionForCheck(brain),
+                    _maxChaseDistance,
+                    Conditions.CheckDistance.ComparisonType.LessThanOrEqual
+                ),
                 new MoveTo(
                     () => GetTargetPosition(),
                     _chaseArrivalDistance,
@@ -196,7 +201,7 @@ namespace NPCBrain.Archetypes
                 // Look around
                 new Wait(_investigateTime),
                 // Clear investigation target
-                new ClearBlackboardKey(this, "lastKnownPosition")
+                new ClearBlackboardKey("lastKnownPosition")
             );
             sequence.Name = "Investigate";
             return sequence;
@@ -246,53 +251,13 @@ namespace NPCBrain.Archetypes
             return Blackboard.Get<Vector3>("lastKnownPosition", transform.position);
         }
         
-        /// <summary>
-        /// Custom action node to clear a blackboard key.
-        /// </summary>
-        private class ClearBlackboardKey : BTNode
+        private static Vector3 GetTargetPositionForCheck(NPCBrainController brain)
         {
-            private readonly NPCBrainController _brain;
-            private readonly string _key;
-            
-            public ClearBlackboardKey(NPCBrainController brain, string key)
+            if (brain.Blackboard.TryGet<GameObject>("target", out var target) && target != null)
             {
-                _brain = brain;
-                _key = key;
-                Name = $"Clear({key})";
+                return target.transform.position;
             }
-            
-            protected override NodeStatus Tick(NPCBrainController brain)
-            {
-                _brain.Blackboard.Remove(_key);
-                return NodeStatus.Success;
-            }
-        }
-        
-        /// <summary>
-        /// Condition node that checks if the target is within a maximum distance.
-        /// </summary>
-        private class CheckTargetInRange : BTNode
-        {
-            private readonly GuardNPC _guard;
-            private readonly float _maxDistance;
-            
-            public CheckTargetInRange(GuardNPC guard, float maxDistance)
-            {
-                _guard = guard;
-                _maxDistance = maxDistance;
-                Name = $"TargetInRange({maxDistance})";
-            }
-            
-            protected override NodeStatus Tick(NPCBrainController brain)
-            {
-                if (!brain.Blackboard.TryGet<GameObject>("target", out var target) || target == null)
-                {
-                    return NodeStatus.Failure;
-                }
-                
-                float distance = Vector3.Distance(_guard.transform.position, target.transform.position);
-                return distance <= _maxDistance ? NodeStatus.Success : NodeStatus.Failure;
-            }
+            return brain.transform.position; // Same position = 0 distance = will fail range check
         }
     }
 }
