@@ -115,6 +115,12 @@ namespace SwarmAI.Editor
             ValidateSwarmAIPackage();
         }
 
+        [MenuItem("SwarmAI/Show Unity Version Info", false, 151)]
+        public static void ShowUnityVersionInfo()
+        {
+            DisplayUnityVersionInfo();
+        }
+
         [MenuItem("SwarmAI/Add Demo Scenes to Build Settings", false, 200)]
         public static void AddDemoScenesToBuildSettings()
         {
@@ -197,6 +203,71 @@ namespace SwarmAI.Editor
             }
             
             return true;
+        }
+
+        private static void DisplayUnityVersionInfo()
+        {
+            string unityVersion = Application.unityVersion;
+            string compatibilityStatus = GetCompatibilityStatus(unityVersion);
+            string renderPipeline = GetRenderPipelineName();
+            string inputSystem = GetInputSystemStatus();
+            
+            string message = $"Current Unity Version: {unityVersion}\n\n" +
+                           $"Compatibility: {compatibilityStatus}\n" +
+                           $"Render Pipeline: {renderPipeline}\n" +
+                           $"Input System: {inputSystem}\n\n" +
+                           "Supported Versions:\n" +
+                           "• Unity 2021.3 LTS (minimum)\n" +
+                           "• Unity 2022.3 LTS (recommended)\n" +
+                           "• Unity 6 (6000.x) (latest)\n\n" +
+                           "For multi-version testing, see:\n" +
+                           "Documentation/MULTI-VERSION-TESTING.md";
+            
+            EditorUtility.DisplayDialog("SwarmAI - Unity Version Info", message, "OK");
+            
+            Debug.Log($"[SwarmAI] Unity {unityVersion} - {compatibilityStatus}");
+        }
+        
+        private static string GetCompatibilityStatus(string version)
+        {
+            if (version.StartsWith("6000") || version.StartsWith("2023") || version.StartsWith("2024"))
+                return "✅ Fully Supported (Latest)";
+            if (version.StartsWith("2022.3"))
+                return "✅ Fully Supported (LTS)";
+            if (version.StartsWith("2022"))
+                return "✅ Supported";
+            if (version.StartsWith("2021.3"))
+                return "✅ Supported (Minimum LTS)";
+            if (version.StartsWith("2021"))
+                return "⚠️ May Work (Not LTS)";
+            if (version.StartsWith("2020"))
+                return "⚠️ Below Minimum (May Have Issues)";
+            return "❌ Not Supported";
+        }
+        
+        private static string GetRenderPipelineName()
+        {
+            var currentRP = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
+            if (currentRP == null)
+                return "Built-in Render Pipeline";
+            
+            string rpName = currentRP.GetType().Name;
+            if (rpName.Contains("Universal") || rpName.Contains("URP"))
+                return "Universal Render Pipeline (URP)";
+            if (rpName.Contains("HD") || rpName.Contains("HDRP"))
+                return "High Definition Render Pipeline (HDRP)";
+            return rpName;
+        }
+        
+        private static string GetInputSystemStatus()
+        {
+            #if ENABLE_INPUT_SYSTEM
+            return "New Input System (Active)";
+            #elif ENABLE_LEGACY_INPUT_MANAGER
+            return "Legacy Input Manager (Active)";
+            #else
+            return "Both (Legacy + New)";
+            #endif
         }
 
         private static void ValidateSwarmAIPackage()

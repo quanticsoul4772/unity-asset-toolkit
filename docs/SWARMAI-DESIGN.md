@@ -241,15 +241,18 @@ public class SpatialHash<T>
 
 ### Phase 8: Demo Scenes & Multi-Version Testing [In Progress]
 - [x] TESTING-GUIDE.md with comprehensive testing instructions
+- [x] MULTI-VERSION-TESTING.md checklist document
 - [x] PowerShell automation script for version testing
+- [x] Windows batch file for easy test execution
 - [x] "Create All Demo Scenes" menu item
 - [x] Unity version compatibility checks in editor
+- [x] "Show Unity Version Info" menu item
 - [x] Package validation menu item
 - [x] Render pipeline shader fallbacks
 - [x] All 4 demo scenes implemented (Flocking, Formation, Resource Gathering, Combat Formations)
-- [ ] Tested on Unity 2021.3 LTS
-- [ ] Tested on Unity 2022.3 LTS
-- [ ] Tested on Unity 6
+- [ ] Tested on Unity 2021.3 LTS (not installed)
+- [ ] Tested on Unity 2022.3 LTS (not installed)
+- [x] Tested on Unity 6 (6000.3.4f1) - Primary development version
 - [ ] Standalone builds tested
 
 ## Integration with EasyPath

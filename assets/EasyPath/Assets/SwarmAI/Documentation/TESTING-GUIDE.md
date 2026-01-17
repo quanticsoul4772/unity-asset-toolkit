@@ -116,6 +116,8 @@ This document provides step-by-step instructions for creating demo scenes, testi
 
 ## Multi-Version Testing
 
+> **See also:** [MULTI-VERSION-TESTING.md](MULTI-VERSION-TESTING.md) for detailed checklists and automation.
+
 ### Supported Unity Versions
 
 | Version | Status | Notes |
@@ -301,8 +303,11 @@ Use this checklist before Asset Store submission:
 A PowerShell script is provided for automated validation:
 
 ```powershell
-# Run from project root
+# Run from project root (close Unity first!)
 powershell -ExecutionPolicy Bypass -File scripts/test-unity-versions.ps1
+
+# Or use the convenient batch file:
+test-versions.bat
 ```
 
 This script:
@@ -310,5 +315,13 @@ This script:
 2. Opens project in each version
 3. Runs compilation check
 4. Generates compatibility report
+
+### Quick Version Check
+
+In Unity Editor, use **SwarmAI > Show Unity Version Info** to see:
+- Current Unity version
+- Compatibility status
+- Render pipeline in use
+- Input system status
 
 See `scripts/test-unity-versions.ps1` for details.

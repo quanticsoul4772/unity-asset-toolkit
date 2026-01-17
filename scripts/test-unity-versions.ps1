@@ -170,7 +170,8 @@ function Test-DemoScenes {
     $expectedScenes = @(
         "SwarmAI_FlockingDemo.unity",
         "SwarmAI_FormationDemo.unity",
-        "SwarmAI_ResourceGatheringDemo.unity"
+        "SwarmAI_ResourceGatheringDemo.unity",
+        "SwarmAI_CombatFormationsDemo.unity"
     )
     
     $results = @()
