@@ -51,6 +51,12 @@ namespace NPCBrain.UtilityAI
                 }
             }
             
+            // Compensation factor (Dave Mark's "make-up value" from GDC Utility AI talks):
+            // Multiplicative scoring unfairly penalizes actions with more considerations.
+            // E.g., 3 considerations at 0.8 each = 0.512, but 2 at 0.8 = 0.64.
+            // This formula adds back a portion of the "lost" score proportional to
+            // the number of considerations, making scores more comparable across actions.
+            // Formula: finalScore = score + (1 - score) * (1 - 1/n) * score
             float modificationFactor = 1f - (1f / _considerations.Count);
             float makeUpValue = (1f - score) * modificationFactor;
             score += makeUpValue * score;

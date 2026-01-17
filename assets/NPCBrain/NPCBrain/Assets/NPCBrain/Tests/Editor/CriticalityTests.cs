@@ -47,13 +47,15 @@ namespace NPCBrain.Tests.Editor
         [Test]
         public void RecordAction_UniformDistribution_HighEntropy()
         {
+            // With 4 actions uniformly distributed, max entropy = ln(4) ≈ 1.386
+            // Use a more lenient threshold to avoid flaky tests
             for (int i = 0; i < 20; i++)
             {
                 _controller.RecordAction(i % 4);
             }
             _controller.Update();
             
-            Assert.Greater(_controller.Entropy, 1f);
+            Assert.Greater(_controller.Entropy, 1.3f);
         }
         
         [Test]

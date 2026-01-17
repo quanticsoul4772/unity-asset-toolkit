@@ -76,6 +76,11 @@ namespace NPCBrain.BehaviorTree.Composites
         
         private UtilityAction SelectAction(NPCBrainController brain)
         {
+            if (brain == null)
+            {
+                return null;
+            }
+            
             float temperature = brain.Criticality?.Temperature ?? 1f;
             
             float maxScore = float.MinValue;
