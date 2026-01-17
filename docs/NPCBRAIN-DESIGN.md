@@ -1,8 +1,16 @@
 # NPCBrain Design Document
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Status:** Planning  
 **Last Updated:** January 2026
+
+## Related Documents
+
+| Document | Description |
+|----------|-------------|
+| [NPCBRAIN-CRITICALITY.md](NPCBRAIN-CRITICALITY.md) | Adaptive behavior system design (criticality-based AI) |
+| [NPCBRAIN-DEBUG-WINDOW.md](NPCBRAIN-DEBUG-WINDOW.md) | Runtime debug window UI design |
+| [NPCBRAIN-SCENE-GIZMOS.md](NPCBRAIN-SCENE-GIZMOS.md) | Scene view gizmos design (vision cones, paths, etc.) |
 
 ## Overview
 
@@ -199,11 +207,16 @@ NPCBrain/
 │   │   ├── BlackboardEditor.cs      # Blackboard visualization
 │   │   └── WaypointPathEditor.cs    # Waypoint editing (NEW)
 │   ├── Windows/
-│   │   ├── NPCBrainDebugWindow.cs   # Runtime visualizer (NEW - CRITICAL)
+│   │   ├── NPCBrainDebugWindow.cs   # Runtime visualizer - see [DEBUG-WINDOW.md](NPCBRAIN-DEBUG-WINDOW.md)
 │   │   └── BehaviorTreeWindow.cs    # Visual BT editor (v2.0 stretch goal)
-│   └── Gizmos/
-│       ├── PerceptionGizmos.cs      # Vision cones, hearing spheres
-│       └── WaypointGizmos.cs        # Waypoint visualization
+│   └── Gizmos/                      # Scene gizmos - see [SCENE-GIZMOS.md](NPCBRAIN-SCENE-GIZMOS.md)
+│       ├── NPCBrainGizmoDrawer.cs   # Main gizmo coordinator
+│       ├── VisionConeGizmo.cs       # Vision cone drawing
+│       ├── HearingGizmo.cs          # Hearing range visualization
+│       ├── WaypointGizmo.cs         # Waypoint path visualization
+│       ├── TargetGizmo.cs           # Target line indicators
+│       ├── DebugLabelGizmo.cs       # World-space labels
+│       └── GizmoColors.cs           # Centralized color definitions
 │
 ├── Demo/
 │   ├── Scripts/
@@ -487,7 +500,7 @@ public static class NPCEvents
 - [ ] Action nodes: MoveTo, MoveToWaypoint, Wait, Log, SetBlackboard
 - [ ] Condition nodes: CheckBlackboard, CheckDistance
 - [ ] Conditional aborts (Self, LowerPriority, Both)
-- [ ] NPCBrainDebugWindow for runtime visualization
+- [ ] NPCBrainDebugWindow MVP (see [NPCBRAIN-DEBUG-WINDOW.md](NPCBRAIN-DEBUG-WINDOW.md))
 - [ ] Unit tests for all node types
 - [ ] **Patrol Demo scene**
 
@@ -502,7 +515,7 @@ public static class NPCEvents
 - [ ] SoundEmitter component (for player footsteps, gunshots)
 - [ ] Memory system with decay
 - [ ] TargetSelector with priority scoring
-- [ ] Perception Gizmos (vision cones, hearing spheres)
+- [ ] Scene Gizmos Phase 1 (see [NPCBRAIN-SCENE-GIZMOS.md](NPCBRAIN-SCENE-GIZMOS.md))
 - [ ] BT Conditions: CheckTargetVisible, CheckHeardSound
 - [ ] BT Actions: Investigate, LookAt
 - [ ] Unit tests for perception
@@ -545,7 +558,8 @@ public static class NPCEvents
 
 - [ ] Performance optimization (tick throttling, pooling)
 - [ ] Custom inspectors for all components
-- [ ] Complete NPCBrainDebugWindow
+- [ ] Complete NPCBrainDebugWindow (all tabs, timeline, breakpoints)
+- [ ] Scene Gizmos Phase 3 (labels, criticality indicators, polish)
 - [ ] Documentation: README, Getting Started, API Reference
 - [ ] Documentation: Behavior Trees guide with examples
 - [ ] Documentation: Utility AI guide with examples
@@ -649,3 +663,14 @@ public CriticalitySettings settings; // Assign in inspector
 3. ☐ Implement BTNode base class and core composites
 4. ☐ Create WaypointPath component
 5. ☐ Build first demo (Patrol Demo)
+
+---
+
+## Appendix: Design Document Index
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| **NPCBRAIN-DESIGN.md** | Main architecture and roadmap | ✅ Complete |
+| **NPCBRAIN-CRITICALITY.md** | Adaptive behavior system | ✅ Complete |
+| **NPCBRAIN-DEBUG-WINDOW.md** | Editor debug window design | ✅ Complete |
+| **NPCBRAIN-SCENE-GIZMOS.md** | Scene view visualization | ✅ Complete |
