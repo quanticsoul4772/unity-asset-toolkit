@@ -131,20 +131,25 @@ namespace SwarmAI.Demo
                 // Clear any existing behaviors to avoid duplication
                 agent.ClearBehaviors();
                 
-                // Add a follow behavior for movement toward leader
-                var followBehavior = new FollowLeaderBehavior();
-                followBehavior.Leader = _leader;
-                followBehavior.FollowDistance = _formationSpacing;
-                agent.AddBehavior(followBehavior, 1.0f);
+                // Add FormationSlotBehavior - this reads from agent.Target which is
+                // set by SwarmFormation.UpdateSlotPositions() every frame
+                // Using larger arrival radius and damping for stable formations
+                var slotBehavior = new FormationSlotBehavior(
+                    slowingRadius: 2f,
+                    arrivalRadius: 0.5f,
+                    dampingFactor: 0.6f
+                );
+                agent.AddBehavior(slotBehavior, 1.0f);
                 
-                // Add separation to avoid crowding
-                agent.AddBehavior(new SeparationBehavior(_formationSpacing * 0.5f), 1.5f);
+                // Light separation only to prevent exact overlap during transitions
+                // (weight is low so it doesn't overpower formation slots)
+                agent.AddBehavior(new SeparationBehavior(_formationSpacing * 0.3f), 0.3f);
                 
                 followerCount++;
             }
             
             _formationInitialized = true;
-            Debug.Log($"[FormationDemo] Created {_currentFormation} formation with 1 leader + {followerCount} followers");
+            Debug.Log($"[FormationDemo] Created {_currentFormation} formation with 1 leader + {followerCount} followers using FormationSlotBehavior");
         }
         
         private void SetLeaderVisual(SwarmAgent leader)
