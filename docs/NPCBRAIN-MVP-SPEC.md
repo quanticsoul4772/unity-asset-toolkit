@@ -23,7 +23,7 @@ Decision structure using nodes that return Running/Success/Failure.
 **Nodes:**
 | Type | Nodes |
 |------|-------|
-| Composites | Selector, Sequence, Parallel |
+| Composites | Selector, Sequence, Parallel, UtilitySelector |
 | Decorators | Inverter, Repeater, Cooldown, Succeeder |
 | Conditions | CheckBlackboard, CheckDistance, CheckTargetVisible |
 | Actions | MoveTo, Wait, SetBlackboard, Log, LookAt |
@@ -34,7 +34,9 @@ Score-based action selection for organic behavior.
 **Components:**
 - UtilityAction with Considerations
 - 3 Response Curves: Linear, Exponential, Step
-- Softmax selection with temperature
+- Softmax selection with temperature (controlled by Criticality)
+
+**Integration:** `UtilitySelector` is a BT composite node that scores children and picks the best one. This allows mixing structured BT logic with fuzzy Utility decisions.
 
 ### 3. Perception (Sight Only)
 Vision cone detection with memory.
@@ -49,7 +51,7 @@ Automatic behavior tuning - keeps NPCs balanced between predictable and random.
 
 **Metrics:** Action entropy only  
 **Knobs:** Temperature, Inertia  
-**Integration:** Feeds into Utility AI softmax
+**Integration:** Temperature feeds into UtilitySelector's softmax. Higher temp = more exploration, lower = more exploitation.
 
 ---
 
@@ -152,15 +154,16 @@ NPCBrain/
 ## Development Phases
 
 ### Week 1: Core Framework
-- [ ] Project structure + assembly definitions
+- [ ] Project structure + assembly definitions (assets/NPCBrain/)
 - [ ] TestScene.unity (validation sandbox - create first!)
-- [ ] NPCBrain component
+- [ ] NPCBrain component (see class skeleton below)
 - [ ] Blackboard with events
-- [ ] WaypointPath
+- [ ] WaypointPath component
 - [ ] BTNode base + Selector, Sequence
+- [ ] Basic conditions: CheckBlackboard (needed to test Selector fallback)
 - [ ] Basic actions: MoveTo, Wait
-- [ ] Unit tests: BlackboardTests, BTNodeTests (Selector, Sequence)
-- [ ] Validate in TestScene: NPC moves between waypoints
+- [ ] Unit tests: BlackboardTests, BTNodeTests (Selector, Sequence, CheckBlackboard)
+- [ ] Validate in TestScene: NPC patrols waypoints, Selector fallback works
 
 ### Week 2: Behavior Trees + Perception
 - [ ] Remaining BT nodes
@@ -304,18 +307,18 @@ public class GuardNPC : NPCBrain
 
 ```
 Update() called every frame:
-│
-├─1. Perception.Tick()        // Update visible targets, memory decay
-│     └─ Fires: OnTargetAcquired, OnTargetLost
-│
-├─2. Criticality.Update()     // Compute entropy, adjust temp/inertia
-│
-├─3. Decision:
-│     ├─ If using BT: BehaviorTree.Tick()
-│     └─ If using Utility: UtilityBrain.SelectAction()
-│
-└─4. Action execution         // MoveTo updates position, etc.
+|
+|--1. Perception.Tick()        // Update visible targets, memory decay
+|      +-- Fires: OnTargetAcquired, OnTargetLost
+|
+|--2. Criticality.Update()     // Compute entropy, adjust temp/inertia
+|
+|--3. BehaviorTree.Tick()      // BT executes, UtilitySelector uses Criticality.Temperature
+|
++--4. Action execution         // MoveTo updates position, etc.
 ```
+
+**Note:** There is no "BT vs Utility" mode switch. BT is always the decision structure. UtilitySelector nodes within the BT use Utility AI scoring. Criticality's temperature affects UtilitySelector's softmax.
 
 **Tick Rate:** Every frame by default. Optional: `[SerializeField] float _tickInterval = 0f;`
 
@@ -427,6 +430,115 @@ public class NPCBrain : MonoBehaviour
 - **Minimum:** Unity 2021.3 LTS
 - **Target:** Unity 6 (6000.x)
 - **Tested:** Unity 6000.3.4f1
+
+### 12. Project Location
+
+**Path:** `assets/NPCBrain/` (separate Unity project, not inside EasyPath)
+
+This keeps NPCBrain independent and allows it to optionally reference EasyPath/SwarmAI without hard dependencies.
+
+### 13. NPCBrain Class Skeleton
+
+```csharp
+namespace NPCBrain
+{
+    public class NPCBrain : MonoBehaviour
+    {
+        // Subsystems
+        public Blackboard Blackboard { get; private set; }
+        public SightSensor Perception { get; private set; }
+        public CriticalityController Criticality { get; private set; }
+        
+        // BT
+        private BTNode _behaviorTree;
+        private NodeStatus _lastStatus;
+        
+        // Config
+        [SerializeField] private float _tickInterval = 0f;
+        [SerializeField] private WaypointPath _waypointPath;
+        
+        // Events
+        public event Action<GameObject> OnTargetAcquired;
+        public event Action<GameObject> OnTargetLost;
+        public event Action<string> OnStateChanged;
+        
+        protected virtual void Awake()
+        {
+            Blackboard = new Blackboard();
+            Perception = GetComponent<SightSensor>();
+            Criticality = new CriticalityController();
+            _behaviorTree = CreateBehaviorTree();
+        }
+        
+        protected virtual BTNode CreateBehaviorTree()
+        {
+            // Override in subclasses (archetypes)
+            return null;
+        }
+        
+        private void Update()
+        {
+            // 1. Perception
+            Perception?.Tick(this);
+            
+            // 2. Criticality
+            Criticality.Update();
+            
+            // 3. BT Decision
+            if (_behaviorTree != null)
+            {
+                _lastStatus = _behaviorTree.Tick(this);
+            }
+        }
+        
+        // Helpers for archetypes
+        public Vector3 GetNextWaypoint() => _waypointPath?.GetNext() ?? transform.position;
+    }
+}
+```
+
+### 14. Key Interface Clarifications
+
+**MoveTo constructor:**
+```csharp
+public class MoveTo : BTNode
+{
+    private readonly Func<Vector3> _targetGetter;
+    private readonly float _arrivalDistance = 0.5f;
+    private readonly float _moveSpeed = 5f;
+    
+    public MoveTo(Func<Vector3> targetGetter, float arrivalDistance = 0.5f)
+    {
+        _targetGetter = targetGetter;
+        _arrivalDistance = arrivalDistance;
+    }
+}
+```
+
+**ResponseCurve:** Abstract base class with Linear, Exponential, Step subclasses:
+```csharp
+public abstract class ResponseCurve
+{
+    public abstract float Evaluate(float input); // input 0-1, output 0-1
+}
+
+public class LinearCurve : ResponseCurve { ... }
+public class ExponentialCurve : ResponseCurve { ... }
+public class StepCurve : ResponseCurve { ... }
+```
+
+**WaypointPath:** MonoBehaviour component with serialized waypoint list:
+```csharp
+public class WaypointPath : MonoBehaviour
+{
+    [SerializeField] private List<Transform> _waypoints;
+    private int _currentIndex = 0;
+    
+    public Vector3 GetNext() { ... }
+    public Vector3 GetCurrent() => _waypoints[_currentIndex].position;
+    public void Advance() => _currentIndex = (_currentIndex + 1) % _waypoints.Count;
+}
+```
 
 ---
 
