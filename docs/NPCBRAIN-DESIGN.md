@@ -12,6 +12,7 @@
 | [NPCBRAIN-DEBUG-WINDOW.md](NPCBRAIN-DEBUG-WINDOW.md) | Runtime debug window UI design |
 | [NPCBRAIN-SCENE-GIZMOS.md](NPCBRAIN-SCENE-GIZMOS.md) | Scene view gizmos design (vision cones, paths, etc.) |
 | [NPCBRAIN-OPPORTUNITIES.md](NPCBRAIN-OPPORTUNITIES.md) | Research synthesis: gaps, cross-domain innovations, v2.0 roadmap |
+| [NPCBRAIN-ARCHITECTURE-DIAGRAMS.md](NPCBRAIN-ARCHITECTURE-DIAGRAMS.md) | Visual blueprints: system wiring, data flow, component connections |
 
 ## Overview
 
@@ -676,3 +677,4 @@ public CriticalitySettings settings; // Assign in inspector
 | **NPCBRAIN-DEBUG-WINDOW.md** | Editor debug window design | ✅ Complete |
 | **NPCBRAIN-SCENE-GIZMOS.md** | Scene view visualization | ✅ Complete |
 | **NPCBRAIN-OPPORTUNITIES.md** | Cross-domain research & gaps | ✅ Complete |
+| **NPCBRAIN-ARCHITECTURE-DIAGRAMS.md** | Visual architecture blueprints | ✅ Complete |
