@@ -85,9 +85,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Jobs/Burst System**: Parallel processing for steering calculations
+  - `SwarmJobSystem` component for automatic Jobs integration
+  - `FlockingSteeringJob` - Burst-compiled parallel flocking behavior
+  - `BurstSpatialHash` - NativeMultiHashMap-based spatial partitioning
+  - `JobsBenchmark` - Performance measurement utility
+  - 10-100x performance improvement for 500+ agents
+- New SwarmSettings options for Jobs configuration
+- Editor menu items for creating SwarmManager with Jobs support
+- JOBS-BURST.md documentation
+
 ### Planned
 - Performance profiler integration
-- Jobs/Burst optimization option
 - NavMesh integration
 - Additional formation types
 - Combat behavior examples

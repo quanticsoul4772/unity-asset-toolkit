@@ -103,6 +103,16 @@ namespace SwarmAI
         [Tooltip("How often to update the spatial hash (in seconds). 0 = every frame.")]
         [SerializeField] private float _spatialHashUpdateInterval = 0f;
         
+        [Header("Jobs/Burst (Requires Burst Package)")]
+        [Tooltip("Enable parallel job processing for steering calculations. Requires Burst package.")]
+        [SerializeField] private bool _useJobsSystem = true;
+        
+        [Tooltip("Minimum number of agents before using Jobs system. Below this, single-threaded is faster.")]
+        [SerializeField] private int _minAgentsForJobs = 50;
+        
+        [Tooltip("Batch size for parallel jobs. Higher = less overhead, lower = better load balancing.")]
+        [SerializeField] private int _jobsBatchSize = 64;
+        
         [Header("State Machine")]
         [Tooltip("Minimum movement per second to not be considered stuck.")]
         [SerializeField] private float _stuckThreshold = 0.1f;
@@ -155,6 +165,9 @@ namespace SwarmAI
         public float ResourceSearchDelay => _resourceSearchDelay;
         public int MaxAgentsPerFrame => _maxAgentsPerFrame;
         public float SpatialHashUpdateInterval => _spatialHashUpdateInterval;
+        public bool UseJobsSystem => _useJobsSystem;
+        public int MinAgentsForJobs => _minAgentsForJobs;
+        public int JobsBatchSize => _jobsBatchSize;
         public float StuckThreshold => _stuckThreshold;
         public float StuckTimeLimit => _stuckTimeLimit;
         public float DefaultFleeDistance => _defaultFleeDistance;
