@@ -70,7 +70,8 @@ namespace NPCBrain.Tests.Runtime
         public IEnumerator MoveTo_MovesTowardsTarget()
         {
             _testObject.transform.position = Vector3.zero;
-            var moveTo = new MoveTo(new Vector3(10f, 0f, 0f), 10f, 0.5f);
+            Vector3 target = new Vector3(10f, 0f, 0f);
+            var moveTo = new MoveTo(() => target, 0.5f, 10f);
             
             moveTo.Execute(_brain);
             yield return new WaitForSeconds(0.1f);
@@ -83,7 +84,8 @@ namespace NPCBrain.Tests.Runtime
         public IEnumerator MoveTo_ReturnsSuccess_WhenReachesTarget()
         {
             _testObject.transform.position = new Vector3(9.8f, 0f, 0f);
-            var moveTo = new MoveTo(new Vector3(10f, 0f, 0f), 10f, 0.5f);
+            Vector3 target = new Vector3(10f, 0f, 0f);
+            var moveTo = new MoveTo(() => target, 0.5f, 10f);
             
             NodeStatus status = NodeStatus.Running;
             for (int i = 0; i < 10 && status == NodeStatus.Running; i++)
