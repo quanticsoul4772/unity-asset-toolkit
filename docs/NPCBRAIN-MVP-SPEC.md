@@ -242,6 +242,168 @@ Deferred to v2.0 (archived in docs/archive/):
 
 ---
 
+---
+
+## Implementation Notes
+
+Critical decisions and details to avoid blocking during development.
+
+### 1. BTNode Architecture Decision
+
+**Decision:** Plain C# classes (not ScriptableObjects)
+
+- Trees defined in code, not serialized assets
+- Simpler memory model, no Unity overhead
+- Visual editor deferred to v2.0
+
+### 2. User Workflow: Archetype Pattern
+
+Users create NPCs by subclassing NPCBrain and overriding `CreateBehaviorTree()`:
+
+```csharp
+public class GuardNPC : NPCBrain
+{
+    protected override BTNode CreateBehaviorTree()
+    {
+        return new Selector(
+            new Sequence(  // Chase if target visible
+                new CheckTargetVisible(),
+                new MoveTo(() => Blackboard.Get<Vector3>("targetPosition"))
+            ),
+            new Sequence(  // Patrol otherwise
+                new MoveTo(() => GetNextWaypoint()),
+                new Wait(2f)
+            )
+        );
+    }
+}
+```
+
+### 3. Execution Loop (Tick Order)
+
+```
+Update() called every frame:
+│
+├─1. Perception.Tick()        // Update visible targets, memory decay
+│     └─ Fires: OnTargetAcquired, OnTargetLost
+│
+├─2. Criticality.Update()     // Compute entropy, adjust temp/inertia
+│
+├─3. Decision:
+│     ├─ If using BT: BehaviorTree.Tick()
+│     └─ If using Utility: UtilityBrain.SelectAction()
+│
+└─4. Action execution         // MoveTo updates position, etc.
+```
+
+**Tick Rate:** Every frame by default. Optional: `[SerializeField] float _tickInterval = 0f;`
+
+### 4. Assembly Definitions
+
+| Assembly | Purpose | References |
+|----------|---------|------------|
+| `NPCBrain.Runtime` | Core systems | Unity.InputSystem (optional) |
+| `NPCBrain.Editor` | Debug window, gizmos | NPCBrain.Runtime |
+| `NPCBrain.Demo` | Demo scripts | NPCBrain.Runtime |
+| `NPCBrain.Tests.Editor` | EditMode tests | NPCBrain.Runtime, NUnit |
+| `NPCBrain.Tests.Runtime` | PlayMode tests | NPCBrain.Runtime, NUnit |
+
+### 5. Namespace Conventions
+
+```csharp
+namespace NPCBrain { }                    // Core: NPCBrain, Blackboard
+namespace NPCBrain.BehaviorTree { }       // BTNode, Selector, Sequence, etc.
+namespace NPCBrain.UtilityAI { }          // UtilityBrain, Consideration, Curves
+namespace NPCBrain.Perception { }         // SightSensor, Memory, TargetSelector
+namespace NPCBrain.Criticality { }        // CriticalityController, Telemetry
+```
+
+### 6. Movement Integration
+
+`MoveTo` action uses this fallback chain:
+
+```csharp
+public class MoveTo : BTNode
+{
+    public override NodeStatus Tick(NPCBrain brain)
+    {
+        // Priority order:
+        // 1. EasyPathAgent (if present)
+        // 2. NavMeshAgent (if present)  
+        // 3. Direct transform movement (always works)
+        
+        var agent = brain.GetComponent<EasyPathAgent>();
+        if (agent != null) return MoveViaEasyPath(agent);
+        
+        var nav = brain.GetComponent<NavMeshAgent>();
+        if (nav != null) return MoveViaNavMesh(nav);
+        
+        return MoveDirectly(brain.transform);
+    }
+}
+```
+
+### 7. Events
+
+```csharp
+public class NPCBrain : MonoBehaviour
+{
+    // Perception events
+    public event Action<GameObject> OnTargetAcquired;
+    public event Action<GameObject> OnTargetLost;
+    
+    // State events  
+    public event Action<string> OnStateChanged;
+    
+    // Blackboard events
+    public event Action<string, object> OnBlackboardChanged;
+}
+```
+
+### 8. Edge Cases
+
+| Situation | Behavior |
+|-----------|----------|
+| No targets visible | `SightSensor.GetVisibleTargets()` returns empty list |
+| Blackboard key missing | `Get<T>(key, default)` returns default value |
+| Destination unreachable | `MoveTo` returns `Failure` after timeout |
+| Null target in Blackboard | Conditions check for null, return `Failure` |
+| No waypoints assigned | `WaypointPath.GetNext()` returns current position |
+| BT node throws exception | Caught, logged, returns `Failure` |
+
+### 9. Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| NPCs at 60 FPS | 100+ |
+| Per-NPC tick cost | < 0.1ms |
+| Memory per NPC | < 1KB (excluding Unity overhead) |
+| Perception raycasts | Max 3 per NPC per frame |
+
+### 10. Unity Compatibility
+
+- **Minimum:** Unity 2021.3 LTS
+- **Target:** Unity 6 (6000.x)
+- **Tested:** Unity 6000.3.4f1
+
+---
+
+## Pre-Coding Checklist
+
+- [x] Architecture decisions documented
+- [x] User workflow defined (archetype pattern)
+- [x] Tick order specified
+- [x] Assembly definitions planned
+- [x] Namespaces defined
+- [x] Integration pattern for movement
+- [x] Events designed
+- [x] Edge cases handled
+- [x] Performance targets set
+
+**Status: ✅ Ready to code**
+
+---
+
 ## Next Step
 
 **Start coding Week 1: Core Framework**
