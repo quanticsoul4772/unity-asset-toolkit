@@ -1,20 +1,21 @@
 namespace NPCBrain.BehaviorTree.Composites
 {
-    public class Sequence : BTNode
+    /// <summary>
+    /// Executes children in order until one fails or returns running.
+    /// Returns Success if all children succeed, Failure if any child fails.
+    /// </summary>
+    public class Sequence : CompositeNode
     {
-        private readonly BTNode[] _children;
-        private int _currentChild = 0;
-        
-        public Sequence(params BTNode[] children)
+        public Sequence(params BTNode[] children) : base(children)
         {
-            _children = children;
+            Name = "Sequence";
         }
         
-        public override NodeStatus Tick(NPCBrainController brain)
+        protected override NodeStatus Tick(NPCBrainController brain)
         {
-            while (_currentChild < _children.Length)
+            while (CurrentChildIndex < Children.Length)
             {
-                NodeStatus status = _children[_currentChild].Tick(brain);
+                NodeStatus status = Children[CurrentChildIndex].Execute(brain);
                 
                 if (status == NodeStatus.Running)
                 {
@@ -23,25 +24,13 @@ namespace NPCBrain.BehaviorTree.Composites
                 
                 if (status == NodeStatus.Failure)
                 {
-                    _currentChild = 0;
                     return NodeStatus.Failure;
                 }
                 
-                _currentChild++;
+                CurrentChildIndex++;
             }
             
-            _currentChild = 0;
             return NodeStatus.Success;
-        }
-        
-        public override void OnEnter(NPCBrainController brain)
-        {
-            _currentChild = 0;
-        }
-        
-        public override void OnExit(NPCBrainController brain)
-        {
-            _currentChild = 0;
         }
     }
 }

@@ -6,34 +6,22 @@ namespace NPCBrain.BehaviorTree.Actions
     {
         private readonly float _duration;
         private float _startTime;
-        private bool _isWaiting;
         
         public Wait(float duration)
         {
             _duration = duration;
+            Name = "Wait";
         }
         
-        public override void OnEnter(NPCBrainController brain)
+        protected override void OnEnter(NPCBrainController brain)
         {
             _startTime = Time.time;
-            _isWaiting = true;
         }
         
-        public override void OnExit(NPCBrainController brain)
+        protected override NodeStatus Tick(NPCBrainController brain)
         {
-            _isWaiting = false;
-        }
-        
-        public override NodeStatus Tick(NPCBrainController brain)
-        {
-            if (!_isWaiting)
-            {
-                OnEnter(brain);
-            }
-            
             if (Time.time - _startTime >= _duration)
             {
-                _isWaiting = false;
                 return NodeStatus.Success;
             }
             

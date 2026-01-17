@@ -28,17 +28,14 @@ namespace NPCBrain.Demo
         [ContextMenu("Generate Test Scene")]
         public void GenerateTestScene()
         {
-            // Create ground plane
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
             ground.transform.localScale = new Vector3(3, 1, 3);
             ground.GetComponent<Renderer>().material.color = new Color(0.3f, 0.3f, 0.3f);
             
-            // Create waypoint container
             var waypointContainer = new GameObject("Waypoints");
             _waypointPath = waypointContainer.AddComponent<WaypointPath>();
             
-            // Create waypoints in a circle
             var waypointList = new System.Collections.Generic.List<Transform>();
             
             for (int i = 0; i < _waypointCount; i++)
@@ -55,7 +52,6 @@ namespace NPCBrain.Demo
                 waypoint.transform.parent = waypointContainer.transform;
                 waypointList.Add(waypoint.transform);
                 
-                // Visual marker
                 var marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 marker.name = "Marker";
                 marker.transform.parent = waypoint.transform;
@@ -67,13 +63,11 @@ namespace NPCBrain.Demo
             
             _waypointPath.SetWaypoints(waypointList);
             
-            // Create NPC
             _npcObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             _npcObject.name = "TestNPC";
             _npcObject.transform.position = new Vector3(0, 1, 0);
             _npcObject.GetComponent<Renderer>().material.color = Color.blue;
             
-            // Add PatrolNPC component
             var brain = _npcObject.AddComponent<PatrolNPC>();
             brain.SetWaypointPath(_waypointPath);
             
@@ -82,7 +76,7 @@ namespace NPCBrain.Demo
         
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 300, 200));
+            GUILayout.BeginArea(new Rect(10, 10, 350, 250));
             GUILayout.Label("NPCBrain Test Scene", GUI.skin.box);
             
             if (_npcObject != null)
@@ -91,6 +85,7 @@ namespace NPCBrain.Demo
                 if (brain != null)
                 {
                     GUILayout.Label($"Status: {brain.LastStatus}");
+                    GUILayout.Label($"Paused: {brain.IsPaused}");
                     GUILayout.Label($"Position: {_npcObject.transform.position:F1}");
                     
                     if (brain.WaypointPath != null)
@@ -98,7 +93,24 @@ namespace NPCBrain.Demo
                         GUILayout.Label($"Current Waypoint: {brain.WaypointPath.CurrentIndex}");
                     }
                     
-                    GUILayout.Space(10);
+                    if (brain.BehaviorTree != null)
+                    {
+                        GUILayout.Label($"BT Node: {brain.BehaviorTree.Name ?? "(unnamed)"}");
+                        GUILayout.Label($"BT Running: {brain.BehaviorTree.IsRunning}");
+                    }
+                    
+                    GUILayout.Space(5);
+                    GUILayout.BeginHorizontal();
+                    if (GUILayout.Button(brain.IsPaused ? "Resume" : "Pause"))
+                    {
+                        if (brain.IsPaused)
+                            brain.Resume();
+                        else
+                            brain.Pause();
+                    }
+                    GUILayout.EndHorizontal();
+                    
+                    GUILayout.Space(5);
                     GUILayout.Label("Blackboard:");
                     foreach (var key in brain.Blackboard.Keys)
                     {
@@ -116,11 +128,13 @@ namespace NPCBrain.Demo
     {
         protected override BTNode CreateBehaviorTree()
         {
-            return new Sequence(
+            var tree = new Sequence(
                 new MoveTo(() => GetCurrentWaypoint()),
                 new Wait(1f),
                 new AdvanceWaypoint()
             );
+            tree.Name = "PatrolSequence";
+            return tree;
         }
     }
 }

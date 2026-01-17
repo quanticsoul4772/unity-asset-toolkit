@@ -39,7 +39,12 @@ namespace NPCBrain.Demo
     
     public class AdvanceWaypoint : BTNode
     {
-        public override NodeStatus Tick(NPCBrainController brain)
+        public AdvanceWaypoint()
+        {
+            Name = "AdvanceWaypoint";
+        }
+        
+        protected override NodeStatus Tick(NPCBrainController brain)
         {
             if (brain.WaypointPath != null)
             {

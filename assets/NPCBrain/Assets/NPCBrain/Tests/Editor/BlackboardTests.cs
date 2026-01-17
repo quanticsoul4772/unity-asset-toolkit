@@ -136,5 +136,46 @@ namespace NPCBrain.Tests.Editor
             
             Assert.IsTrue(result);
         }
+        
+        [Test]
+        public void TryGet_ExistingKey_ReturnsTrue()
+        {
+            _blackboard.Set("health", 100);
+            
+            bool result = _blackboard.TryGet<int>("health", out int value);
+            
+            Assert.IsTrue(result);
+            Assert.AreEqual(100, value);
+        }
+        
+        [Test]
+        public void TryGet_MissingKey_ReturnsFalse()
+        {
+            bool result = _blackboard.TryGet<int>("missing", out int value);
+            
+            Assert.IsFalse(result);
+            Assert.AreEqual(0, value);
+        }
+        
+        [Test]
+        public void TryGet_WrongType_ReturnsFalse()
+        {
+            _blackboard.Set("health", "not an int");
+            
+            bool result = _blackboard.TryGet<int>("health", out int value);
+            
+            Assert.IsFalse(result);
+        }
+        
+        [Test]
+        public void SetWithTTL_OnValueChanged_Fires()
+        {
+            string changedKey = null;
+            _blackboard.OnValueChanged += (key, value) => changedKey = key;
+            
+            _blackboard.SetWithTTL("temp", 100, 5f);
+            
+            Assert.AreEqual("temp", changedKey);
+        }
     }
 }

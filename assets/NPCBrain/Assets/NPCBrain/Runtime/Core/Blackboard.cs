@@ -5,28 +5,85 @@ namespace NPCBrain
 {
     public class Blackboard
     {
-        private readonly Dictionary<string, object> _data = new Dictionary<string, object>();
+        private struct Entry
+        {
+            public object Value;
+            public float ExpirationTime;
+            public bool HasExpiration;
+        }
+        
+        private readonly Dictionary<string, Entry> _data = new Dictionary<string, Entry>();
+        private readonly List<string> _keysToRemove = new List<string>();
         
         public event Action<string, object> OnValueChanged;
+        public event Action<string> OnValueExpired;
         
         public void Set<T>(string key, T value)
         {
-            _data[key] = value;
+            _data[key] = new Entry { Value = value, HasExpiration = false };
+            OnValueChanged?.Invoke(key, value);
+        }
+        
+        public void SetWithTTL<T>(string key, T value, float ttlSeconds)
+        {
+            _data[key] = new Entry
+            {
+                Value = value,
+                ExpirationTime = UnityEngine.Time.time + ttlSeconds,
+                HasExpiration = true
+            };
             OnValueChanged?.Invoke(key, value);
         }
         
         public T Get<T>(string key, T defaultValue = default)
         {
-            if (_data.TryGetValue(key, out object value) && value is T typedValue)
+            if (TryGet<T>(key, out T value))
             {
-                return typedValue;
+                return value;
             }
             return defaultValue;
         }
         
+        public bool TryGet<T>(string key, out T value)
+        {
+            value = default;
+            
+            if (!_data.TryGetValue(key, out Entry entry))
+            {
+                return false;
+            }
+            
+            if (entry.HasExpiration && UnityEngine.Time.time >= entry.ExpirationTime)
+            {
+                _data.Remove(key);
+                OnValueExpired?.Invoke(key);
+                return false;
+            }
+            
+            if (entry.Value is T typedValue)
+            {
+                value = typedValue;
+                return true;
+            }
+            
+            return false;
+        }
+        
         public bool Has(string key)
         {
-            return _data.ContainsKey(key);
+            if (!_data.TryGetValue(key, out Entry entry))
+            {
+                return false;
+            }
+            
+            if (entry.HasExpiration && UnityEngine.Time.time >= entry.ExpirationTime)
+            {
+                _data.Remove(key);
+                OnValueExpired?.Invoke(key);
+                return false;
+            }
+            
+            return true;
         }
         
         public bool Remove(string key)
@@ -39,6 +96,49 @@ namespace NPCBrain
             _data.Clear();
         }
         
-        public IEnumerable<string> Keys => _data.Keys;
+        public void CleanupExpired()
+        {
+            _keysToRemove.Clear();
+            float currentTime = UnityEngine.Time.time;
+            
+            foreach (var kvp in _data)
+            {
+                if (kvp.Value.HasExpiration && currentTime >= kvp.Value.ExpirationTime)
+                {
+                    _keysToRemove.Add(kvp.Key);
+                }
+            }
+            
+            foreach (var key in _keysToRemove)
+            {
+                _data.Remove(key);
+                OnValueExpired?.Invoke(key);
+            }
+        }
+        
+        public IEnumerable<string> Keys
+        {
+            get
+            {
+                _keysToRemove.Clear();
+                float currentTime = UnityEngine.Time.time;
+                
+                foreach (var kvp in _data)
+                {
+                    if (kvp.Value.HasExpiration && currentTime >= kvp.Value.ExpirationTime)
+                    {
+                        _keysToRemove.Add(kvp.Key);
+                    }
+                }
+                
+                foreach (var key in _keysToRemove)
+                {
+                    _data.Remove(key);
+                    OnValueExpired?.Invoke(key);
+                }
+                
+                return _data.Keys;
+            }
+        }
     }
 }

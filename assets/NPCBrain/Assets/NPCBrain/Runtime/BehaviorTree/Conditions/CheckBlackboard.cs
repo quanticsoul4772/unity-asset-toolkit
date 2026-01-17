@@ -2,61 +2,52 @@ using System;
 
 namespace NPCBrain.BehaviorTree.Conditions
 {
-    public class CheckBlackboard : BTNode
-    {
-        private readonly string _key;
-        private readonly Func<object, bool> _predicate;
-        
-        public CheckBlackboard(string key)
-        {
-            _key = key;
-            _predicate = value => value != null;
-        }
-        
-        public CheckBlackboard(string key, Func<object, bool> predicate)
-        {
-            _key = key;
-            _predicate = predicate;
-        }
-        
-        public override NodeStatus Tick(NPCBrainController brain)
-        {
-            if (!brain.Blackboard.Has(_key))
-            {
-                return NodeStatus.Failure;
-            }
-            
-            object value = brain.Blackboard.Get<object>(_key);
-            return _predicate(value) ? NodeStatus.Success : NodeStatus.Failure;
-        }
-    }
-    
+    /// <summary>
+    /// Checks if a blackboard key exists and optionally validates it with a predicate.
+    /// </summary>
     public class CheckBlackboard<T> : BTNode
     {
         private readonly string _key;
         private readonly Func<T, bool> _predicate;
         
-        public CheckBlackboard(string key, Func<T, bool> predicate)
+        public CheckBlackboard(string key) : this(key, null)
         {
-            _key = key;
-            _predicate = predicate;
         }
         
-        public override NodeStatus Tick(NPCBrainController brain)
+        public CheckBlackboard(string key, Func<T, bool> predicate)
         {
-            if (!brain.Blackboard.Has(_key))
+            _key = key ?? throw new ArgumentNullException(nameof(key));
+            _predicate = predicate;
+            Name = $"CheckBlackboard({key})";
+        }
+        
+        protected override NodeStatus Tick(NPCBrainController brain)
+        {
+            if (!brain.Blackboard.TryGet<T>(_key, out T value))
             {
                 return NodeStatus.Failure;
             }
             
-            object rawValue = brain.Blackboard.Get<object>(_key);
-            if (!(rawValue is T))
+            if (_predicate == null)
             {
-                return NodeStatus.Failure;
+                return NodeStatus.Success;
             }
             
-            T value = (T)rawValue;
             return _predicate(value) ? NodeStatus.Success : NodeStatus.Failure;
+        }
+    }
+    
+    /// <summary>
+    /// Non-generic version for simple key existence checks.
+    /// </summary>
+    public class CheckBlackboard : CheckBlackboard<object>
+    {
+        public CheckBlackboard(string key) : base(key)
+        {
+        }
+        
+        public CheckBlackboard(string key, Func<object, bool> predicate) : base(key, predicate)
+        {
         }
     }
 }

@@ -7,59 +7,83 @@ namespace NPCBrain.BehaviorTree.Actions
     public class MoveTo : BTNode
     {
         private readonly Func<Vector3> _targetGetter;
-        private readonly float _arrivalDistance;
+        private readonly float _arrivalDistanceSqr;
         private readonly float _moveSpeed;
         private readonly float _timeout;
         
         private float _startTime;
-        private bool _isMoving;
+        private NavMeshAgent _cachedNavAgent;
+        private bool _navAgentCached;
         
-        public MoveTo(Func<Vector3> targetGetter, float arrivalDistance = 0.5f, float moveSpeed = 5f, float timeout = 30f)
+        public MoveTo(Func<Vector3> targetGetter, float arrivalDistance, float moveSpeed, float timeout)
         {
-            _targetGetter = targetGetter;
-            _arrivalDistance = arrivalDistance;
+            _targetGetter = targetGetter ?? throw new ArgumentNullException(nameof(targetGetter));
+            _arrivalDistanceSqr = arrivalDistance * arrivalDistance;
             _moveSpeed = moveSpeed;
             _timeout = timeout;
+            Name = "MoveTo";
         }
         
-        public override void OnEnter(NPCBrainController brain)
+        public MoveTo(Func<Vector3> targetGetter, float arrivalDistance, float moveSpeed)
+            : this(targetGetter, arrivalDistance, moveSpeed, 30f)
+        {
+        }
+        
+        public MoveTo(Func<Vector3> targetGetter, float arrivalDistance)
+            : this(targetGetter, arrivalDistance, 5f, 30f)
+        {
+        }
+        
+        public MoveTo(Func<Vector3> targetGetter)
+            : this(targetGetter, 0.5f, 5f, 30f)
+        {
+        }
+        
+        protected override void OnEnter(NPCBrainController brain)
         {
             _startTime = Time.time;
-            _isMoving = true;
-        }
-        
-        public override void OnExit(NPCBrainController brain)
-        {
-            _isMoving = false;
-        }
-        
-        public override NodeStatus Tick(NPCBrainController brain)
-        {
-            if (!_isMoving)
-            {
-                OnEnter(brain);
-            }
             
+            if (!_navAgentCached)
+            {
+                _cachedNavAgent = brain.GetComponent<NavMeshAgent>();
+                _navAgentCached = true;
+            }
+        }
+        
+        protected override void OnExit(NPCBrainController brain)
+        {
+            if (_cachedNavAgent != null && _cachedNavAgent.isOnNavMesh)
+            {
+                _cachedNavAgent.ResetPath();
+            }
+        }
+        
+        public override void Reset()
+        {
+            base.Reset();
+            _navAgentCached = false;
+            _cachedNavAgent = null;
+        }
+        
+        protected override NodeStatus Tick(NPCBrainController brain)
+        {
             Vector3 target = _targetGetter();
             Vector3 currentPos = brain.transform.position;
-            float distance = Vector3.Distance(currentPos, target);
+            float distanceSqr = (currentPos - target).sqrMagnitude;
             
-            if (distance <= _arrivalDistance)
+            if (distanceSqr <= _arrivalDistanceSqr)
             {
-                _isMoving = false;
                 return NodeStatus.Success;
             }
             
             if (Time.time - _startTime > _timeout)
             {
-                _isMoving = false;
                 return NodeStatus.Failure;
             }
             
-            NavMeshAgent navAgent = brain.GetComponent<NavMeshAgent>();
-            if (navAgent != null)
+            if (_cachedNavAgent != null && _cachedNavAgent.isOnNavMesh)
             {
-                return MoveViaNavMesh(navAgent, target);
+                return MoveViaNavMesh(_cachedNavAgent, target);
             }
             
             return MoveDirectly(brain.transform, target);
@@ -79,7 +103,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 return NodeStatus.Failure;
             }
             
-            if (agent.remainingDistance <= _arrivalDistance && !agent.pathPending)
+            if (agent.remainingDistance * agent.remainingDistance <= _arrivalDistanceSqr && !agent.pathPending)
             {
                 return NodeStatus.Success;
             }
