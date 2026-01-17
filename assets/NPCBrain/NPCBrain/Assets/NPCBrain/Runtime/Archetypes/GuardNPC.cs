@@ -166,11 +166,11 @@ namespace NPCBrain.Archetypes
                 new CheckBlackboard("target"),
                 new CheckBlackboard<float>("alertLevel", level => level > 0.2f),
                 // Check target is within chase range
-                new Conditions.CheckDistance(
+                new CheckDistance(
                     brain => brain.transform.position,
                     brain => GetTargetPositionForCheck(brain),
                     _maxChaseDistance,
-                    Conditions.CheckDistance.ComparisonType.LessThanOrEqual
+                    CheckDistance.ComparisonType.LessThanOrEqual
                 ),
                 new MoveTo(
                     () => GetTargetPosition(),

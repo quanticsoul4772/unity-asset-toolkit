@@ -184,7 +184,7 @@ namespace NPCBrain.Tests.Editor
             }
             controller.Update();
             
-            // History should now be: 5 zeros + 10 ones = 15:10 = mix
+            // History should now be: 10 zeros + 10 ones (5 zeros dropped due to overflow)
             // Should have non-zero entropy
             Assert.Greater(controller.Entropy, 0f, 
                 "After overflow, history should contain a mix of actions with non-zero entropy");
