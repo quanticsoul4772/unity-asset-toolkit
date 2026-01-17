@@ -38,6 +38,7 @@ namespace SwarmAI.Demo
         private static bool _actionNPressed;
         private static bool _actionFPressed;
         private static bool _actionXPressed;
+        private static bool _actionJPressed;
         private static bool _plusPressed;
         private static bool _minusPressed;
 
@@ -77,6 +78,7 @@ namespace SwarmAI.Demo
             _actions.Demo.ActionN.performed += _ => _actionNPressed = true;
             _actions.Demo.ActionF.performed += _ => _actionFPressed = true;
             _actions.Demo.ActionX.performed += _ => _actionXPressed = true;
+            _actions.Demo.ActionJ.performed += _ => _actionJPressed = true;
             _actions.Demo.Plus.performed += _ => _plusPressed = true;
             _actions.Demo.Minus.performed += _ => _minusPressed = true;
             
@@ -117,6 +119,7 @@ namespace SwarmAI.Demo
             _actionNPressed = false;
             _actionFPressed = false;
             _actionXPressed = false;
+            _actionJPressed = false;
             _plusPressed = false;
             _minusPressed = false;
         }
@@ -346,6 +349,16 @@ namespace SwarmAI.Demo
             {
                 EnsureInitialized();
                 return _actionXPressed;
+            }
+        }
+        
+        /// <summary>True the frame J key was pressed.</summary>
+        public static bool ActionJPressed
+        {
+            get
+            {
+                EnsureInitialized();
+                return _actionJPressed;
             }
         }
         

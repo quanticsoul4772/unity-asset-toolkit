@@ -4,6 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using System.IO;
 using System.Collections.Generic;
+using SwarmAI.Jobs;
 
 namespace SwarmAI.Editor
 {
@@ -37,11 +38,12 @@ namespace SwarmAI.Editor
             
             bool proceed = EditorUtility.DisplayDialog(
                 "Create All Demo Scenes",
-                "This will create 4 demo scenes:\n\n" +
+                "This will create 5 demo scenes:\n\n" +
                 "- SwarmAI_FlockingDemo (30 agents)\n" +
                 "- SwarmAI_FormationDemo (10 agents)\n" +
                 "- SwarmAI_ResourceGatheringDemo (15 agents)\n" +
-                "- SwarmAI_CombatFormationsDemo (10 agents)\n\n" +
+                "- SwarmAI_CombatFormationsDemo (10 agents)\n" +
+                "- SwarmAI_MassSwarmDemo (500 agents - Jobs/Burst)\n\n" +
                 "Any existing scenes with the same names will be overwritten.\n\n" +
                 "Continue?",
                 "Create All",
@@ -53,14 +55,17 @@ namespace SwarmAI.Editor
             EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Flocking Demo...", 0.1f);
             CreateFlockingScene("SwarmAI_FlockingDemo", 30);
             
-            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Formation Demo...", 0.3f);
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Formation Demo...", 0.25f);
             CreateFormationScene("SwarmAI_FormationDemo", 10);
             
-            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Resource Gathering Demo...", 0.5f);
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Resource Gathering Demo...", 0.4f);
             CreateResourceGatheringScene("SwarmAI_ResourceGatheringDemo", 15);
             
-            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Combat Formations Demo...", 0.7f);
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Combat Formations Demo...", 0.55f);
             CreateCombatFormationsScene("SwarmAI_CombatFormationsDemo", 10);
+            
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Mass Swarm Demo (500 agents)...", 0.7f);
+            CreateMassSwarmScene("SwarmAI_MassSwarmDemo", 500);
             
             EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Refreshing assets...", 0.9f);
             AssetDatabase.Refresh();
@@ -69,7 +74,7 @@ namespace SwarmAI.Editor
             
             EditorUtility.DisplayDialog(
                 "Demo Scenes Created",
-                "All 4 demo scenes have been created successfully!\n\n" +
+                "All 5 demo scenes have been created successfully!\n\n" +
                 "Location: Assets/EasyPath/Assets/SwarmAI/Demo/Scenes/\n\n" +
                 "Next steps:\n" +
                 "1. Open a demo scene\n" +
@@ -107,6 +112,13 @@ namespace SwarmAI.Editor
         {
             if (!CheckUnityVersionCompatibility()) return;
             CreateCombatFormationsScene("SwarmAI_CombatFormationsDemo", 10);
+        }
+
+        [MenuItem("SwarmAI/Create Demo Scene/Mass Swarm Demo (500 Agents - Jobs+Burst)", false, 104)]
+        public static void CreateMassSwarmDemoScene()
+        {
+            if (!CheckUnityVersionCompatibility()) return;
+            CreateMassSwarmScene("SwarmAI_MassSwarmDemo", 500);
         }
 
         [MenuItem("SwarmAI/Validate Package", false, 150)]
@@ -294,7 +306,8 @@ namespace SwarmAI.Editor
                 "SwarmAI_FlockingDemo.unity",
                 "SwarmAI_FormationDemo.unity",
                 "SwarmAI_ResourceGatheringDemo.unity",
-                "SwarmAI_CombatFormationsDemo.unity"
+                "SwarmAI_CombatFormationsDemo.unity",
+                "SwarmAI_MassSwarmDemo.unity"
             };
             
             foreach (string scene in expectedScenes)
@@ -569,6 +582,48 @@ namespace SwarmAI.Editor
             Debug.Log($"[SwarmAI] Combat formations demo scene created with {agentCount} agents (2 teams of {halfCount})");
         }
 
+        private static void CreateMassSwarmScene(string sceneName, int agentCount)
+        {
+            Scene newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            GameObject environmentRoot = new GameObject("Environment");
+            GameObject agentsRoot = new GameObject("Agents");
+            GameObject controllersRoot = new GameObject("Controllers");
+
+            // Larger ground for 500+ agents
+            CreateGround(environmentRoot.transform, 80f);
+            CreateLighting();
+            // Higher camera to see all agents
+            CreateCamera(new Vector3(0, 50f, -30f), 60f, true);
+
+            // Create SwarmManager with Jobs system
+            CreateSwarmManagerWithJobs(controllersRoot.transform);
+
+            // Create agents in a large cluster
+            float spawnRadius = 25f;
+            for (int i = 0; i < agentCount; i++)
+            {
+                Color color = AgentColors[i % AgentColors.Length];
+                CreateSwarmAgent(agentsRoot.transform, i, agentCount, Vector3.zero, spawnRadius, color);
+            }
+
+            // Create demo controller
+            GameObject demoController = new GameObject("Mass Swarm Demo Controller");
+            demoController.transform.SetParent(controllersRoot.transform);
+            var massSwarmDemo = demoController.AddComponent<Demo.MassSwarmDemo>();
+            
+            SerializedObject so = new SerializedObject(massSwarmDemo);
+            so.FindProperty("_demoTitle").stringValue = "SwarmAI - Mass Swarm Demo (Jobs/Burst)";
+            so.FindProperty("_autoSpawnAgents").boolValue = false;
+            so.FindProperty("_agentCount").intValue = agentCount;
+            so.FindProperty("_initialAgentCount").intValue = agentCount;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            SaveDemoScene(newScene, sceneName);
+
+            Debug.Log($"[SwarmAI] Mass swarm demo scene created with {agentCount} agents (Jobs/Burst enabled)");
+        }
+
         #endregion
 
         #region Helper Methods
@@ -660,6 +715,29 @@ namespace SwarmAI.Editor
             GameObject managerObj = new GameObject("SwarmManager");
             managerObj.transform.SetParent(parent);
             managerObj.AddComponent<SwarmManager>();
+        }
+
+        private static void CreateSwarmManagerWithJobs(Transform parent)
+        {
+            GameObject managerObj = new GameObject("SwarmManager");
+            managerObj.transform.SetParent(parent);
+            managerObj.AddComponent<SwarmManager>();
+            
+            // Add Jobs system components
+            var jobSystem = managerObj.AddComponent<Jobs.SwarmJobSystem>();
+            var benchmark = managerObj.AddComponent<Jobs.JobsBenchmark>();
+            
+            // Configure Jobs system for large swarms
+            SerializedObject jobsSo = new SerializedObject(jobSystem);
+            jobsSo.FindProperty("_useJobs").boolValue = true;
+            jobsSo.FindProperty("_minAgentsForJobs").intValue = 50;
+            jobsSo.FindProperty("_batchSize").intValue = 64;
+            jobsSo.FindProperty("_showDebugInfo").boolValue = true;
+            jobsSo.ApplyModifiedPropertiesWithoutUndo();
+            
+            SerializedObject benchmarkSo = new SerializedObject(benchmark);
+            benchmarkSo.FindProperty("_showBenchmark").boolValue = true;
+            benchmarkSo.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static GameObject CreateSwarmAgent(Transform parent, int index, int total, Vector3 center, float radius, Color? colorOverride = null)

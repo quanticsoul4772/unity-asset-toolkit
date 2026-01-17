@@ -282,6 +282,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "ActionJ",
+                    "type": "Button",
+                    "id": "a0b1c2d3-e4f5-6789-4567-890123456780",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Plus",
                     "type": "Button",
                     "id": "a1b2c3d4-e5f6-7890-4567-890123456789",
@@ -483,6 +492,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "ActionX",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b0c1d2e3-f4a5-6789-4567-890123456781",
+                    "path": "<Keyboard>/j",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ActionJ",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
