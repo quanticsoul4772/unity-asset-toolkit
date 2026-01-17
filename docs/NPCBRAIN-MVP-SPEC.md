@@ -233,12 +233,12 @@ Deferred to v2.0 (archived in docs/archive/):
 
 ## Success Criteria
 
-1. ✅ 5-minute setup for new users
-2. ✅ BT + Utility AI hybrid works
-3. ✅ Sight perception detects targets
-4. ✅ Criticality auto-tunes behavior
-5. ✅ 2 ready-to-use archetypes
-6. ✅ Basic debug visualization
+1. 5-minute setup for new users
+2. BT + Utility AI hybrid works
+3. Sight perception detects targets
+4. Criticality auto-tunes behavior
+5. 2 ready-to-use archetypes
+6. Basic debug visualization
 
 ---
 
@@ -400,7 +400,7 @@ public class NPCBrain : MonoBehaviour
 - [x] Edge cases handled
 - [x] Performance targets set
 
-**Status: ✅ Ready to code**
+**Status: Ready to code**
 
 ---
 
