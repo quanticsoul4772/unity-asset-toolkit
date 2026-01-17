@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EasyPath;
 
 namespace SwarmAI
 {
@@ -39,7 +38,8 @@ namespace SwarmAI
         private Vector3 _targetPosition;
         private bool _hasTarget;
         private List<WeightedBehavior> _behaviors;
-        private EasyPathAgent _pathAgent;
+        // Placeholder for future pathfinding integration
+        // private EasyPathAgent _pathAgent;
         private List<SwarmAgent> _cachedNeighbors;
         private float _lastNeighborQueryTime;
         
@@ -138,10 +138,8 @@ namespace SwarmAI
         /// </summary>
         public bool IsRegistered => _agentId >= 0;
         
-        /// <summary>
-        /// EasyPath agent component (optional, for pathfinding).
-        /// </summary>
-        public EasyPathAgent PathAgent => _pathAgent;
+        // Placeholder for future pathfinding integration
+        // public EasyPathAgent PathAgent => _pathAgent;
         
         /// <summary>
         /// Whether the agent's position has changed since last spatial hash update.
@@ -186,7 +184,8 @@ namespace SwarmAI
         {
             _behaviors = new List<WeightedBehavior>();
             _cachedNeighbors = new List<SwarmAgent>();
-            _pathAgent = GetComponent<EasyPathAgent>();
+            // Placeholder for future pathfinding integration
+            // _pathAgent = GetComponent<EasyPathAgent>();
             _lastSpatialHashPosition = transform.position;
             
             // Set initial state
@@ -269,11 +268,11 @@ namespace SwarmAI
             _targetPosition = position;
             _hasTarget = true;
             
-            // Use EasyPath if available
-            if (_pathAgent != null)
-            {
-                _pathAgent.SetDestination(position);
-            }
+            // Placeholder for future pathfinding integration
+            // if (_pathAgent != null)
+            // {
+            //     _pathAgent.SetDestination(position);
+            // }
         }
         
         /// <summary>
@@ -283,10 +282,11 @@ namespace SwarmAI
         {
             _hasTarget = false;
             
-            if (_pathAgent != null)
-            {
-                _pathAgent.Stop();
-            }
+            // Placeholder for future pathfinding integration
+            // if (_pathAgent != null)
+            // {
+            //     _pathAgent.Stop();
+            // }
         }
         
         /// <summary>
@@ -366,8 +366,8 @@ namespace SwarmAI
                 Debug.Log($"[SwarmAgent {name}]   Behaviors skipped (Jobs system active), steering force from Jobs: {_steeringForce}");
             }
             
-            // Add seek force if we have a target and no pathfinding agent
-            if (_hasTarget && _pathAgent == null)
+            // Add seek force if we have a target
+            if (_hasTarget)
             {
                 Vector3 toTarget = _targetPosition - Position;
                 float distance = toTarget.magnitude;
@@ -408,16 +408,12 @@ namespace SwarmAI
         {
             bool shouldLog = _verboseDebug && (Time.time - _lastDebugLogTime >= DebugLogInterval);
             
-            // Skip if using pathfinding agent for movement
-            if (_pathAgent != null && _pathAgent.IsMoving)
-            {
-                _velocity = (_pathAgent.Destination - Position).normalized * _pathAgent.Speed;
-                if (shouldLog)
-                {
-                    Debug.Log($"[SwarmAgent {name}] ApplyMovement: Using EasyPathAgent, velocity={_velocity}");
-                }
-                return;
-            }
+            // Placeholder for future pathfinding integration
+            // if (_pathAgent != null && _pathAgent.IsMoving)
+            // {
+            //     _velocity = (_pathAgent.Destination - Position).normalized * _pathAgent.Speed;
+            //     return;
+            // }
             
             // Apply steering force (F = ma, so a = F/m)
             Vector3 acceleration = _steeringForce / _mass;
