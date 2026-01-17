@@ -206,8 +206,8 @@ namespace SwarmAI.Demo
         
         private void HandleCombatInput()
         {
-            // Tab - Switch selected team
-            if (Input.GetKeyDown(KeyCode.Tab))
+            // Space - Switch selected team (was Tab, but Tab not in Input System)
+            if (SwarmDemoInput.SpacePressed)
             {
                 _selectedTeam = _selectedTeam == 1 ? 2 : 1;
                 Debug.Log($"[CombatFormationsDemo] Selected Team {_selectedTeam}");
@@ -221,20 +221,20 @@ namespace SwarmAI.Demo
             if (SwarmDemoInput.Number5Pressed) SetFormation(CombatFormationType.V);
             if (SwarmDemoInput.Number6Pressed) SetFormation(CombatFormationType.Box);
             
-            // A - Attack (move toward enemy)
-            if (Input.GetKeyDown(KeyCode.A))
+            // G - Attack (move toward enemy) - G for "Go"
+            if (SwarmDemoInput.ActionGPressed)
             {
                 Attack();
             }
             
             // R - Retreat
-            if (Input.GetKeyDown(KeyCode.R))
+            if (SwarmDemoInput.ResetPressed)
             {
                 Retreat();
             }
             
             // H - Hold position
-            if (Input.GetKeyDown(KeyCode.H))
+            if (SwarmDemoInput.ActionHPressed)
             {
                 HoldPosition();
             }
@@ -351,10 +351,10 @@ namespace SwarmAI.Demo
             
             GUILayout.Space(5);
             GUILayout.Label("Controls:");
-            GUILayout.Label("• Tab - Switch team");
+            GUILayout.Label("• Space - Switch team");
             GUILayout.Label("• 1-6 - Change formation");
             GUILayout.Label("• Click - Move team");
-            GUILayout.Label("• A - Attack enemy");
+            GUILayout.Label("• G - Attack enemy");
             GUILayout.Label("• R - Retreat");
             GUILayout.Label("• H - Hold position");
             
