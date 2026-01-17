@@ -4,6 +4,9 @@ namespace NPCBrain.BehaviorTree.Decorators
     /// Repeats execution of its child node a specified number of times.
     /// Returns Running until all repetitions complete, then returns the last status.
     /// If repeatCount is -1, repeats forever (always returns Running).
+    /// 
+    /// Note: The child node is Reset() after each completion to allow re-execution.
+    /// This is intentional behavior for repeating actions.
     /// </summary>
     public class Repeater : DecoratorNode
     {
@@ -43,6 +46,7 @@ namespace NPCBrain.BehaviorTree.Decorators
             }
             
             _currentCount++;
+            // Reset child to allow re-execution on next tick
             Child.Reset();
             
             if (_repeatCount == -1)

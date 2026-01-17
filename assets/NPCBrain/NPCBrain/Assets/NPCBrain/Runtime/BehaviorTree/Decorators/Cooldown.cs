@@ -60,9 +60,13 @@ namespace NPCBrain.BehaviorTree.Decorators
             _lastSuccessTime = float.MinValue;
         }
         
+        /// <summary>
+        /// Resets the decorator and clears the cooldown timer.
+        /// </summary>
         public override void Reset()
         {
             base.Reset();
+            ResetCooldown();
         }
         
         public float CooldownTime => _cooldownTime;
