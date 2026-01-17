@@ -31,7 +31,7 @@ Unity Asset Store project for AI/pathfinding tools. C#, Unity 7 LTS, Visual Stud
 ## Project Status 
  
 **Phase:** Development (January 2026) 
-**Current Project:** NPCBrain - All-in-One AI Toolkit
+**Current Project:** NPCBrain - All-in-One AI Toolkit (4-week MVP)
 
 ### EasyPath Status
 **Status:** ✅ Complete! Ready for Asset Store submission

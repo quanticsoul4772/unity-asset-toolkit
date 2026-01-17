@@ -5,11 +5,11 @@ A collection of AI and pathfinding tools for the Unity Asset Store.
 **Repository:** https://github.com/quanticsoul4772/unity-asset-toolkit
  
 ## Project Status 
-**NPCBrain - In Development** (January 2026)
+**NPCBrain - Ready to Build** (January 2026)
 
 - EasyPath ✅ Complete - A* pathfinding working and tested
 - SwarmAI ✅ Complete - Multi-agent coordination with Jobs/Burst
-- NPCBrain 🔄 Starting - All-in-one AI toolkit  
+- NPCBrain 🔄 Ready to Build - All-in-one AI toolkit (4-week MVP)  
  
 ## Development Environment 
 - Unity 6 (6000.3.4f1) 
