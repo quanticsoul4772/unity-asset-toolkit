@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using NPCBrain.Perception;
 
-namespace NPCBrain.Editor.Gizmos
+namespace NPCBrain.Editor
 {
     /// <summary>
     /// Custom editor that draws vision cone gizmos for SightSensor components.
@@ -91,7 +91,7 @@ namespace NPCBrain.Editor.Gizmos
     /// Static class for drawing vision cone gizmos without a custom editor.
     /// Can be called from OnDrawGizmos in any MonoBehaviour.
     /// </summary>
-    public static class VisionConeGizmo
+    public static class VisionConeGizmoHelper
     {
         /// <summary>
         /// Draws a vision cone gizmo for the given sensor.
@@ -111,7 +111,7 @@ namespace NPCBrain.Editor.Gizmos
             // Determine color
             var visibleTargets = sensor.VisibleTargets;
             bool hasTargets = visibleTargets != null && visibleTargets.Count > 0;
-            Gizmos.color = hasTargets 
+            UnityEngine.Gizmos.color = hasTargets 
                 ? new Color(1f, 0.3f, 0.3f, 0.5f) 
                 : new Color(0.3f, 1f, 0.3f, 0.5f);
             
@@ -119,9 +119,9 @@ namespace NPCBrain.Editor.Gizmos
             Vector3 leftDir = Quaternion.Euler(0, -halfAngle, 0) * forward;
             Vector3 rightDir = Quaternion.Euler(0, halfAngle, 0) * forward;
             
-            Gizmos.DrawRay(position, leftDir * viewDistance);
-            Gizmos.DrawRay(position, rightDir * viewDistance);
-            Gizmos.DrawRay(position, forward * viewDistance);
+            UnityEngine.Gizmos.DrawRay(position, leftDir * viewDistance);
+            UnityEngine.Gizmos.DrawRay(position, rightDir * viewDistance);
+            UnityEngine.Gizmos.DrawRay(position, forward * viewDistance);
             
             // Draw arc segments
             int segments = 20;
@@ -133,12 +133,12 @@ namespace NPCBrain.Editor.Gizmos
                 float angle = -halfAngle + angleStep * i;
                 Vector3 dir = Quaternion.Euler(0, angle, 0) * forward;
                 Vector3 point = position + dir * viewDistance;
-                Gizmos.DrawLine(prevPoint, point);
+                UnityEngine.Gizmos.DrawLine(prevPoint, point);
                 prevPoint = point;
             }
             
             // Draw range circle
-            Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
+            UnityEngine.Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
             DrawWireCircle(position, viewDistance, 32);
         }
         
@@ -152,7 +152,7 @@ namespace NPCBrain.Editor.Gizmos
                 float angle = angleStep * i;
                 Vector3 dir = Quaternion.Euler(0, angle, 0) * Vector3.forward;
                 Vector3 point = center + dir * radius;
-                Gizmos.DrawLine(prevPoint, point);
+                UnityEngine.Gizmos.DrawLine(prevPoint, point);
                 prevPoint = point;
             }
         }

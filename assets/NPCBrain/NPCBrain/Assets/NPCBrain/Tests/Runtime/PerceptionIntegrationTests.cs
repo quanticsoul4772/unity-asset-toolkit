@@ -61,8 +61,8 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.GetVisibleTargets();
-            Assert.Contains(_targetObject, (System.Collections.ICollection)visibleTargets, 
+            var visibleTargets = _sightSensor.VisibleTargets;
+            Assert.IsTrue(visibleTargets.Contains(_targetObject), 
                 "Target directly in front should be visible");
         }
         
@@ -79,7 +79,7 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.GetVisibleTargets();
+            var visibleTargets = _sightSensor.VisibleTargets;
             Assert.IsFalse(visibleTargets.Contains(_targetObject), 
                 "Target behind NPC should not be visible");
         }
@@ -97,7 +97,7 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.GetVisibleTargets();
+            var visibleTargets = _sightSensor.VisibleTargets;
             Assert.IsFalse(visibleTargets.Contains(_targetObject), 
                 "Target out of range should not be visible");
         }
@@ -115,7 +115,7 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.GetVisibleTargets();
+            var visibleTargets = _sightSensor.VisibleTargets;
             Assert.IsFalse(visibleTargets.Contains(_targetObject), 
                 "Target outside FOV should not be visible");
         }
@@ -197,7 +197,7 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            var closest = _sightSensor.GetClosestTarget();
+            var closest = _sightSensor.ClosestTarget;
             Assert.AreEqual(_targetObject, closest, "Should return the closest target");
             
             Object.Destroy(farTarget);
@@ -215,11 +215,11 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            Assert.IsTrue(_sightSensor.CanSee(_targetObject), "CanSee should return true for visible target");
+            Assert.IsTrue(_sightSensor.VisibleTargets.Contains(_targetObject), "Should see visible target");
             
             // Create invisible target
             var invisibleTarget = new GameObject("Invisible");
-            Assert.IsFalse(_sightSensor.CanSee(invisibleTarget), "CanSee should return false for non-visible target");
+            Assert.IsFalse(_sightSensor.VisibleTargets.Contains(invisibleTarget), "Should not see non-visible target");
             
             Object.Destroy(invisibleTarget);
         }
@@ -243,7 +243,7 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.GetVisibleTargets();
+            var visibleTargets = _sightSensor.VisibleTargets;
             Assert.IsFalse(visibleTargets.Contains(_npcObject), "NPC should not detect itself");
         }
         
@@ -259,7 +259,7 @@ namespace NPCBrain.Tests.Runtime
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.GetVisibleTargets();
+            var visibleTargets = _sightSensor.VisibleTargets;
             Assert.AreEqual(0, visibleTargets.Count, "Should return empty list when no targets");
         }
         

@@ -165,6 +165,8 @@ namespace NPCBrain.Archetypes
             var sequence = new Sequence(
                 new CheckBlackboard("target"),
                 new CheckBlackboard<float>("alertLevel", level => level > 0.2f),
+                // Check target is within chase range
+                new CheckTargetInRange(this, _maxChaseDistance),
                 new MoveTo(
                     () => GetTargetPosition(),
                     _chaseArrivalDistance,
@@ -263,6 +265,33 @@ namespace NPCBrain.Archetypes
             {
                 _brain.Blackboard.Remove(_key);
                 return NodeStatus.Success;
+            }
+        }
+        
+        /// <summary>
+        /// Condition node that checks if the target is within a maximum distance.
+        /// </summary>
+        private class CheckTargetInRange : BTNode
+        {
+            private readonly GuardNPC _guard;
+            private readonly float _maxDistance;
+            
+            public CheckTargetInRange(GuardNPC guard, float maxDistance)
+            {
+                _guard = guard;
+                _maxDistance = maxDistance;
+                Name = $"TargetInRange({maxDistance})";
+            }
+            
+            protected override NodeStatus Tick(NPCBrainController brain)
+            {
+                if (!brain.Blackboard.TryGet<GameObject>("target", out var target) || target == null)
+                {
+                    return NodeStatus.Failure;
+                }
+                
+                float distance = Vector3.Distance(_guard.transform.position, target.transform.position);
+                return distance <= _maxDistance ? NodeStatus.Success : NodeStatus.Failure;
             }
         }
     }

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace NPCBrain.Editor.Gizmos
+namespace NPCBrain.Editor
 {
     /// <summary>
     /// Custom editor that draws waypoint path gizmos.

@@ -36,9 +36,7 @@ namespace NPCBrain.Archetypes
         [Tooltip("Time to wait at each waypoint")]
         [SerializeField] private float _waypointWaitTime = 2f;
         
-        [Tooltip("Should the NPC loop the patrol path?")]
-        [SerializeField] private bool _loopPatrol = true;
-        
+
         [Header("Optional Features")]
         [Tooltip("Random variation added to wait time (0 = none)")]
         [SerializeField] private float _waitTimeVariation = 0.5f;
