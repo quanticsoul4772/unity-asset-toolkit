@@ -20,6 +20,12 @@ namespace NPCBrain.Tests.Editor
         {
             _testObject = new GameObject("TestNPC");
             _brain = _testObject.AddComponent<TestBrain>();
+            // In EditMode tests, Awake() is called but we need to ensure Blackboard is initialized
+            // If Awake wasn't called, manually initialize
+            if (_brain.Blackboard == null)
+            {
+                _brain.InitializeForTests();
+            }
         }
         
         [TearDown]
@@ -280,6 +286,24 @@ namespace NPCBrain.Tests.Editor
         
         private class TestBrain : NPCBrainController
         {
+            public void InitializeForTests()
+            {
+                // Manually trigger Awake logic for EditMode tests
+                Blackboard = new Blackboard();
+            }
+            
+            public new Blackboard Blackboard
+            {
+                get => base.Blackboard;
+                private set => SetBlackboard(value);
+            }
+            
+            private void SetBlackboard(Blackboard bb)
+            {
+                var field = typeof(NPCBrainController).GetField("<Blackboard>k__BackingField", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                field?.SetValue(this, bb);
+            }
         }
     }
 }
