@@ -1,13 +1,10 @@
 using UnityEngine;
-using NPCBrain;
 using NPCBrain.BehaviorTree;
+using NPCBrain.BehaviorTree.Composites;
+using NPCBrain.BehaviorTree.Actions;
 
 namespace NPCBrain.Demo
 {
-    /// <summary>
-    /// Sets up the test scene with NPC, waypoints, and basic controls.
-    /// Attach to an empty GameObject to auto-generate test content.
-    /// </summary>
     public class TestSceneSetup : MonoBehaviour
     {
         [Header("Scene Settings")]
@@ -41,8 +38,6 @@ namespace NPCBrain.Demo
             _waypointPath = waypointContainer.AddComponent<WaypointPath>();
             
             // Create waypoints in a circle
-            var waypointsField = typeof(WaypointPath).GetField("_waypoints", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var waypointList = new System.Collections.Generic.List<Transform>();
             
             for (int i = 0; i < _waypointCount; i++)
@@ -69,7 +64,7 @@ namespace NPCBrain.Demo
                 Object.Destroy(marker.GetComponent<Collider>());
             }
             
-            waypointsField?.SetValue(_waypointPath, waypointList);
+            _waypointPath.SetWaypoints(waypointList);
             
             // Create NPC
             _npcObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -79,11 +74,7 @@ namespace NPCBrain.Demo
             
             // Add PatrolNPC component
             var brain = _npcObject.AddComponent<PatrolNPC>();
-            
-            // Set waypoint path via reflection (since it's serialized)
-            var pathField = typeof(NPCBrain.NPCBrain).GetField("_waypointPath",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            pathField?.SetValue(brain, _waypointPath);
+            brain.SetWaypointPath(_waypointPath);
             
             Debug.Log("Test scene generated! Press Play to see the NPC patrol.");
         }
@@ -95,11 +86,10 @@ namespace NPCBrain.Demo
             
             if (_npcObject != null)
             {
-                var brain = _npcObject.GetComponent<NPCBrain.NPCBrain>();
+                var brain = _npcObject.GetComponent<NPCBrainController>();
                 if (brain != null)
                 {
                     GUILayout.Label($"Status: {brain.LastStatus}");
-                    GUILayout.Label($"Moving: {brain.IsMoving}");
                     GUILayout.Label($"Position: {_npcObject.transform.position:F1}");
                     
                     if (brain.WaypointPath != null)
@@ -109,7 +99,7 @@ namespace NPCBrain.Demo
                     
                     GUILayout.Space(10);
                     GUILayout.Label("Blackboard:");
-                    foreach (var key in brain.Blackboard.GetAllKeys())
+                    foreach (var key in brain.Blackboard.Keys)
                     {
                         var value = brain.Blackboard.Get<object>(key);
                         GUILayout.Label($"  {key}: {value}");
@@ -121,38 +111,25 @@ namespace NPCBrain.Demo
         }
     }
     
-    /// <summary>
-    /// Simple patrol NPC that walks between waypoints.
-    /// </summary>
-    public class PatrolNPC : NPCBrain.NPCBrain
+    public class PatrolNPC : NPCBrainController
     {
         protected override BTNode CreateBehaviorTree()
         {
             return new Sequence(
                 new MoveTo(() => GetCurrentWaypoint()),
                 new Wait(1f),
-                new AdvanceWaypoint(this)
+                new AdvanceWaypointNode()
             );
         }
     }
     
-    /// <summary>
-    /// Simple action node that advances to the next waypoint.
-    /// </summary>
-    public class AdvanceWaypoint : BTNode
+    public class AdvanceWaypointNode : BTNode
     {
-        private readonly NPCBrain.NPCBrain _brain;
-        
-        public AdvanceWaypoint(NPCBrain.NPCBrain brain)
+        public override NodeStatus Tick(NPCBrainController brain)
         {
-            _brain = brain;
-        }
-        
-        protected override NodeStatus OnTick(NPCBrain.NPCBrain brain)
-        {
-            if (_brain.WaypointPath != null)
+            if (brain.WaypointPath != null)
             {
-                _brain.WaypointPath.Advance();
+                brain.WaypointPath.Advance();
             }
             return NodeStatus.Success;
         }

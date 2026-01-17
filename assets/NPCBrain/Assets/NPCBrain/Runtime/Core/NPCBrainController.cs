@@ -90,5 +90,10 @@ namespace NPCBrain
         {
             OnStateChanged?.Invoke(state);
         }
+        
+        public void SetWaypointPath(WaypointPath path)
+        {
+            _waypointPath = path;
+        }
     }
 }
