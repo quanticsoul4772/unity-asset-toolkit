@@ -29,9 +29,16 @@ namespace SwarmAI.Demo
         private SwarmFormation _formation;
         private SwarmGroup _group;
         
+        // Track if formation has been set up (to prevent duplicate behavior adding)
+        private bool _formationInitialized = false;
+        
         // Movement state
         private Vector3 _moveTarget;
         private bool _hasTarget = false;
+        
+        // Debug throttling
+        private float _lastDebugLogTime;
+        private const float DebugLogInterval = 1f;
         
         protected override void Start()
         {
@@ -64,6 +71,16 @@ namespace SwarmAI.Demo
             if (_agents.Count == 0)
             {
                 Debug.LogWarning("[FormationDemo] SetupFormation() called but no agents found! Make sure agents exist in the scene.");
+                return;
+            }
+            
+            // Prevent duplicate setup
+            if (_formationInitialized)
+            {
+                if (_verboseDebug)
+                {
+                    Debug.Log("[FormationDemo] Formation already initialized, skipping setup");
+                }
                 return;
             }
             
@@ -100,10 +117,10 @@ namespace SwarmAI.Demo
                 
                 _group.AddMember(agent);
                 
-                // Set following state
-                agent.SetState(new FollowingState(_leader));
+                // Clear any existing behaviors to avoid duplication
+                agent.ClearBehaviors();
                 
-                // Add a follow behavior for smoother following
+                // Add a follow behavior for movement toward leader
                 var followBehavior = new FollowLeaderBehavior();
                 followBehavior.Leader = _leader;
                 followBehavior.FollowDistance = _formationSpacing;
@@ -115,6 +132,7 @@ namespace SwarmAI.Demo
                 followerCount++;
             }
             
+            _formationInitialized = true;
             Debug.Log($"[FormationDemo] Created {_currentFormation} formation with 1 leader + {followerCount} followers");
         }
         
@@ -200,9 +218,11 @@ namespace SwarmAI.Demo
         {
             if (_leader == null)
             {
-                if (_verboseDebug && Time.frameCount % 60 == 0)
+                bool shouldLog = _verboseDebug && (Time.time - _lastDebugLogTime >= DebugLogInterval);
+                if (shouldLog)
                 {
                     Debug.LogWarning("[FormationDemo] HandleLeaderMovement: No leader assigned!");
+                    _lastDebugLogTime = Time.time;
                 }
                 return;
             }
@@ -222,9 +242,11 @@ namespace SwarmAI.Demo
                 
                 _hasTarget = false;
                 
-                if (_verboseDebug && Time.frameCount % 30 == 0)
+                bool shouldLog = _verboseDebug && (Time.time - _lastDebugLogTime >= DebugLogInterval);
+                if (shouldLog)
                 {
                     Debug.Log($"[FormationDemo] Leader moving: input={moveInput}, pos={newPos}");
+                    _lastDebugLogTime = Time.time;
                 }
             }
         }
@@ -311,6 +333,31 @@ namespace SwarmAI.Demo
             if (_hasTarget)
             {
                 GUILayout.Label($"• Target: ({_moveTarget.x:F1}, {_moveTarget.z:F1})");
+            }
+        }
+        
+        /// <summary>
+        /// Override to clean up formation references when agents are destroyed.
+        /// </summary>
+        protected override void CleanupStaleAgents()
+        {
+            base.CleanupStaleAgents();
+            
+            // Check if leader was destroyed
+            if (_leader == null && _formationInitialized)
+            {
+                Debug.LogWarning("[FormationDemo] Leader was destroyed! Formation needs to be re-established.");
+                
+                // Clean up formation component (it was on the leader)
+                _formation = null;
+                _group = null;
+                _formationInitialized = false;
+                
+                // Try to re-establish formation with remaining agents
+                if (_agents.Count > 0)
+                {
+                    SetupFormation();
+                }
             }
         }
         
