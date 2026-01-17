@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Criticality System is an **optional advanced module** that keeps NPC behavior at the "edge of chaos" - a dynamic balance between predictable (boring) and random (erratic) behavior. This creates NPCs that are **stable yet responsive, predictable yet surprising**.
+The Criticality System is a **core component** of NPCBrain that keeps NPC behavior at the "edge of chaos" - a dynamic balance between predictable (boring) and random (erratic) behavior. This creates NPCs that are **stable yet responsive, predictable yet surprising**.
 
 **Key Insight:** Criticality doesn't add new behaviors - it **tunes existing parameters** that Utility AI already needs (temperature, inertia), creating emergent adaptive behavior with minimal overhead.
 
@@ -38,7 +38,7 @@ We measure how "ordered" or "chaotic" NPC behavior is using **order parameters**
 | **Surprise** | Prediction error (expected vs actual outcomes) | Too predictable | Outcomes make no sense |
 | **State Volatility** | How often high-level states flip | Stuck in one state | Rapid state oscillation |
 
-### Group Metrics (Optional)
+### Group Metrics
 
 | Metric | Measures | Too Low | Too High |
 |--------|----------|---------|----------|
@@ -422,7 +422,7 @@ public class CriticalityAwareSelector : BTComposite
 
 ---
 
-## Group Coordination (Optional)
+## Group Coordination
 
 ### Shared Intent Field
 
@@ -526,26 +526,24 @@ public class CriticalityDebugger : MonoBehaviour
 
 ## Implementation Phases
 
-### MVP (Week 4-5, alongside Utility AI)
+### Phase 1: Core (Week 4, alongside Utility AI)
 
 | Component | Scope | Effort |
 |-----------|-------|--------|
-| CriticalityTelemetry | Ring buffers, basic metrics | 1 day |
-| CriticalityController | Temperature + inertia control | 0.5 day |
-| UtilityBrain integration | Softmax with temperature | 0.5 day |
-| Debug visualization | Basic metrics display | 0.5 day |
-| **Total MVP** | | **2.5 days** |
+| CriticalityTelemetry | Ring buffers, all 4 metrics | 1.5 days |
+| CriticalityController | Temperature + inertia + attention control | 1 day |
+| UtilityBrain integration | Softmax with temperature, inertia | 0.5 day |
+| Debug visualization | Full metrics display | 0.5 day |
+| **Total Phase 1** | | **3.5 days** |
 
-### Full Implementation (Post-launch or Week 6)
+### Phase 2: Group Coordination (Week 5)
 
 | Component | Scope | Effort |
 |-----------|-------|--------|
-| All 4 metrics | Entropy, churn, surprise, volatility | 1 day |
-| Attention width control | Candidate limiting | 0.5 day |
-| Group field | Shared coordination | 2 days |
-| Coupling control | Group alignment | 1 day |
-| Advanced debug window | Full visualization | 1 day |
-| **Total Full** | | **5.5 days** |
+| Group field | Shared coordination signals | 1.5 days |
+| Coupling control | Group alignment tuning | 1 day |
+| Intent broadcast | Low-bandwidth NPC communication | 1 day |
+| **Total Phase 2** | | **3.5 days** |
 
 ---
 
@@ -572,11 +570,10 @@ public class CriticalityDebugger : MonoBehaviour
 ├── Behavior Tree
 ├── Utility AI
 ├── Perception
-└── ▼ Adaptive Behavior (Advanced)
-    ├── [x] Enable Adaptive Behavior
+└── ▼ Adaptive Behavior
     ├── Criticality Settings: [Default Settings ▼]
     ├── [Show Debug Visualization]
-    └── ── Metrics ──
+    └── ── Live Metrics ──
         ├── Chaos Index: ████████░░ 0.47 (OK)
         ├── Temperature: 1.2
         ├── Inertia: 0.35
@@ -616,11 +613,11 @@ public class CriticalityDebugger : MonoBehaviour
 
 ## Success Criteria
 
-1. ✅ **Optional** - Disabled by default, one checkbox to enable
+1. ✅ **Always On** - Core feature, no toggles needed
 2. ✅ **Lightweight** - <0.1ms overhead per NPC
 3. ✅ **Visible** - Clear debug visualization
-4. ✅ **Tunable** - ScriptableObject settings
-5. ✅ **Integrated** - Works with Utility AI out of the box
+4. ✅ **Tunable** - ScriptableObject settings for target bands and weights
+5. ✅ **Integrated** - Seamlessly works with Utility AI and Behavior Trees
 6. ✅ **Documented** - Guide with examples
 
 ---

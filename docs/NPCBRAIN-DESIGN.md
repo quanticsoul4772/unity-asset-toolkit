@@ -75,7 +75,7 @@ NPCBrain is an all-in-one AI toolkit that combines decision-making systems (Beha
 3. **4 ready-to-use archetypes** - Guard, Patrol, Civilian, Enemy
 4. **Code-first with runtime visualization** - Easy to learn, debug, customize
 5. **Performance-focused** - Same architecture patterns as SwarmAI (Jobs/Burst ready)
-6. **🆕 Adaptive Behavior (Criticality)** - UNIQUE: Self-tuning exploration/exploitation balance (see [NPCBRAIN-CRITICALITY.md](NPCBRAIN-CRITICALITY.md))
+6. **🆕 Adaptive Behavior (Criticality)** - UNIQUE: Built-in self-tuning exploration/exploitation balance - every NPC automatically stays at the "edge of chaos" (see [NPCBRAIN-CRITICALITY.md](NPCBRAIN-CRITICALITY.md))
 
 ---
 
@@ -585,35 +585,34 @@ public static class NPCEvents
 
 **See full design:** [NPCBRAIN-CRITICALITY.md](NPCBRAIN-CRITICALITY.md)
 
-NPCBrain includes an **optional advanced module** that keeps NPC behavior at the "edge of chaos" - creating NPCs that are stable yet responsive, predictable yet surprising.
+NPCBrain's **core differentiator** - every NPC automatically maintains behavior at the "edge of chaos", creating NPCs that are stable yet responsive, predictable yet surprising.
 
 ### Key Concepts
 
 | Concept | Description |
 |---------|-------------|
-| **Order Parameters** | Metrics measuring behavior order/chaos (entropy, churn, surprise) |
+| **Order Parameters** | Metrics measuring behavior order/chaos (entropy, churn, surprise, volatility) |
 | **Target Band** | Desired range for chaos index (e.g., 0.40-0.55) |
 | **Control Knobs** | Temperature, inertia, attention width, coupling |
 | **Feedback Loop** | Controller adjusts knobs to stay in critical band |
 
-### Integration
+### How It Works
 
 ```csharp
-// Enable adaptive behavior (optional)
-brain.EnableAdaptiveBehavior = true;
-
-// The system automatically:
-// - Tracks action entropy, plan churn, surprise
+// Criticality is ALWAYS active - no enable flag needed
+// Every NPCBrain automatically:
+// - Tracks action entropy, plan churn, surprise, volatility
 // - Adjusts softmax temperature for exploration/exploitation
 // - Tunes inertia for plan commitment
 // - Controls group coupling for coordination
+
+// Users can customize target bands via ScriptableObject:
+public CriticalitySettings settings; // Assign in inspector
 ```
 
-### MVP Scope (2.5 days)
-- Temperature + inertia control
-- Action entropy + plan churn metrics
-- Basic debug visualization
-- Utility AI integration
+### Implementation (7 days total)
+- **Phase 1 (Week 4):** Core metrics, controller, Utility AI integration (3.5 days)
+- **Phase 2 (Week 5):** Group coordination, coupling, intent broadcast (3.5 days)
 
 ---
 
@@ -639,7 +638,7 @@ brain.EnableAdaptiveBehavior = true;
 5. ✅ **Performance** - Handle 100+ NPCs at 60 FPS
 6. ✅ **Well-documented** - Clear examples for every feature
 7. ✅ **4 Archetypes** - Guard, Patrol, Civilian, Enemy ready to use
-8. ✅ **Adaptive Behavior** - Optional criticality system for emergent behavior (UNIQUE)
+8. ✅ **Adaptive Behavior** - Criticality system for emergent behavior (UNIQUE - always on)
 
 ---
 
