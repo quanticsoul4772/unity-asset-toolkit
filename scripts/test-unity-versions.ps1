@@ -12,6 +12,27 @@ $ProjectPath = (Get-Location).Path
 $AssetsPath = Join-Path $ProjectPath "assets\EasyPath"
 $ReportPath = Join-Path $ProjectPath "test-report.md"
 
+# Check if Unity is running
+function Test-UnityRunning {
+    $unityProcesses = Get-Process -Name "Unity" -ErrorAction SilentlyContinue
+    return $null -ne $unityProcesses -and $unityProcesses.Count -gt 0
+}
+
+if (Test-UnityRunning) {
+    Write-Host ""
+    Write-Host "ERROR: Unity Editor is currently running!" -ForegroundColor Red
+    Write-Host "" -ForegroundColor Red
+    Write-Host "Please close ALL Unity Editor instances before running this test." -ForegroundColor Yellow
+    Write-Host "The batch mode tests cannot run while Unity is open." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Steps to fix:" -ForegroundColor Cyan
+    Write-Host "  1. Save your work in Unity" -ForegroundColor White
+    Write-Host "  2. Close the Unity Editor" -ForegroundColor White
+    Write-Host "  3. Run this script again" -ForegroundColor White
+    Write-Host ""
+    exit 1
+}
+
 # Target Unity versions to test
 $TargetVersions = @(
     @{ Pattern = "2021.3"; Name = "Unity 2021.3 LTS"; Required = $true },

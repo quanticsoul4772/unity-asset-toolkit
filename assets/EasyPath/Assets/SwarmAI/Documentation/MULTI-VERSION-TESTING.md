@@ -124,6 +124,11 @@ Create and test each demo scene:
 - Input System may need manual installation
 - Some EditorGUI APIs may have slight differences
 
+**Input System Compatibility:**
+- Maximum supported version: ~1.7.0 via Package Manager
+- When opening the project, Unity will auto-downgrade to a compatible version
+- If you see Input System errors, go to **Window > Package Manager** and update/downgrade Input System
+
 **Expected Warnings:**
 - Deprecation warnings for `FindObjectOfType` are acceptable
 - These don't affect functionality
@@ -135,6 +140,11 @@ Create and test each demo scene:
 - SwarmAI uses `FindFirstObjectByType` with preprocessor fallback
 - Should compile without issues
 
+**Input System Compatibility:**
+- Supported versions: 1.15.0 - 1.18.0
+- Unity will auto-adjust the package version when opening the project
+- No manual intervention typically needed
+
 ### Unity 6 (6000.x)
 
 **Known Considerations:**
@@ -142,11 +152,44 @@ Create and test each demo scene:
 - Demo scripts support both legacy and new Input System
 - Render pipeline may differ (materials adjust automatically)
 
+**Input System Compatibility:**
+- Supported versions: 1.10.0 - 1.18.0+
+- Input System is typically installed by default
+- Project uses Input System for all demo controls
+
+---
+
+## Input System Package Compatibility
+
+SwarmAI demos use the Unity Input System package. Different Unity versions support different Input System versions:
+
+| Unity Version | Input System Range | Notes |
+|---------------|-------------------|-------|
+| Unity 2021.3 LTS | 1.3.0 - 1.7.0 | Auto-downgrade when opening project |
+| Unity 2022.3 LTS | 1.15.0 - 1.18.0 | Good compatibility |
+| Unity 6 (6000.x) | 1.10.0 - 1.18.0+ | Full support, may be pre-installed |
+
+**What happens when you open the project in an older Unity version:**
+1. Unity detects incompatible package versions
+2. Package Manager auto-resolves to compatible versions
+3. You may see a popup asking to update packages - click **Continue**
+4. Wait for recompilation to complete
+
+**If you encounter Input System errors:**
+1. Open **Window > Package Manager**
+2. Find **Input System** in the list
+3. Click **Update** or **Downgrade** to a compatible version
+4. Wait for recompilation
+
 ---
 
 ## Automated Testing
 
 ### Running the Test Script
+
+**⚠️ IMPORTANT: Close Unity Editor before running these tests!**
+
+The script will check if Unity is running and exit with an error if it is.
 
 ```bash
 # From project root (close Unity first!)
@@ -175,6 +218,17 @@ test-versions.bat
 ---
 
 ## Troubleshooting
+
+### "ERROR: Unity Editor is currently running!"
+
+**Cause:** The automated test script detected that Unity is open.
+
+**Solution:**
+1. Save your work in Unity
+2. **Close ALL Unity Editor windows** (including Unity Hub is optional)
+3. Run the test script again
+
+**Why this matters:** Unity batch mode cannot open a project that's already open in another Editor instance. Each test needs to launch Unity fresh.
 
 ### "Another Unity instance is running"
 
