@@ -44,6 +44,24 @@ namespace EasyPath.Editor
         [MenuItem("EasyPath/Fix Existing Demo Scenes", false, 150)]
         public static void FixExistingDemoScenes()
         {
+            // Check if the current scene has unsaved changes
+            Scene currentScene = EditorSceneManager.GetActiveScene();
+            if (currentScene.isDirty)
+            {
+                bool proceed = EditorUtility.DisplayDialog(
+                    "Unsaved Changes",
+                    "The current scene has unsaved changes. Do you want to save before fixing demo scenes?",
+                    "Save and Continue",
+                    "Cancel");
+                
+                if (!proceed)
+                {
+                    return;
+                }
+                
+                EditorSceneManager.SaveScene(currentScene);
+            }
+            
             // Ensure the Obstacles layer exists
             int obstacleLayer = GetOrCreateLayer("Obstacles");
             if (obstacleLayer == 0)
@@ -55,22 +73,20 @@ namespace EasyPath.Editor
             
             int obstacleLayerMask = 1 << obstacleLayer;
             
-            // Find all EasyPath demo scenes
-            string[] scenePaths = new string[]
+            // Dynamically find all EasyPath demo scenes using AssetDatabase
+            string[] sceneGuids = AssetDatabase.FindAssets("t:Scene EasyPath_", new[] { "Assets/EasyPath/Demo/Scenes" });
+            
+            if (sceneGuids.Length == 0)
             {
-                "Assets/EasyPath/Demo/Scenes/EasyPath_BasicDemo.unity",
-                "Assets/EasyPath/Demo/Scenes/EasyPath_MultiAgentDemo.unity",
-                "Assets/EasyPath/Demo/Scenes/EasyPath_StressTest.unity"
-            };
+                Debug.Log("[EasyPath] No EasyPath demo scenes found in Assets/EasyPath/Demo/Scenes.");
+                return;
+            }
             
             int fixedCount = 0;
             
-            foreach (string scenePath in scenePaths)
+            foreach (string guid in sceneGuids)
             {
-                if (!File.Exists(scenePath))
-                {
-                    continue;
-                }
+                string scenePath = AssetDatabase.GUIDToAssetPath(guid);
                 
                 // Open the scene
                 Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
@@ -94,11 +110,39 @@ namespace EasyPath.Editor
                     }
                 }
                 
-                // Find all obstacles and assign them to the Obstacles layer
+                // Find ALL objects with colliders that should be obstacles
+                // First check the standard Environment/Obstacles parent
                 GameObject obstaclesParent = GameObject.Find("Environment/Obstacles");
                 if (obstaclesParent != null)
                 {
                     foreach (Transform child in obstaclesParent.transform)
+                    {
+                        if (child.gameObject.layer != obstacleLayer)
+                        {
+                            child.gameObject.layer = obstacleLayer;
+                            sceneModified = true;
+                        }
+                    }
+                }
+                
+                // Also check for any GameObject named "Obstacle_*" anywhere in the scene
+                // This catches obstacles that may have been manually added elsewhere
+                GameObject[] allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+                foreach (GameObject obj in allObjects)
+                {
+                    if (obj.name.StartsWith("Obstacle_") && obj.layer != obstacleLayer)
+                    {
+                        obj.layer = obstacleLayer;
+                        sceneModified = true;
+                        Debug.Log($"[EasyPath] Fixed layer on {obj.name}");
+                    }
+                }
+                
+                // Also check RuntimeObstacles parent (for dynamically spawned obstacles)
+                GameObject runtimeObstacles = GameObject.Find("RuntimeObstacles");
+                if (runtimeObstacles != null)
+                {
+                    foreach (Transform child in runtimeObstacles.transform)
                     {
                         if (child.gameObject.layer != obstacleLayer)
                         {
@@ -121,7 +165,7 @@ namespace EasyPath.Editor
             }
             else
             {
-                Debug.Log("[EasyPath] No demo scenes needed fixing (either already correct or not found).");
+                Debug.Log("[EasyPath] No demo scenes needed fixing (already configured correctly).");
             }
         }
 
