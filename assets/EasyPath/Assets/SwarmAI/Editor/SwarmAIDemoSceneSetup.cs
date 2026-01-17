@@ -455,24 +455,27 @@ namespace SwarmAI.Editor
 
             CreateGround(environmentRoot.transform, 60f);
             CreateLighting();
-            CreateCamera(new Vector3(0, 35f, -25f), 55f, true);
+            // Position camera at origin so _boundsCenter will be (0,0,0)
+            CreateCamera(new Vector3(0, 35f, 0f), 90f, true);
 
             CreateSwarmManager(controllersRoot.transform);
 
-            // Create two teams of agents
+            // Match the script's _teamSpacing default of 15f
+            // Teams are positioned at _boundsCenter ± (teamSpacing / 2)
+            float teamSpacing = 15f;
             int halfCount = agentCount / 2;
             Color team1Color = new Color(0.2f, 0.4f, 1f); // Blue
             Color team2Color = new Color(1f, 0.3f, 0.2f); // Red
 
-            // Team 1 - Left side
-            Vector3 team1Center = new Vector3(-8f, 0, 0);
+            // Team 1 - Left side (at -teamSpacing/2 = -7.5)
+            Vector3 team1Center = new Vector3(-teamSpacing / 2f, 0, 0);
             for (int i = 0; i < halfCount; i++)
             {
                 CreateSwarmAgent(agentsRoot.transform, i, agentCount, team1Center, 3f, team1Color);
             }
 
-            // Team 2 - Right side
-            Vector3 team2Center = new Vector3(8f, 0, 0);
+            // Team 2 - Right side (at +teamSpacing/2 = +7.5)
+            Vector3 team2Center = new Vector3(teamSpacing / 2f, 0, 0);
             for (int i = halfCount; i < agentCount; i++)
             {
                 CreateSwarmAgent(agentsRoot.transform, i, agentCount, team2Center, 3f, team2Color);
@@ -487,6 +490,7 @@ namespace SwarmAI.Editor
             so.FindProperty("_demoTitle").stringValue = "SwarmAI - Combat Formations Demo";
             so.FindProperty("_autoSpawnAgents").boolValue = false;
             so.FindProperty("_agentCount").intValue = agentCount;
+            so.FindProperty("_teamSpacing").floatValue = teamSpacing;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             SaveDemoScene(newScene, sceneName);
