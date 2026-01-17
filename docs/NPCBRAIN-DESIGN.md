@@ -11,6 +11,7 @@
 | [NPCBRAIN-CRITICALITY.md](NPCBRAIN-CRITICALITY.md) | Adaptive behavior system design (criticality-based AI) |
 | [NPCBRAIN-DEBUG-WINDOW.md](NPCBRAIN-DEBUG-WINDOW.md) | Runtime debug window UI design |
 | [NPCBRAIN-SCENE-GIZMOS.md](NPCBRAIN-SCENE-GIZMOS.md) | Scene view gizmos design (vision cones, paths, etc.) |
+| [NPCBRAIN-OPPORTUNITIES.md](NPCBRAIN-OPPORTUNITIES.md) | Research synthesis: gaps, cross-domain innovations, v2.0 roadmap |
 
 ## Overview
 
@@ -674,3 +675,4 @@ public CriticalitySettings settings; // Assign in inspector
 | **NPCBRAIN-CRITICALITY.md** | Adaptive behavior system | ✅ Complete |
 | **NPCBRAIN-DEBUG-WINDOW.md** | Editor debug window design | ✅ Complete |
 | **NPCBRAIN-SCENE-GIZMOS.md** | Scene view visualization | ✅ Complete |
+| **NPCBRAIN-OPPORTUNITIES.md** | Cross-domain research & gaps | ✅ Complete |
