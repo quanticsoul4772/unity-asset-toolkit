@@ -37,10 +37,11 @@ namespace SwarmAI.Editor
             
             bool proceed = EditorUtility.DisplayDialog(
                 "Create All Demo Scenes",
-                "This will create 3 demo scenes:\n\n" +
+                "This will create 4 demo scenes:\n\n" +
                 "- SwarmAI_FlockingDemo (30 agents)\n" +
                 "- SwarmAI_FormationDemo (10 agents)\n" +
-                "- SwarmAI_ResourceGatheringDemo (15 agents)\n\n" +
+                "- SwarmAI_ResourceGatheringDemo (15 agents)\n" +
+                "- SwarmAI_CombatFormationsDemo (10 agents)\n\n" +
                 "Any existing scenes with the same names will be overwritten.\n\n" +
                 "Continue?",
                 "Create All",
@@ -52,11 +53,14 @@ namespace SwarmAI.Editor
             EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Flocking Demo...", 0.1f);
             CreateFlockingScene("SwarmAI_FlockingDemo", 30);
             
-            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Formation Demo...", 0.4f);
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Formation Demo...", 0.3f);
             CreateFormationScene("SwarmAI_FormationDemo", 10);
             
-            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Resource Gathering Demo...", 0.7f);
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Resource Gathering Demo...", 0.5f);
             CreateResourceGatheringScene("SwarmAI_ResourceGatheringDemo", 15);
+            
+            EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Creating Combat Formations Demo...", 0.7f);
+            CreateCombatFormationsScene("SwarmAI_CombatFormationsDemo", 10);
             
             EditorUtility.DisplayProgressBar("Creating Demo Scenes", "Refreshing assets...", 0.9f);
             AssetDatabase.Refresh();
@@ -65,7 +69,7 @@ namespace SwarmAI.Editor
             
             EditorUtility.DisplayDialog(
                 "Demo Scenes Created",
-                "All 3 demo scenes have been created successfully!\n\n" +
+                "All 4 demo scenes have been created successfully!\n\n" +
                 "Location: Assets/EasyPath/Assets/SwarmAI/Demo/Scenes/\n\n" +
                 "Next steps:\n" +
                 "1. Open a demo scene\n" +
@@ -96,6 +100,13 @@ namespace SwarmAI.Editor
         {
             if (!CheckUnityVersionCompatibility()) return;
             CreateResourceGatheringScene("SwarmAI_ResourceGatheringDemo", 15);
+        }
+
+        [MenuItem("SwarmAI/Create Demo Scene/Combat Formations Demo (10 Agents)", false, 103)]
+        public static void CreateCombatFormationsDemoScene()
+        {
+            if (!CheckUnityVersionCompatibility()) return;
+            CreateCombatFormationsScene("SwarmAI_CombatFormationsDemo", 10);
         }
 
         [MenuItem("SwarmAI/Validate Package", false, 150)]
@@ -211,7 +222,8 @@ namespace SwarmAI.Editor
             {
                 "SwarmAI_FlockingDemo.unity",
                 "SwarmAI_FormationDemo.unity",
-                "SwarmAI_ResourceGatheringDemo.unity"
+                "SwarmAI_ResourceGatheringDemo.unity",
+                "SwarmAI_CombatFormationsDemo.unity"
             };
             
             foreach (string scene in expectedScenes)
@@ -431,6 +443,55 @@ namespace SwarmAI.Editor
             SaveDemoScene(newScene, sceneName);
 
             Debug.Log($"[SwarmAI] Resource gathering demo scene created with {agentCount} agents");
+        }
+
+        private static void CreateCombatFormationsScene(string sceneName, int agentCount)
+        {
+            Scene newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            GameObject environmentRoot = new GameObject("Environment");
+            GameObject agentsRoot = new GameObject("Agents");
+            GameObject controllersRoot = new GameObject("Controllers");
+
+            CreateGround(environmentRoot.transform, 60f);
+            CreateLighting();
+            CreateCamera(new Vector3(0, 35f, -25f), 55f, true);
+
+            CreateSwarmManager(controllersRoot.transform);
+
+            // Create two teams of agents
+            int halfCount = agentCount / 2;
+            Color team1Color = new Color(0.2f, 0.4f, 1f); // Blue
+            Color team2Color = new Color(1f, 0.3f, 0.2f); // Red
+
+            // Team 1 - Left side
+            Vector3 team1Center = new Vector3(-8f, 0, 0);
+            for (int i = 0; i < halfCount; i++)
+            {
+                CreateSwarmAgent(agentsRoot.transform, i, agentCount, team1Center, 3f, team1Color);
+            }
+
+            // Team 2 - Right side
+            Vector3 team2Center = new Vector3(8f, 0, 0);
+            for (int i = halfCount; i < agentCount; i++)
+            {
+                CreateSwarmAgent(agentsRoot.transform, i, agentCount, team2Center, 3f, team2Color);
+            }
+
+            // Create demo controller
+            GameObject demoController = new GameObject("Combat Formations Demo Controller");
+            demoController.transform.SetParent(controllersRoot.transform);
+            var combatDemo = demoController.AddComponent<Demo.CombatFormationsDemo>();
+            
+            SerializedObject so = new SerializedObject(combatDemo);
+            so.FindProperty("_demoTitle").stringValue = "SwarmAI - Combat Formations Demo";
+            so.FindProperty("_autoSpawnAgents").boolValue = false;
+            so.FindProperty("_agentCount").intValue = agentCount;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            SaveDemoScene(newScene, sceneName);
+
+            Debug.Log($"[SwarmAI] Combat formations demo scene created with {agentCount} agents (2 teams of {halfCount})");
         }
 
         #endregion
