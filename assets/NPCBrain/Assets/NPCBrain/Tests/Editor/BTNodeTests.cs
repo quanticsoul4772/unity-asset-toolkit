@@ -6,6 +6,9 @@ using NPCBrain.BehaviorTree.Conditions;
 
 namespace NPCBrain.Tests.Editor
 {
+    // Note: These EditMode tests use AddComponent which calls Awake().
+    // This works because NPCBrainController.Awake() initializes the Blackboard.
+    // For tests that need multi-frame behavior, use PlayMode tests in Tests/Runtime.
     [TestFixture]
     public class BTNodeTests
     {

@@ -1,4 +1,5 @@
 using UnityEngine;
+using NPCBrain;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;
@@ -118,20 +119,8 @@ namespace NPCBrain.Demo
             return new Sequence(
                 new MoveTo(() => GetCurrentWaypoint()),
                 new Wait(1f),
-                new AdvanceWaypointNode()
+                new AdvanceWaypoint()
             );
-        }
-    }
-    
-    public class AdvanceWaypointNode : BTNode
-    {
-        public override NodeStatus Tick(NPCBrainController brain)
-        {
-            if (brain.WaypointPath != null)
-            {
-                brain.WaypointPath.Advance();
-            }
-            return NodeStatus.Success;
         }
     }
 }
