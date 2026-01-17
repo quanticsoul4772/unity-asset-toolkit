@@ -235,10 +235,10 @@ namespace SwarmAI
         /// </summary>
         public void ClearMembers()
         {
-            var membersCopy = new List<SwarmAgent>(_members);
-            foreach (var member in membersCopy)
+            // Iterate backwards to avoid allocation - RemoveMember modifies _members
+            for (int i = _members.Count - 1; i >= 0; i--)
             {
-                RemoveMember(member);
+                RemoveMember(_members[i]);
             }
         }
         

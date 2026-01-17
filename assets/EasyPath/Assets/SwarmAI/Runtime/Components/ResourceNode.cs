@@ -34,6 +34,9 @@ namespace SwarmAI
         private float _respawnTimer;
         private Vector3 _initialScale;
         
+        // Performance: cached squared radius to avoid repeated multiplication
+        private float _harvestRadiusSq;
+        
         // Static registry for efficient lookups
         private static readonly List<ResourceNode> _allNodes = new List<ResourceNode>();
         
@@ -133,6 +136,7 @@ namespace SwarmAI
             _initialAmount = _totalAmount;
             _initialScale = transform.localScale;
             _activeHarvesters = new HashSet<SwarmAgent>();
+            _harvestRadiusSq = _harvestRadius * _harvestRadius;
         }
         
         private void OnEnable()
@@ -182,8 +186,7 @@ namespace SwarmAI
             
             // Check distance (use sqrMagnitude to avoid sqrt)
             float distanceSq = (agent.Position - Position).sqrMagnitude;
-            float radiusSq = _harvestRadius * _harvestRadius;
-            if (distanceSq > radiusSq) return false;
+            if (distanceSq > _harvestRadiusSq) return false;
             
             _activeHarvesters.Add(agent);
             OnHarvestStarted?.Invoke(agent);
@@ -223,8 +226,7 @@ namespace SwarmAI
             
             // Check distance (use sqrMagnitude to avoid sqrt)
             float distanceSq = (agent.Position - Position).sqrMagnitude;
-            float radiusSq = _harvestRadius * _harvestRadius;
-            if (distanceSq > radiusSq) return 0f;
+            if (distanceSq > _harvestRadiusSq) return 0f;
             
             // Calculate harvest amount
             float harvestAmount = _harvestRate * deltaTime;
@@ -259,10 +261,9 @@ namespace SwarmAI
         public bool IsInRange(SwarmAgent agent)
         {
             if (agent == null) return false;
-            // Use sqrMagnitude to avoid sqrt
+            // Use sqrMagnitude to avoid sqrt (cached radiusSq)
             float distanceSq = (agent.Position - Position).sqrMagnitude;
-            float radiusSq = _harvestRadius * _harvestRadius;
-            return distanceSq <= radiusSq;
+            return distanceSq <= _harvestRadiusSq;
         }
         
         /// <summary>
@@ -327,6 +328,7 @@ namespace SwarmAI
             _harvestRate = harvestRate;
             _respawns = respawns;
             _respawnTime = respawnTime;
+            _harvestRadiusSq = _harvestRadius * _harvestRadius;
         }
         
         #endregion

@@ -44,9 +44,11 @@ namespace SwarmAI
         private float _lastNeighborQueryTime;
         
         // Performance: dirty tracking for spatial hash updates
+        // Threshold of 0.25 (0.5 units squared) balances update frequency vs accuracy
+        // Agents only update spatial hash when they move > 0.5 units from last recorded position
         private Vector3 _lastSpatialHashPosition;
         private bool _isPositionDirty = true;
-        private const float PositionDirtyThresholdSq = 0.0001f; // 0.01 units squared
+        private const float PositionDirtyThresholdSq = 0.25f; // 0.5 units squared
         
         // Behavior wrapper with weight
         private struct WeightedBehavior

@@ -304,9 +304,14 @@ namespace SwarmAI
         {
             if (_spatialHash == null) return new List<SwarmAgent>();
             
-            // Clear cache on new frame
+            // Clear cache on new frame - return lists to pool to reduce GC
             if (Time.frameCount != _lastCacheFrame)
             {
+                // Return all cached lists to pool before clearing
+                foreach (var kvp in _neighborCache)
+                {
+                    _spatialHash.ReturnListToPool(kvp.Value);
+                }
                 _neighborCache.Clear();
                 _lastCacheFrame = Time.frameCount;
             }
