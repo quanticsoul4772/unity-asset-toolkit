@@ -2,7 +2,8 @@
     "name": "NPCBrain.Editor",
     "rootNamespace": "NPCBrain.Editor",
     "references": [
-        "NPCBrain.Runtime"
+        "NPCBrain.Runtime",
+        "NPCBrain.Demo"
     ],
     "includePlatforms": [
         "Editor"
