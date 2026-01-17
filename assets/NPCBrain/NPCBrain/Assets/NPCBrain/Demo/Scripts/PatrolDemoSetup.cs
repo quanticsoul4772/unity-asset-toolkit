@@ -210,7 +210,7 @@ namespace NPCBrain.Demo
             patroller.SetWaypointPath(waypointPath);
             
             // Position at first waypoint
-            if (waypointPath.WaypointCount > 0)
+            if (waypointPath.Count > 0)
             {
                 patrollerObj.transform.position = waypointPath.GetCurrent() + Vector3.up * 0.1f;
             }
