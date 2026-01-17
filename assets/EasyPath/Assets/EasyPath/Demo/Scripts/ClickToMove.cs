@@ -1,5 +1,6 @@
 using UnityEngine;
 using EasyPath;
+using System.Collections.Generic;
 
 namespace EasyPath.Demo
 {
@@ -10,7 +11,8 @@ namespace EasyPath.Demo
     public class ClickToMove : MonoBehaviour
     {
         [Header("Settings")]
-        [SerializeField] private EasyPathAgent _agent;
+        [SerializeField] private List<EasyPathAgent> _agents = new List<EasyPathAgent>();
+        [SerializeField] private bool _autoFindAgents = true;
         [SerializeField] private LayerMask _groundLayer;
         [SerializeField] private Camera _camera;
         
@@ -26,9 +28,9 @@ namespace EasyPath.Demo
         {
             EasyPathDemoInput.Initialize();
             
-            if (_agent == null)
+            if (_autoFindAgents || _agents.Count == 0)
             {
-                _agent = FindFirstObjectByType<EasyPathAgent>();
+                FindAllAgents();
             }
             
             if (_camera == null)
@@ -36,11 +38,22 @@ namespace EasyPath.Demo
                 _camera = Camera.main;
             }
             
-            if (_agent == null)
+            if (_agents.Count == 0)
             {
-                Debug.LogError("[ClickToMove] No EasyPathAgent found!");
+                Debug.LogError("[ClickToMove] No EasyPathAgents found!");
                 enabled = false;
             }
+        }
+        
+        /// <summary>
+        /// Find all EasyPathAgents in the scene.
+        /// </summary>
+        public void FindAllAgents()
+        {
+            _agents.Clear();
+            EasyPathAgent[] foundAgents = FindObjectsByType<EasyPathAgent>(FindObjectsSortMode.None);
+            _agents.AddRange(foundAgents);
+            Debug.Log($"[ClickToMove] Found {_agents.Count} agents");
         }
         
         private void Update()
@@ -64,11 +77,21 @@ namespace EasyPath.Demo
         
         private void MoveAgentTo(Vector3 destination)
         {
-            if (_agent.SetDestination(destination))
+            int successCount = 0;
+            
+            foreach (var agent in _agents)
+            {
+                if (agent != null && agent.SetDestination(destination))
+                {
+                    successCount++;
+                }
+            }
+            
+            if (successCount > 0)
             {
                 _lastClickPosition = destination;
                 _markerTimer = _markerDuration;
-                Debug.Log($"[ClickToMove] Moving to {destination}");
+                Debug.Log($"[ClickToMove] Moving {successCount} agent(s) to {destination}");
             }
             else
             {
