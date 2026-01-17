@@ -14,6 +14,7 @@ namespace SwarmAI
         
         [Header("Debug")]
         [SerializeField] private bool _showDebugInfo = true;
+        [SerializeField] private bool _verboseLogging = false; // Log every agent registration (very spammy!)
         [SerializeField] private bool _showSpatialHash = false;
         [SerializeField] private Color _spatialHashColor = new Color(0.5f, 0.5f, 1f, 0.2f);
         
@@ -240,7 +241,7 @@ namespace SwarmAI
             
             OnAgentRegistered?.Invoke(agent);
             
-            if (_showDebugInfo)
+            if (_showDebugInfo && _verboseLogging)
             {
                 Debug.Log($"[SwarmManager] Registered agent {id} ({agent.name}). Total: {_agents.Count}");
             }
@@ -262,7 +263,7 @@ namespace SwarmAI
                 _spatialHash.Remove(agent);
                 OnAgentUnregistered?.Invoke(agent);
                 
-                if (_showDebugInfo)
+                if (_showDebugInfo && _verboseLogging)
                 {
                     Debug.Log($"[SwarmManager] Unregistered agent {id}. Total: {_agents.Count}");
                 }

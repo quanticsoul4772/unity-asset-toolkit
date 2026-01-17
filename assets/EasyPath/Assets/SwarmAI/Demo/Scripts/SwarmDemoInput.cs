@@ -100,13 +100,17 @@ namespace SwarmAI.Demo
             }
             
             // Poll for keys that may not be in the input actions asset
-            // These use legacy Input for compatibility
-            if (UnityEngine.Input.GetKeyDown(KeyCode.J))
-                _actionJPressed = true;
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Equals) || UnityEngine.Input.GetKeyDown(KeyCode.Plus) || UnityEngine.Input.GetKeyDown(KeyCode.KeypadPlus))
-                _plusPressed = true;
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Minus) || UnityEngine.Input.GetKeyDown(KeyCode.KeypadMinus))
-                _minusPressed = true;
+            // Use new Input System's Keyboard class
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                if (keyboard.jKey.wasPressedThisFrame)
+                    _actionJPressed = true;
+                if (keyboard.equalsKey.wasPressedThisFrame || keyboard.numpadPlusKey.wasPressedThisFrame)
+                    _plusPressed = true;
+                if (keyboard.minusKey.wasPressedThisFrame || keyboard.numpadMinusKey.wasPressedThisFrame)
+                    _minusPressed = true;
+            }
         }
         
         private void LateUpdate()
