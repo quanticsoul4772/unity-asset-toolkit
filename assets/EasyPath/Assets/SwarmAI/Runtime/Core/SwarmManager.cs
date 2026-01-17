@@ -39,7 +39,6 @@ namespace SwarmAI
         private int _lastCacheFrame = -1;
         
         // Cached collections to avoid allocation
-        private List<int> _tempCacheKeys;
         private HashSet<Vector2Int> _drawnCellsCache;
         
         // Message wrapper for queued messages
@@ -157,7 +156,6 @@ namespace SwarmAI
             _neighborCache = new Dictionary<int, List<SwarmAgent>>();
             
             // Initialize cached collections
-            _tempCacheKeys = new List<int>();
             _drawnCellsCache = new HashSet<Vector2Int>();
             
             if (_showDebugInfo)
@@ -312,13 +310,13 @@ namespace SwarmAI
             // Clear cache on new frame - return lists to pool to reduce GC
             if (Time.frameCount != _lastCacheFrame)
             {
-                // Return all cached lists to pool before clearing (use temp list to avoid enumerator allocation)
-                _tempCacheKeys.Clear();
-                _tempCacheKeys.AddRange(_neighborCache.Keys);
-                int keyCount = _tempCacheKeys.Count;
-                for (int i = 0; i < keyCount; i++)
+                // Return all cached lists to pool before clearing
+                // Note: We iterate the dictionary values directly here. While this allocates an enumerator,
+                // it only happens once per frame at frame boundary, making this an acceptable tradeoff
+                // for simpler code vs maintaining a parallel tracking structure.
+                foreach (var cachedList in _neighborCache.Values)
                 {
-                    _spatialHash.ReturnListToPool(_neighborCache[_tempCacheKeys[i]]);
+                    _spatialHash.ReturnListToPool(cachedList);
                 }
                 _neighborCache.Clear();
                 _lastCacheFrame = Time.frameCount;

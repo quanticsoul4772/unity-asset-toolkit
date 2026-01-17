@@ -204,21 +204,11 @@ namespace SwarmAI.Demo
             // Add SwarmAgent component
             SwarmAgent agent = agentObj.AddComponent<SwarmAgent>();
             
-            // Create visual
-            Color color = GetAgentColor(index);
-            CreateAgentVisual(agentObj.transform, color);
+            // Create visual using shared utility
+            Color color = AgentVisualUtility.GetAgentColor(index);
+            AgentVisualUtility.CreateAgentVisual(agentObj.transform, color);
             
             return agentObj;
-        }
-        
-        private Color GetAgentColor(int index)
-        {
-            return AgentVisualUtility.GetAgentColor(index);
-        }
-        
-        private void CreateAgentVisual(Transform parent, Color color)
-        {
-            AgentVisualUtility.CreateAgentVisual(parent, color);
         }
         
         private void SetupAllAgentBehaviors()
