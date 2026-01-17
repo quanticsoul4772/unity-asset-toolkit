@@ -154,12 +154,15 @@ namespace NPCBrain.Tests.Editor
         [Test]
         public void HistoryWindow_OldActionsDropped()
         {
-            for (int i = 0; i < 30; i++)
+            // HistorySize is 20, so we need to ensure a mix remains in the window
+            // Add 15 zeros, then 10 ones = 25 total, window keeps last 20
+            // Result: 10 zeros + 10 ones = mix with entropy > 0
+            for (int i = 0; i < 15; i++)
             {
                 _controller.RecordAction(0);
             }
             
-            for (int i = 0; i < 25; i++)
+            for (int i = 0; i < 10; i++)
             {
                 _controller.RecordAction(1);
             }
