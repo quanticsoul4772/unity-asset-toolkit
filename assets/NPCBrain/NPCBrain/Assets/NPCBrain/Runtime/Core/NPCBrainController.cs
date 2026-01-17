@@ -12,9 +12,9 @@ namespace NPCBrain
         [SerializeField] private WaypointPath _waypointPath;
         [SerializeField] private bool _logExceptions = true;
         
-        public Blackboard Blackboard { get; private set; }
+        public Blackboard Blackboard { get; protected set; }
         public SightSensor Perception { get; private set; }
-        public CriticalityController Criticality { get; private set; }
+        public CriticalityController Criticality { get; protected set; }
         public WaypointPath WaypointPath => _waypointPath;
         public BTNode BehaviorTree => _behaviorTree;
         

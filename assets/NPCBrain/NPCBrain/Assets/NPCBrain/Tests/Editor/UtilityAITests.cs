@@ -260,11 +260,12 @@ namespace NPCBrain.Tests.Editor
                     selector.Execute(_brain);
                 }
                 
-                if (selector.GetLastProbabilities()[0] > 0.1f)
+                var probs = selector.GetLastProbabilities();
+                if (probs.Count > 0 && probs[0] > 0.1f)
                 {
                     lowCount++;
                 }
-                if (selector.GetLastProbabilities()[1] > 0.1f)
+                if (probs.Count > 1 && probs[1] > 0.1f)
                 {
                     highCount++;
                 }
@@ -273,39 +274,67 @@ namespace NPCBrain.Tests.Editor
             Assert.Greater(lowCount, 0, "Low action should have non-trivial probability with high temperature");
         }
         
-        private class MockNode : BTNode
+        [Test]
+        public void UtilitySelector_GetAction_ReturnsActionByName()
         {
-            private readonly NodeStatus _status;
-            public int TickCount { get; private set; }
+            var action1 = new UtilityAction("Attack", new MockNode(NodeStatus.Success));
+            var action2 = new UtilityAction("Flee", new MockNode(NodeStatus.Success));
+            var selector = new UtilitySelector(action1, action2);
             
-            public MockNode(NodeStatus status)
-            {
-                _status = status;
-                Name = "MockNode";
-            }
+            var found = selector.GetAction("Flee");
             
-            protected override NodeStatus Tick(NPCBrainController brain)
-            {
-                TickCount++;
-                return _status;
-            }
+            Assert.IsNotNull(found);
+            Assert.AreEqual("Flee", found.Name);
         }
         
-        private class TestBrain : NPCBrainController
+        [Test]
+        public void UtilitySelector_GetAction_ReturnsNullIfNotFound()
         {
-            public void InitializeForTests()
-            {
-                var bbField = typeof(NPCBrainController).GetField("<Blackboard>k__BackingField",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                bbField?.SetValue(this, new Blackboard());
-                
-                var critField = typeof(NPCBrainController).GetField("<Criticality>k__BackingField",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                critField?.SetValue(this, new Criticality.CriticalityController());
-            }
+            var action = new UtilityAction("Attack", new MockNode(NodeStatus.Success));
+            var selector = new UtilitySelector(action);
             
-            public new Blackboard Blackboard => base.Blackboard;
-            public new Criticality.CriticalityController Criticality => base.Criticality;
+            var found = selector.GetAction("NonExistent");
+            
+            Assert.IsNull(found);
+        }
+        
+        [Test]
+        public void UtilitySelector_RemoveAction_RemovesAction()
+        {
+            var action1 = new UtilityAction("Attack", new MockNode(NodeStatus.Success));
+            var action2 = new UtilityAction("Flee", new MockNode(NodeStatus.Success));
+            var selector = new UtilitySelector(action1, action2);
+            
+            bool removed = selector.RemoveAction("Attack");
+            
+            Assert.IsTrue(removed);
+            Assert.AreEqual(1, selector.ActionCount);
+            Assert.IsNull(selector.GetAction("Attack"));
+        }
+        
+        [Test]
+        public void UtilityAction_RemoveConsideration_RemovesConsideration()
+        {
+            var cons1 = new ConstantConsideration("Health", 0.5f);
+            var cons2 = new ConstantConsideration("Ammo", 0.8f);
+            var action = new UtilityAction("Attack", new MockNode(NodeStatus.Success), cons1, cons2);
+            
+            bool removed = action.RemoveConsideration("Health");
+            
+            Assert.IsTrue(removed);
+            Assert.AreEqual(1, action.ConsiderationCount);
+        }
+        
+        [Test]
+        public void UtilityAction_SetAction_SwapsAction()
+        {
+            var original = new MockNode(NodeStatus.Success);
+            var replacement = new MockNode(NodeStatus.Failure);
+            var action = new UtilityAction("Test", original);
+            
+            action.Action = replacement;
+            
+            Assert.AreEqual(replacement, action.Action);
         }
     }
 }

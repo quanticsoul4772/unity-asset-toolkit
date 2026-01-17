@@ -2,9 +2,12 @@ using NPCBrain.UtilityAI.Curves;
 
 namespace NPCBrain.UtilityAI
 {
+    /// <summary>
+    /// Base class for considerations that evaluate game state and return a 0-1 score.
+    /// </summary>
     public abstract class Consideration
     {
-        public string Name { get; set; }
+        public string Name { get; protected set; }
         public ResponseCurve Curve { get; set; }
         
         protected Consideration(string name, ResponseCurve curve)
@@ -13,13 +16,17 @@ namespace NPCBrain.UtilityAI
             Curve = curve ?? new LinearCurve();
         }
         
-        protected Consideration(string name) : this(name, new LinearCurve()) { }
+        protected Consideration(string name)
+        {
+            Name = name;
+            Curve = new LinearCurve();
+        }
         
         public float Score(NPCBrainController brain)
         {
-            float rawValue = Evaluate(brain);
-            float clampedValue = rawValue < 0f ? 0f : (rawValue > 1f ? 1f : rawValue);
-            return Curve.Evaluate(clampedValue);
+            float rawScore = Evaluate(brain);
+            float clampedScore = UnityEngine.Mathf.Clamp01(rawScore);
+            return Curve.Evaluate(clampedScore);
         }
         
         protected abstract float Evaluate(NPCBrainController brain);

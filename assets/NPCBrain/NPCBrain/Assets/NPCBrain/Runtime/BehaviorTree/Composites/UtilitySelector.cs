@@ -7,6 +7,8 @@ namespace NPCBrain.BehaviorTree.Composites
     public class UtilitySelector : BTNode
     {
         private readonly List<UtilityAction> _actions;
+        private readonly List<float> _scoresList;
+        private readonly List<float> _probabilitiesList;
         private UtilityAction _currentAction;
         private int _currentActionIndex = -1;
         private float[] _scores;
@@ -16,6 +18,8 @@ namespace NPCBrain.BehaviorTree.Composites
         public UtilitySelector(params UtilityAction[] actions)
         {
             _actions = new List<UtilityAction>(actions);
+            _scoresList = new List<float>(actions.Length);
+            _probabilitiesList = new List<float>(actions.Length);
             _scores = new float[actions.Length];
             _probabilities = new float[actions.Length];
             _random = new Random();
@@ -25,6 +29,8 @@ namespace NPCBrain.BehaviorTree.Composites
         public UtilitySelector(int seed, params UtilityAction[] actions)
         {
             _actions = new List<UtilityAction>(actions);
+            _scoresList = new List<float>(actions.Length);
+            _probabilitiesList = new List<float>(actions.Length);
             _scores = new float[actions.Length];
             _probabilities = new float[actions.Length];
             _random = new Random(seed);
@@ -169,10 +175,56 @@ namespace NPCBrain.BehaviorTree.Composites
         
         public int ActionCount => _actions.Count;
         
-        public float[] GetLastScores() => _scores;
+        public IReadOnlyList<float> GetLastScores()
+        {
+            _scoresList.Clear();
+            for (int i = 0; i < _actions.Count && i < _scores.Length; i++)
+            {
+                _scoresList.Add(_scores[i]);
+            }
+            return _scoresList;
+        }
         
-        public float[] GetLastProbabilities() => _probabilities;
+        public IReadOnlyList<float> GetLastProbabilities()
+        {
+            _probabilitiesList.Clear();
+            for (int i = 0; i < _actions.Count && i < _probabilities.Length; i++)
+            {
+                _probabilitiesList.Add(_probabilities[i]);
+            }
+            return _probabilitiesList;
+        }
         
         public UtilityAction CurrentAction => _currentAction;
+        
+        public UtilityAction GetAction(string name)
+        {
+            foreach (var action in _actions)
+            {
+                if (action.Name == name)
+                {
+                    return action;
+                }
+            }
+            return null;
+        }
+        
+        public bool RemoveAction(string name)
+        {
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                if (_actions[i].Name == name)
+                {
+                    _actions.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        public bool RemoveAction(UtilityAction action)
+        {
+            return _actions.Remove(action);
+        }
     }
 }

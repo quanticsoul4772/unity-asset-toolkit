@@ -6,9 +6,6 @@ using NPCBrain.BehaviorTree.Conditions;
 
 namespace NPCBrain.Tests.Editor
 {
-    // Note: These EditMode tests use AddComponent which calls Awake().
-    // This works because NPCBrainController.Awake() initializes the Blackboard.
-    // For tests that need multi-frame behavior, use PlayMode tests in Tests/Runtime.
     [TestFixture]
     public class BTNodeTests
     {
@@ -20,8 +17,6 @@ namespace NPCBrain.Tests.Editor
         {
             _testObject = new GameObject("TestNPC");
             _brain = _testObject.AddComponent<TestBrain>();
-            // In EditMode tests, Awake() is called but we need to ensure Blackboard is initialized
-            // If Awake wasn't called, manually initialize
             if (_brain.Blackboard == null)
             {
                 _brain.InitializeForTests();
@@ -252,58 +247,6 @@ namespace NPCBrain.Tests.Editor
             
             Assert.IsFalse(child1.IsRunning);
             Assert.IsFalse(child2.IsRunning);
-        }
-        
-        private class MockNode : BTNode
-        {
-            private readonly NodeStatus _status;
-            public int TickCount { get; private set; }
-            public int OnEnterCount { get; private set; }
-            public int OnExitCount { get; private set; }
-            
-            public MockNode(NodeStatus status)
-            {
-                _status = status;
-                Name = "MockNode";
-            }
-            
-            protected override NodeStatus Tick(NPCBrainController brain)
-            {
-                TickCount++;
-                return _status;
-            }
-            
-            protected override void OnEnter(NPCBrainController brain)
-            {
-                OnEnterCount++;
-            }
-            
-            protected override void OnExit(NPCBrainController brain)
-            {
-                OnExitCount++;
-            }
-        }
-        
-        private class TestBrain : NPCBrainController
-        {
-            public void InitializeForTests()
-            {
-                // Manually trigger Awake logic for EditMode tests
-                Blackboard = new Blackboard();
-            }
-            
-            public new Blackboard Blackboard
-            {
-                get => base.Blackboard;
-                private set => SetBlackboard(value);
-            }
-            
-            private void SetBlackboard(Blackboard bb)
-            {
-                var field = typeof(NPCBrainController).GetField("<Blackboard>k__BackingField", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                field?.SetValue(this, bb);
-            }
         }
     }
 }

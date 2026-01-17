@@ -6,7 +6,7 @@ namespace NPCBrain.UtilityAI
     public class UtilityAction
     {
         public string Name { get; set; }
-        public BTNode Action { get; private set; }
+        public BTNode Action { get; set; }
         public float BaseScore { get; set; } = 1f;
         
         private readonly List<Consideration> _considerations;
@@ -29,6 +29,24 @@ namespace NPCBrain.UtilityAI
         public void AddConsideration(Consideration consideration)
         {
             _considerations.Add(consideration);
+        }
+        
+        public bool RemoveConsideration(string name)
+        {
+            for (int i = 0; i < _considerations.Count; i++)
+            {
+                if (_considerations[i].Name == name)
+                {
+                    _considerations.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        public bool RemoveConsideration(Consideration consideration)
+        {
+            return _considerations.Remove(consideration);
         }
         
         public float Score(NPCBrainController brain)
