@@ -1,4 +1,6 @@
-# Project Knowledge - Unity Asset Toolkit 
+# Project Knowledge - Unity Asset Toolkit
+
+**Last Updated:** January 2026 
  
 Unity Asset Store project for AI/pathfinding tools. C#, Unity 7 LTS, Visual Studio 2022, Windows 11. 
  
@@ -86,24 +88,39 @@ unity-asset-toolkit/
 +-- README.md         # Project overview 
 ``` 
  
-## Potential Products 
- 
-| Asset | Description | Price | Complexity | 
-|-------|-------------|-------|------------| 
-| EasyPath | Simple A* pathfinding for beginners | $35 | 2-3 weeks | 
-| SwarmAI | Multi-agent coordination system | $45 | 3-4 weeks | 
-| NPCBrain | All-in-one AI toolkit | $60 | 4-6 weeks | 
- 
-**Recommendation:** Start with EasyPath - lowest complexity, clear market demand. 
+## Completed Products
+
+| Asset | Description | Price | Status |
+|-------|-------------|-------|--------|
+| **EasyPath** | A* pathfinding for Unity | $35 | ✅ Complete |
+| **SwarmAI** | Multi-agent coordination | $45 | ✅ Complete |
+
+### EasyPath Features
+- Grid-based A* pathfinding
+- Custom inspectors
+- Demo scenes: BasicDemo, MultiAgentDemo
+- Click-to-move with multi-agent support
+- Obstacle layer configuration
+
+### SwarmAI Features
+- 10+ steering behaviors (Seek, Flee, Arrive, Wander, Separation, Alignment, Cohesion, etc.)
+- Formation system (Line, Column, Circle, Wedge, V, Box)
+- State machine (Idle, Moving, Seeking, Fleeing, Gathering, Returning, Following)
+- Resource gathering system
+- Inter-agent messaging
+- Spatial hash for efficient neighbor queries
+- 4 demo scenes (Flocking, Formation, Resource Gathering, Combat Formations) 
  
 ## Conventions 
- 
-- **C# naming:** PascalCase (classes, methods), camelCase (local variables) 
-- **Unity 7 LTS** target version 
-- **Visual Studio 2022** as IDE 
-- **Asset Store submission guidelines** must be followed 
-- **Full source code** included in all assets 
-- **Demo scenes** required for each feature 
+
+- **C# naming:** PascalCase (classes, methods), camelCase (local variables)
+- **Unity 6+** target version (compatible with 2021.3+)
+- **Visual Studio 2022** as IDE
+- **Asset Store submission guidelines** followed
+- **Full source code** included in all assets
+- **Demo scenes** for each major feature
+- **Unit tests** for core systems (NUnit + Unity Test Framework)
+- **XML documentation** for all public APIs 
  
 ## Skills from Battlecode 2026 
  
@@ -115,28 +132,73 @@ This project leverages skills learned from MIT Battlecode 2026:
 - Performance optimization 
 - Debug and logging systems 
  
-## Key Patterns to Implement 
- 
-From Battlecode experience: 
-- tryMove() helper - prefer efficient movement 
-- State enums (IDLE, MOVING, ATTACKING, etc.) 
-- Distance-based decision making 
-- Threat avoidance algorithms 
-- ID-based agent differentiation 
- 
-## Key Links 
- 
-- Unity Asset Store: https://assetstore.unity.com 
-- Publisher Portal: https://publisher.unity.com 
-- Unity Docs: https://docs.unity3d.com 
-- C# Docs: https://docs.microsoft.com/en-us/dotnet/csharp/ 
- 
-## File Descriptions 
+## SwarmAI Key Patterns (Implemented)
 
-- **docs/SETUP.md** - Development environment setup guide 
-- **docs/CHECKLIST.md** - Environment setup checklist with status 
-- **notes/project-ideas.md** - Detailed comparison of asset options 
+From Battlecode experience:
+- **State machine** - AgentState FSM (Idle, Moving, Seeking, Fleeing, Gathering, Returning, Following)
+- **Steering behaviors** - IBehavior interface with weighted blending
+- **Spatial partitioning** - SpatialHash<T> for O(1) neighbor queries
+- **ID-based coordination** - AgentId for messaging and targeting
+- **Formation system** - SwarmFormation with FormationSlotBehavior for stable formations
+- **Per-frame caching** - Neighbor queries cached per frame for performance
+
+## Performance Optimizations
+
+- **Squared distances** - All behaviors use sqrMagnitude instead of magnitude
+- **Neighbor query caching** - SwarmManager caches queries per frame
+- **Spatial hash** - O(1) lookups for neighbor queries
+- **Behavior weight blending** - Efficient weighted sum of steering forces 
+ 
+## Test Coverage
+
+### SwarmAI Tests (Editor Mode)
+- `SwarmManagerTests.cs` - Singleton, settings, messages, states
+- `SwarmAgentTests.cs` - Behaviors, properties, state machine
+- `ResourceNodeTests.cs` - Harvesting, depletion, respawn logic
+- `SpatialHashTests.cs` - Insert, remove, query, update
+- `SteeringBehaviorTests.cs` - All steering behaviors
+- `FormationTests.cs` - Formation patterns
+- `FormationSlotBehaviorTests.cs` - Formation slot behavior
+
+### SwarmAI Tests (PlayMode)
+- `SwarmManagerPlayModeTests.cs` - Registration, messaging, spatial queries
+- `SwarmAgentPlayModeTests.cs` - Movement, neighbors, state changes
+- `ResourceNodePlayModeTests.cs` - Harvesting, events, static helpers
+- `FlockingIntegrationTests.cs` - Full flocking behavior integration
+
+## Key Links 
+
+- Unity Asset Store: https://assetstore.unity.com
+- Publisher Portal: https://publisher.unity.com
+- Unity Docs: https://docs.unity3d.com
+- C# Docs: https://docs.microsoft.com/en-us/dotnet/csharp/## File Descriptions 
+
+- **docs/SETUP.md** - Development environment setup guide
+- **docs/CHECKLIST.md** - Environment setup checklist with status
+- **docs/SWARMAI-DESIGN.md** - SwarmAI architecture and feature breakdown
+- **notes/project-ideas.md** - Asset comparison and status
 - **notes/battlecode-learnings.md** - Skills and patterns from competition
+
+## SwarmAI Documentation
+
+Located in `assets/EasyPath/Assets/SwarmAI/Documentation/`:
+- **README.md** - Overview, features, quick start
+- **GETTING-STARTED.md** - Step-by-step tutorials
+- **BEHAVIORS.md** - All steering behaviors with diagrams
+- **STATES.md** - Agent states and transitions
+- **EXAMPLES.md** - Code samples
+- **API-REFERENCE.md** - Complete API documentation
+- **TROUBLESHOOTING.md** - Common issues and solutions
+
+## Common Issues & Solutions
+
+| Issue | Solution |
+|-------|----------|
+| Input Manager deprecation warning | Change Project Settings → Player → Active Input Handling to "Input System Package (New)" |
+| SwarmManager cleanup warning | Fixed - uses HasInstance check and _applicationQuitting flag |
+| Formation oscillation | Use FormationSlotBehavior instead of FollowLeaderBehavior |
+| Multi-agent click moves one | Fixed - ClickToMove now moves all agents |
+| EasyPath obstacle layer warning | Run EasyPath → Fix Existing Demo Scenes |
 
 ## Automation Scripts
 

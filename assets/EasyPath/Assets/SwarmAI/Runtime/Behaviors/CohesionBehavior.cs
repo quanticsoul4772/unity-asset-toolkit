@@ -58,8 +58,9 @@ namespace SwarmAI
             {
                 if (neighbor == null || neighbor == agent) continue;
                 
-                // Check if within cohesion radius
-                float distanceSq = (neighbor.Position - agent.Position).sqrMagnitude;
+                // Check if within cohesion radius (using squared distance for performance)
+                Vector3 toNeighbor = neighbor.Position - agent.Position;
+                float distanceSq = toNeighbor.sqrMagnitude;
                 if (distanceSq > radiusSq) continue;
                 
                 centerOfMass += neighbor.Position;

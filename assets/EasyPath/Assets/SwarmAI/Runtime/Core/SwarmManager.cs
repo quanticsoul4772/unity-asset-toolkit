@@ -32,6 +32,10 @@ namespace SwarmAI
         // Message queue
         private Queue<QueuedMessage> _messageQueue;
         
+        // Performance: Frame-based neighbor query cache
+        private Dictionary<int, List<SwarmAgent>> _neighborCache;
+        private int _lastCacheFrame = -1;
+        
         // Message wrapper for queued messages
         private struct QueuedMessage
         {
@@ -141,6 +145,9 @@ namespace SwarmAI
             
             // Initialize spatial hash
             _spatialHash = new SpatialHash<SwarmAgent>(_settings.SpatialHashCellSize);
+            
+            // Initialize neighbor cache
+            _neighborCache = new Dictionary<int, List<SwarmAgent>>();
             
             if (_showDebugInfo)
             {
@@ -273,11 +280,54 @@ namespace SwarmAI
         
         /// <summary>
         /// Get all agents within a radius of a position.
+        /// Results are cached per-frame for identical queries.
         /// </summary>
         public List<SwarmAgent> GetNeighbors(Vector3 position, float radius)
         {
             if (_spatialHash == null) return new List<SwarmAgent>();
-            return _spatialHash.Query(position, radius);
+            
+            // Clear cache on new frame
+            if (Time.frameCount != _lastCacheFrame)
+            {
+                _neighborCache.Clear();
+                _lastCacheFrame = Time.frameCount;
+            }
+            
+            // Create cache key from position and radius (discretized)
+            int cacheKey = GetCacheKey(position, radius);
+            
+            if (_neighborCache.TryGetValue(cacheKey, out List<SwarmAgent> cached))
+            {
+                return cached;
+            }
+            
+            var result = _spatialHash.Query(position, radius);
+            _neighborCache[cacheKey] = result;
+            return result;
+        }
+        
+        /// <summary>
+        /// Generate a cache key from position and radius.
+        /// Uses discretized position to allow for some floating-point variance.
+        /// </summary>
+        private int GetCacheKey(Vector3 position, float radius)
+        {
+            // Discretize position to cell boundaries for better cache hits
+            int px = Mathf.RoundToInt(position.x);
+            int py = Mathf.RoundToInt(position.y);
+            int pz = Mathf.RoundToInt(position.z);
+            int r = Mathf.RoundToInt(radius * 10); // 0.1 precision
+            
+            // Combine into hash
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + px;
+                hash = hash * 31 + py;
+                hash = hash * 31 + pz;
+                hash = hash * 31 + r;
+                return hash;
+            }
         }
         
         /// <summary>

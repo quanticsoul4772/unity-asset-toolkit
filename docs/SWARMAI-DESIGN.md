@@ -184,7 +184,7 @@ public class SpatialHash<T>
 - [x] SwarmAgent component with ID system
 - [x] Basic state machine (Idle, Moving, Seeking, Fleeing)
 - [x] Spatial hash for neighbor queries
-- [ ] Unit tests for core systems
+- [x] Unit tests for core systems (SwarmManagerTests, SwarmAgentTests, ResourceNodeTests)
 
 ### Phase 2: Steering Behaviors (Week 2)
 - [x] IBehavior interface
@@ -210,7 +210,7 @@ public class SpatialHash<T>
   - [x] ResourceGatheringDemo - GatheringState, ReturningState, ResourceNode
   - [x] CombatFormationsDemo - Two teams, attack/retreat commands, formation controls
 - [x] Documentation (Phase 5)
-- [ ] Performance optimization
+- [x] Performance optimization (neighbor query caching, squared distances)
 - [x] Asset Store submission prep (Phase 7)
 
 ### Phase 5: Documentation (Week 4) [Complete]
@@ -413,11 +413,11 @@ From MIT Battlecode 2026 experience:
 
 ## Success Criteria
 
-- [x] 100+ agents running at 60 FPS (spatial hash optimization)
+- [x] 100+ agents running at 60 FPS (spatial hash optimization + query caching)
 - [x] All behaviors working independently and combined
 - [x] Clean public API with XML documentation
 - [x] 4 demo scenes showcasing features (Flocking, Formation, Resource Gathering, Combat Formations)
 - [x] Editor tools for debugging
 - [x] Comprehensive documentation
-- [x] Unit tests for core systems (behaviors, formations, states, messages)
+- [x] Unit tests for core systems (SwarmManager, SwarmAgent, ResourceNode, behaviors, formations, states, messages)
 - [ ] Asset Store submission approved (pending)
