@@ -10,6 +10,7 @@ namespace NPCBrain.Perception
         [SerializeField] private LayerMask _targetLayers = -1;
         [SerializeField] private LayerMask _obstacleLayers = -1;
         [SerializeField] private int _maxTargets = 10;
+        [SerializeField] private float _eyeHeight = 1.5f;
         
         public float ViewDistance => _viewDistance;
         public float ViewAngle => _viewAngle;
@@ -30,6 +31,11 @@ namespace NPCBrain.Perception
         
         public void Tick(NPCBrainController brain)
         {
+            if (_overlapResults == null)
+            {
+                _overlapResults = new Collider[_maxTargets];
+            }
+            
             _previousTargets.Clear();
             _previousTargets.AddRange(_visibleTargets);
             _visibleTargets.Clear();
@@ -82,7 +88,7 @@ namespace NPCBrain.Perception
         private bool IsLineOfSightClear(Vector3 origin, Vector3 target, float distance)
         {
             Vector3 direction = (target - origin).normalized;
-            Vector3 eyePosition = origin + Vector3.up * 1.5f;
+            Vector3 eyePosition = origin + Vector3.up * _eyeHeight;
             
             if (Physics.Raycast(eyePosition, direction, distance, _obstacleLayers))
             {
