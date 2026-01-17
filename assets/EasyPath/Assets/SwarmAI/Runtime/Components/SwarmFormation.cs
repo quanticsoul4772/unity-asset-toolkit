@@ -33,6 +33,9 @@ namespace SwarmAI
         private Vector3 _targetPosition;
         private Quaternion _targetRotation;
         
+        // Cached collections to avoid allocations
+        private List<SwarmAgent> _preservedAgentsCache;
+        
         #region Properties
         
         /// <summary>
@@ -84,9 +87,10 @@ namespace SwarmAI
                 int count = 0;
                 if (_slots != null)
                 {
-                    foreach (var slot in _slots)
+                    int slotCount = _slots.Count;
+                    for (int i = 0; i < slotCount; i++)
                     {
-                        if (slot.IsOccupied) count++;
+                        if (_slots[i].IsOccupied) count++;
                     }
                 }
                 return count;
@@ -146,6 +150,7 @@ namespace SwarmAI
         {
             _formationId = _nextFormationId++;
             _slots = new List<FormationSlot>();
+            _preservedAgentsCache = new List<SwarmAgent>();
             
             // Try to get leader from this object
             _leader = GetComponent<SwarmAgent>();
@@ -323,23 +328,30 @@ namespace SwarmAI
         /// </summary>
         public void RegenerateSlots()
         {
-            // Preserve assigned agents
-            var preservedAgents = new List<SwarmAgent>();
+            // Preserve assigned agents using cached list
+            if (_preservedAgentsCache == null)
+            {
+                _preservedAgentsCache = new List<SwarmAgent>();
+            }
+            _preservedAgentsCache.Clear();
+            
             if (_slots != null)
             {
-                foreach (var slot in _slots)
+                int slotCount = _slots.Count;
+                for (int i = 0; i < slotCount; i++)
                 {
-                    if (slot.IsOccupied)
-                        preservedAgents.Add(slot.AssignedAgent);
+                    if (_slots[i].IsOccupied)
+                        _preservedAgentsCache.Add(_slots[i].AssignedAgent);
                 }
             }
             
             _slots = GenerateSlots(_formationType, _maxSlots, _spacing);
             
             // Reassign preserved agents
-            foreach (var agent in preservedAgents)
+            int preservedCount = _preservedAgentsCache.Count;
+            for (int i = 0; i < preservedCount; i++)
             {
-                AddAgent(agent);
+                AddAgent(_preservedAgentsCache[i]);
             }
             
             OnFormationChanged?.Invoke(_formationType);
@@ -587,8 +599,10 @@ namespace SwarmAI
             Vector3 center = Application.isPlaying ? Position : transform.position;
             Quaternion rotation = Application.isPlaying ? Rotation : transform.rotation;
             
-            foreach (var slot in _slots)
+            int slotCount = _slots.Count;
+            for (int i = 0; i < slotCount; i++)
             {
+                var slot = _slots[i];
                 Vector3 worldPos = slot.GetWorldPosition(center, rotation);
                 Gizmos.color = slot.IsOccupied ? _occupiedSlotColor : _slotColor;
                 Gizmos.DrawWireSphere(worldPos, 0.5f);

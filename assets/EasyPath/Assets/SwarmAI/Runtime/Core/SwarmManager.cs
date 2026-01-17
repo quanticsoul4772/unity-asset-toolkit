@@ -38,6 +38,10 @@ namespace SwarmAI
         private Dictionary<int, List<SwarmAgent>> _neighborCache;
         private int _lastCacheFrame = -1;
         
+        // Cached collections to avoid allocation
+        private List<int> _tempCacheKeys;
+        private HashSet<Vector2Int> _drawnCellsCache;
+        
         // Message wrapper for queued messages
         private struct QueuedMessage
         {
@@ -152,6 +156,10 @@ namespace SwarmAI
             // Initialize neighbor cache
             _neighborCache = new Dictionary<int, List<SwarmAgent>>();
             
+            // Initialize cached collections
+            _tempCacheKeys = new List<int>();
+            _drawnCellsCache = new HashSet<Vector2Int>();
+            
             if (_showDebugInfo)
             {
                 Debug.Log($"[SwarmManager] Initialized with cell size {_settings.SpatialHashCellSize}");
@@ -186,10 +194,7 @@ namespace SwarmAI
             if (_agentListDirty)
             {
                 _agentList.Clear();
-                foreach (var kvp in _agents)
-                {
-                    _agentList.Add(kvp.Value);
-                }
+                _agentList.AddRange(_agents.Values);
                 _agentListDirty = false;
             }
             
@@ -307,10 +312,13 @@ namespace SwarmAI
             // Clear cache on new frame - return lists to pool to reduce GC
             if (Time.frameCount != _lastCacheFrame)
             {
-                // Return all cached lists to pool before clearing
-                foreach (var kvp in _neighborCache)
+                // Return all cached lists to pool before clearing (use temp list to avoid enumerator allocation)
+                _tempCacheKeys.Clear();
+                _tempCacheKeys.AddRange(_neighborCache.Keys);
+                int keyCount = _tempCacheKeys.Count;
+                for (int i = 0; i < keyCount; i++)
                 {
-                    _spatialHash.ReturnListToPool(kvp.Value);
+                    _spatialHash.ReturnListToPool(_neighborCache[_tempCacheKeys[i]]);
                 }
                 _neighborCache.Clear();
                 _lastCacheFrame = Time.frameCount;
@@ -552,7 +560,8 @@ namespace SwarmAI
             Gizmos.color = _spatialHashColor;
             float cellSize = _spatialHash.CellSize;
             
-            HashSet<Vector2Int> drawnCells = new HashSet<Vector2Int>();
+            // Use cached HashSet to avoid allocation
+            _drawnCellsCache.Clear();
             
             if (_agentList != null)
             {
@@ -564,9 +573,9 @@ namespace SwarmAI
                     
                     if (_spatialHash.TryGetCell(agent, out Vector2Int cell))
                     {
-                        if (!drawnCells.Contains(cell))
+                        if (!_drawnCellsCache.Contains(cell))
                         {
-                            drawnCells.Add(cell);
+                            _drawnCellsCache.Add(cell);
                             
                             Vector3 cellCenter = new Vector3(
                                 cell.x * cellSize + cellSize * 0.5f,

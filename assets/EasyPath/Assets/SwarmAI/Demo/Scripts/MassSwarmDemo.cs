@@ -213,53 +213,12 @@ namespace SwarmAI.Demo
         
         private Color GetAgentColor(int index)
         {
-            Color[] colors = new Color[]
-            {
-                new Color(0.2f, 0.6f, 1f),   // Blue
-                new Color(0.4f, 1f, 0.4f),   // Green
-                new Color(1f, 0.8f, 0.2f),   // Yellow
-                new Color(0.8f, 0.4f, 1f),   // Purple
-                new Color(1f, 0.6f, 0.4f),   // Orange
-                new Color(0.4f, 0.8f, 0.8f), // Cyan
-            };
-            return colors[index % colors.Length];
+            return AgentVisualUtility.GetAgentColor(index);
         }
         
         private void CreateAgentVisual(Transform parent, Color color)
         {
-            // Body (capsule)
-            GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            body.name = "Body";
-            body.transform.SetParent(parent);
-            body.transform.localPosition = Vector3.up * 0.5f;
-            body.transform.localScale = new Vector3(0.5f, 0.4f, 0.5f);
-            
-            var collider = body.GetComponent<Collider>();
-            if (collider != null) Destroy(collider);
-            
-            var renderer = body.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                renderer.material = new Material(Shader.Find("Standard"));
-                renderer.material.color = color;
-            }
-            
-            // Direction indicator
-            GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            indicator.name = "DirectionIndicator";
-            indicator.transform.SetParent(parent);
-            indicator.transform.localPosition = new Vector3(0f, 0.5f, 0.35f);
-            indicator.transform.localScale = new Vector3(0.15f, 0.15f, 0.25f);
-            
-            var indicatorCollider = indicator.GetComponent<Collider>();
-            if (indicatorCollider != null) Destroy(indicatorCollider);
-            
-            var indicatorRenderer = indicator.GetComponent<Renderer>();
-            if (indicatorRenderer != null)
-            {
-                indicatorRenderer.material = new Material(Shader.Find("Standard"));
-                indicatorRenderer.material.color = Color.white;
-            }
+            AgentVisualUtility.CreateAgentVisual(parent, color);
         }
         
         private void SetupAllAgentBehaviors()

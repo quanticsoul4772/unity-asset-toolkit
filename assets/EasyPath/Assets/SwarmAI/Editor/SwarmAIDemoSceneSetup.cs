@@ -14,17 +14,8 @@ namespace SwarmAI.Editor
     /// </summary>
     public static class SwarmAIDemoSceneSetup
     {
-        private static readonly Color[] AgentColors = new Color[]
-        {
-            new Color(0.2f, 0.6f, 1f),   // Blue
-            new Color(1f, 0.4f, 0.4f),   // Red
-            new Color(0.4f, 1f, 0.4f),   // Green
-            new Color(1f, 0.8f, 0.2f),   // Yellow
-            new Color(0.8f, 0.4f, 1f),   // Purple
-            new Color(1f, 0.6f, 0.4f),   // Orange
-            new Color(0.4f, 0.8f, 0.8f), // Cyan
-            new Color(0.8f, 0.8f, 0.4f), // Lime
-        };
+        // Use shared color palette from AgentVisualUtility
+        private static Color[] AgentColors => AgentVisualUtility.AgentColors;
 
         #region Menu Items
 
@@ -642,32 +633,7 @@ namespace SwarmAI.Editor
 
         private static Material CreateMaterial(Color color)
         {
-            // Try to find an appropriate shader based on render pipeline
-            Shader shader = Shader.Find("Standard");
-            
-            // If Standard shader not found (URP/HDRP), try alternatives
-            if (shader == null)
-            {
-                shader = Shader.Find("Universal Render Pipeline/Lit");
-            }
-            if (shader == null)
-            {
-                shader = Shader.Find("HDRP/Lit");
-            }
-            if (shader == null)
-            {
-                shader = Shader.Find("Unlit/Color");
-            }
-            
-            if (shader == null)
-            {
-                Debug.LogWarning("[SwarmAI] Could not find suitable shader. Materials may appear incorrect.");
-                shader = Shader.Find("Hidden/InternalErrorShader");
-            }
-            
-            Material mat = new Material(shader);
-            mat.color = color;
-            return mat;
+            return AgentVisualUtility.CreateMaterial(color);
         }
 
         private static void CreateObstacles(Transform parent, int count)
