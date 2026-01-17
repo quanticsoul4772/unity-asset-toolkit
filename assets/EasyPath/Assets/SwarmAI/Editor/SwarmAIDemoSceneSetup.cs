@@ -163,6 +163,18 @@ namespace SwarmAI.Editor
 
         private static bool CheckUnityVersionCompatibility()
         {
+            // Cannot create scenes during Play mode
+            if (Application.isPlaying)
+            {
+                EditorUtility.DisplayDialog(
+                    "Cannot Create Scene",
+                    "Please stop Play mode before creating demo scenes.\n\n" +
+                    "Press the Play button to stop, then try again.",
+                    "OK"
+                );
+                return false;
+            }
+            
             string unityVersion = Application.unityVersion;
             
             // Parse major version
