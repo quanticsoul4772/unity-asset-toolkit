@@ -9,8 +9,8 @@ namespace NPCBrain.BehaviorTree.Composites
         private readonly List<UtilityAction> _actions;
         private UtilityAction _currentAction;
         private int _currentActionIndex = -1;
-        private readonly float[] _scores;
-        private readonly float[] _probabilities;
+        private float[] _scores;
+        private float[] _probabilities;
         private readonly Random _random;
         
         public UtilitySelector(params UtilityAction[] actions)
@@ -22,9 +22,28 @@ namespace NPCBrain.BehaviorTree.Composites
             Name = "UtilitySelector";
         }
         
+        public UtilitySelector(int seed, params UtilityAction[] actions)
+        {
+            _actions = new List<UtilityAction>(actions);
+            _scores = new float[actions.Length];
+            _probabilities = new float[actions.Length];
+            _random = new Random(seed);
+            Name = "UtilitySelector";
+        }
+        
         public void AddAction(UtilityAction action)
         {
             _actions.Add(action);
+            EnsureArrayCapacity();
+        }
+        
+        private void EnsureArrayCapacity()
+        {
+            if (_scores.Length < _actions.Count)
+            {
+                _scores = new float[_actions.Count];
+                _probabilities = new float[_actions.Count];
+            }
         }
         
         protected override NodeStatus Tick(NPCBrainController brain)
