@@ -6,6 +6,7 @@ using EasyPath;
 using EasyPath.Demo;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace EasyPath.Editor
 {
@@ -159,8 +160,8 @@ namespace EasyPath.Editor
             GameObject obstaclesParent = new GameObject("Obstacles");
             obstaclesParent.transform.SetParent(parent);
 
-            // Create "Obstacles" layer if it doesn't exist
-            // For now, we'll use Default layer and rely on physics
+            // Ensure the "Obstacles" layer exists
+            int obstacleLayer = GetOrCreateLayer("Obstacles");
 
             // Predefined obstacle positions for a nice layout
             Vector3[] obstaclePositions = GenerateObstaclePositions(count);
@@ -170,6 +171,9 @@ namespace EasyPath.Editor
                 GameObject obstacle = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 obstacle.name = $"Obstacle_{i}";
                 obstacle.transform.SetParent(obstaclesParent.transform);
+                
+                // Assign to Obstacles layer so the grid can detect it
+                obstacle.layer = obstacleLayer;
                 
                 // Random size variation
                 float scaleX = Random.Range(1f, 3f);
@@ -233,12 +237,16 @@ namespace EasyPath.Editor
 
             EasyPathGrid grid = gridObject.AddComponent<EasyPathGrid>();
             
+            // Ensure the "Obstacles" layer exists and get its mask
+            int obstacleLayer = GetOrCreateLayer("Obstacles");
+            int obstacleLayerMask = 1 << obstacleLayer;
+            
             // Configure grid via serialized fields using SerializedObject
             SerializedObject so = new SerializedObject(grid);
             so.FindProperty("_width").intValue = 20;
             so.FindProperty("_height").intValue = 20;
             so.FindProperty("_cellSize").floatValue = 1f;
-            so.FindProperty("_obstacleLayer").intValue = ~0; // All layers
+            so.FindProperty("_obstacleLayer").intValue = obstacleLayerMask; // Only detect Obstacles layer
             so.FindProperty("_obstacleCheckRadius").floatValue = 0.4f;
             so.FindProperty("_obstacleCheckHeight").floatValue = 0.5f; // Check above ground level
             so.FindProperty("_showDebugGizmos").boolValue = true;
@@ -364,6 +372,43 @@ namespace EasyPath.Editor
             GameObject multiAgent = new GameObject("Multi Agent Demo");
             multiAgent.transform.SetParent(parent);
             multiAgent.AddComponent<MultiAgentDemo>();
+        }
+        
+        /// <summary>
+        /// Gets or creates a Unity layer by name.
+        /// Returns the layer index.
+        /// </summary>
+        private static int GetOrCreateLayer(string layerName)
+        {
+            // Check if layer already exists
+            int existingLayer = LayerMask.NameToLayer(layerName);
+            if (existingLayer != -1)
+            {
+                return existingLayer;
+            }
+            
+            // Layer doesn't exist - try to create it
+            SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            SerializedProperty layersProp = tagManager.FindProperty("layers");
+            
+            // Layers 0-7 are built-in, user layers start at 8
+            for (int i = 8; i < layersProp.arraySize; i++)
+            {
+                SerializedProperty layerProp = layersProp.GetArrayElementAtIndex(i);
+                if (string.IsNullOrEmpty(layerProp.stringValue))
+                {
+                    // Found an empty slot - use it
+                    layerProp.stringValue = layerName;
+                    tagManager.ApplyModifiedPropertiesWithoutUndo();
+                    Debug.Log($"[EasyPath] Created '{layerName}' layer at index {i}");
+                    return i;
+                }
+            }
+            
+            // No empty slots found
+            Debug.LogWarning($"[EasyPath] Could not create '{layerName}' layer - no empty layer slots available. " +
+                "Please manually create an 'Obstacles' layer in Edit > Project Settings > Tags and Layers.");
+            return 0; // Return Default layer as fallback
         }
     }
 }
