@@ -78,9 +78,10 @@ namespace SwarmAI.Demo
             _actions.Demo.ActionN.performed += _ => _actionNPressed = true;
             _actions.Demo.ActionF.performed += _ => _actionFPressed = true;
             _actions.Demo.ActionX.performed += _ => _actionXPressed = true;
-            _actions.Demo.ActionJ.performed += _ => _actionJPressed = true;
-            _actions.Demo.Plus.performed += _ => _plusPressed = true;
-            _actions.Demo.Minus.performed += _ => _minusPressed = true;
+            // Note: ActionJ, Plus, and Minus are polled in Update() since they may not be in the input actions
+            // _actions.Demo.ActionJ.performed += _ => _actionJPressed = true;
+            // _actions.Demo.Plus.performed += _ => _plusPressed = true;
+            // _actions.Demo.Minus.performed += _ => _minusPressed = true;
             
             _isInitialized = true;
         }
@@ -97,6 +98,15 @@ namespace SwarmAI.Demo
                 _mousePosition = _actions.Demo.MousePosition.ReadValue<Vector2>();
                 _movement = _actions.Demo.Movement.ReadValue<Vector2>();
             }
+            
+            // Poll for keys that may not be in the input actions asset
+            // These use legacy Input for compatibility
+            if (UnityEngine.Input.GetKeyDown(KeyCode.J))
+                _actionJPressed = true;
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Equals) || UnityEngine.Input.GetKeyDown(KeyCode.Plus) || UnityEngine.Input.GetKeyDown(KeyCode.KeypadPlus))
+                _plusPressed = true;
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Minus) || UnityEngine.Input.GetKeyDown(KeyCode.KeypadMinus))
+                _minusPressed = true;
         }
         
         private void LateUpdate()

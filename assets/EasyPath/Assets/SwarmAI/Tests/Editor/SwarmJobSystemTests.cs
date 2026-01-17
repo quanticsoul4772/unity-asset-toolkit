@@ -21,7 +21,7 @@ namespace SwarmAI.Tests
             
             Assert.AreEqual(float3.zero, data.Position);
             Assert.AreEqual(float3.zero, data.Velocity);
-            Assert.AreEqual(0, data.AgentIndex);
+            Assert.AreEqual(0, data.AgentId);
         }
         
         [Test]
@@ -51,14 +51,14 @@ namespace SwarmAI.Tests
         }
         
         [Test]
-        public void AgentData_CanSetAgentIndex()
+        public void AgentData_CanSetAgentId()
         {
             var data = new AgentData
             {
-                AgentIndex = 42
+                AgentId = 42
             };
             
-            Assert.AreEqual(42, data.AgentIndex);
+            Assert.AreEqual(42, data.AgentId);
         }
         
         #endregion
@@ -100,60 +100,53 @@ namespace SwarmAI.Tests
         
         #endregion
         
-        #region FlockingParams Tests
+        #region BehaviorWeights Tests
         
         [Test]
-        public void FlockingParams_DefaultConstructor_HasZeroValues()
+        public void BehaviorWeights_DefaultConstructor_HasZeroValues()
         {
-            var fparams = new FlockingParams();
+            var weights = new BehaviorWeights();
             
-            Assert.AreEqual(0f, fparams.SeparationWeight);
-            Assert.AreEqual(0f, fparams.AlignmentWeight);
-            Assert.AreEqual(0f, fparams.CohesionWeight);
-            Assert.AreEqual(0f, fparams.NeighborRadius);
-            Assert.AreEqual(0f, fparams.MaxForce);
+            Assert.AreEqual(0f, weights.Separation);
+            Assert.AreEqual(0f, weights.Alignment);
+            Assert.AreEqual(0f, weights.Cohesion);
+            Assert.AreEqual(0f, weights.SeparationRadius);
         }
         
         [Test]
-        public void FlockingParams_CanSetAllWeights()
+        public void BehaviorWeights_CanSetAllWeights()
         {
-            var fparams = new FlockingParams
+            var weights = new BehaviorWeights
             {
-                SeparationWeight = 1.5f,
-                AlignmentWeight = 1.0f,
-                CohesionWeight = 0.8f,
-                NeighborRadius = 5f,
-                MaxForce = 10f
+                Separation = 1.5f,
+                Alignment = 1.0f,
+                Cohesion = 0.8f,
+                SeparationRadius = 2.5f
             };
             
-            Assert.AreEqual(1.5f, fparams.SeparationWeight);
-            Assert.AreEqual(1.0f, fparams.AlignmentWeight);
-            Assert.AreEqual(0.8f, fparams.CohesionWeight);
-            Assert.AreEqual(5f, fparams.NeighborRadius);
-            Assert.AreEqual(10f, fparams.MaxForce);
+            Assert.AreEqual(1.5f, weights.Separation);
+            Assert.AreEqual(1.0f, weights.Alignment);
+            Assert.AreEqual(0.8f, weights.Cohesion);
+            Assert.AreEqual(2.5f, weights.SeparationRadius);
         }
         
         [Test]
-        public void FlockingParams_NeighborRadiusSq_CalculatesCorrectly()
+        public void BehaviorWeights_Default_HasSensibleValues()
         {
-            var fparams = new FlockingParams
-            {
-                NeighborRadius = 5f
-            };
+            var weights = BehaviorWeights.Default;
             
-            // 5 * 5 = 25
-            Assert.AreEqual(25f, fparams.NeighborRadiusSq);
+            Assert.AreEqual(1.5f, weights.Separation);
+            Assert.AreEqual(1.0f, weights.Alignment);
+            Assert.AreEqual(1.0f, weights.Cohesion);
+            Assert.AreEqual(2.5f, weights.SeparationRadius);
         }
         
         [Test]
-        public void FlockingParams_NeighborRadiusSq_WorksWithSmallValues()
+        public void BehaviorWeights_SeparationRadius_IsPositive()
         {
-            var fparams = new FlockingParams
-            {
-                NeighborRadius = 0.5f
-            };
+            var weights = BehaviorWeights.Default;
             
-            Assert.AreEqual(0.25f, fparams.NeighborRadiusSq);
+            Assert.Greater(weights.SeparationRadius, 0f);
         }
         
         #endregion
