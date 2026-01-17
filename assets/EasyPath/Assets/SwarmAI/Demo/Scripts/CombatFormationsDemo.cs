@@ -23,6 +23,7 @@ namespace SwarmAI.Demo
     {
         [Header("Team Settings")]
         [SerializeField] private int _agentsPerTeam = 5;
+#pragma warning disable CS0414 // Field is assigned but never used - reserved for future combat features
         [SerializeField] private float _teamSpacing = 15f;
         [SerializeField] private Color _team1Color = new Color(0.2f, 0.4f, 1f); // Blue
         [SerializeField] private Color _team2Color = new Color(1f, 0.3f, 0.2f); // Red
@@ -34,6 +35,7 @@ namespace SwarmAI.Demo
         [Header("Combat Settings")]
         [SerializeField] private float _attackRange = 3f;
         [SerializeField] private float _retreatDistance = 8f;
+#pragma warning restore CS0414
         
         [Header("Debug")]
         [SerializeField] private bool _verboseDebug = true;
@@ -49,7 +51,9 @@ namespace SwarmAI.Demo
         // State
         private int _selectedTeam = 1; // 1 or 2
         private Vector3 _boundsCenter = Vector3.zero;
+#pragma warning disable CS0414 // Field is assigned but never used - reserved for future combat state tracking
         private bool _isAttacking = false;
+#pragma warning restore CS0414
         
         protected override void Start()
         {
