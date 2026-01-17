@@ -54,8 +54,11 @@ namespace SwarmAI
             Vector3 averageVelocity = Vector3.zero;
             int count = 0;
             
-            foreach (var neighbor in neighbors)
+            // Use indexed for loop to avoid enumerator allocation
+            int neighborCount = neighbors.Count;
+            for (int i = 0; i < neighborCount; i++)
             {
+                var neighbor = neighbors[i];
                 if (neighbor == null || neighbor == agent) continue;
                 
                 // Check if within alignment radius

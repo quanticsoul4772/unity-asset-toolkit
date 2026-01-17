@@ -23,6 +23,8 @@ namespace SwarmAI
         
         // Agent registry
         private Dictionary<int, SwarmAgent> _agents;
+        private List<SwarmAgent> _agentList; // Cached list for iteration without allocation
+        private bool _agentListDirty = true;
         private int _nextAgentId;
         
         // Spatial partitioning
@@ -134,6 +136,7 @@ namespace SwarmAI
             
             // Initialize
             _agents = new Dictionary<int, SwarmAgent>();
+            _agentList = new List<SwarmAgent>();
             _messageQueue = new Queue<QueuedMessage>();
             _nextAgentId = 0;
             
@@ -179,13 +182,26 @@ namespace SwarmAI
         
         private void LateUpdate()
         {
-            // Update agent positions in spatial hash
-            foreach (var kvp in _agents)
+            // Rebuild agent list if dirty (avoids dictionary enumerator allocation)
+            if (_agentListDirty)
             {
-                SwarmAgent agent = kvp.Value;
-                if (agent != null && agent.gameObject.activeInHierarchy)
+                _agentList.Clear();
+                foreach (var kvp in _agents)
+                {
+                    _agentList.Add(kvp.Value);
+                }
+                _agentListDirty = false;
+            }
+            
+            // Update agent positions in spatial hash (only for dirty agents)
+            int count = _agentList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                SwarmAgent agent = _agentList[i];
+                if (agent != null && agent.gameObject.activeInHierarchy && agent.IsPositionDirty)
                 {
                     _spatialHash.UpdatePosition(agent, agent.Position);
+                    agent.ClearPositionDirty();
                 }
             }
         }
@@ -214,6 +230,7 @@ namespace SwarmAI
             
             // Add to registry
             _agents[id] = agent;
+            _agentListDirty = true;
             
             // Add to spatial hash
             _spatialHash.Insert(agent, agent.Position);
@@ -238,6 +255,7 @@ namespace SwarmAI
             
             if (_agents.Remove(id))
             {
+                _agentListDirty = true;
                 _spatialHash.Remove(agent);
                 OnAgentUnregistered?.Invoke(agent);
                 
@@ -377,8 +395,11 @@ namespace SwarmAI
             SwarmAgent nearest = null;
             float nearestDistSq = maxRadius * maxRadius;
             
-            foreach (var agent in neighbors)
+            // Use indexed for loop to avoid enumerator allocation
+            int count = neighbors.Count;
+            for (int i = 0; i < count; i++)
             {
+                var agent = neighbors[i];
                 if (agent == null) continue;
                 
                 float distSq = (agent.Position - position).sqrMagnitude;
@@ -388,6 +409,9 @@ namespace SwarmAI
                     nearest = agent;
                 }
             }
+            
+            // Return pooled list to reduce GC allocations
+            _spatialHash.ReturnListToPool(neighbors);
             
             return nearest;
         }
@@ -441,9 +465,10 @@ namespace SwarmAI
         public void BroadcastToArea(Vector3 position, float radius, SwarmMessage message)
         {
             var agents = GetNeighbors(position, radius);
-            foreach (var agent in agents)
+            int count = agents.Count;
+            for (int i = 0; i < count; i++)
             {
-                SendMessage(agent.AgentId, message);
+                SendMessage(agents[i].AgentId, message);
             }
         }
         
@@ -458,10 +483,11 @@ namespace SwarmAI
                 
                 if (qm.TargetId < 0)
                 {
-                    // Broadcast - iterate over copy to avoid issues if agents are destroyed during iteration
-                    foreach (var kvp in _agents)
+                    // Broadcast - use cached list to avoid enumerator allocation
+                    int count = _agentList.Count;
+                    for (int i = 0; i < count; i++)
                     {
-                        SwarmAgent agent = kvp.Value;
+                        SwarmAgent agent = _agentList[i];
                         if (agent != null && agent.gameObject != null)
                         {
                             agent.ReceiveMessage(qm.Message);
@@ -523,11 +549,12 @@ namespace SwarmAI
             
             HashSet<Vector2Int> drawnCells = new HashSet<Vector2Int>();
             
-            if (_agents != null)
+            if (_agentList != null)
             {
-                foreach (var kvp in _agents)
+                int count = _agentList.Count;
+                for (int i = 0; i < count; i++)
                 {
-                    SwarmAgent agent = kvp.Value;
+                    SwarmAgent agent = _agentList[i];
                     if (agent == null) continue;
                     
                     if (_spatialHash.TryGetCell(agent, out Vector2Int cell))

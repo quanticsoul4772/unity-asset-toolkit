@@ -106,9 +106,10 @@ namespace SwarmAI
                 return new IdleState();
             }
             
-            // Check if at safe distance
-            float distance = Vector3.Distance(Agent.Position, _threatPosition);
-            if (distance >= _safeDistance)
+            // Check if at safe distance (use sqrMagnitude to avoid sqrt)
+            float distanceSq = (Agent.Position - _threatPosition).sqrMagnitude;
+            float safeDistSq = _safeDistance * _safeDistance;
+            if (distanceSq >= safeDistSq)
             {
                 return new IdleState();
             }

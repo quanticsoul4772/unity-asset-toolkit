@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Performance note: This class uses object pooling for query results to minimize GC allocations.
+// Consider calling ReturnListToPool() when done with query results in performance-critical code.
+
 namespace SwarmAI
 {
     /// <summary>
@@ -13,6 +16,10 @@ namespace SwarmAI
         private readonly float _cellSize;
         private readonly Dictionary<Vector2Int, List<T>> _cells;
         private readonly Dictionary<T, Vector2Int> _itemCells;
+        
+        // Object pool for query results to reduce GC allocations
+        private readonly Stack<List<T>> _listPool = new Stack<List<T>>();
+        private const int MaxPoolSize = 16;
         
         /// <summary>
         /// Number of items in the spatial hash.
@@ -125,15 +132,34 @@ namespace SwarmAI
         
         /// <summary>
         /// Query all items within a radius of the specified position.
+        /// Note: The returned list should be returned to the pool via ReturnListToPool() when done.
         /// </summary>
         /// <param name="center">Center of the query sphere.</param>
         /// <param name="radius">Radius to search within.</param>
         /// <returns>List of items within the radius.</returns>
         public List<T> Query(Vector3 center, float radius)
         {
-            List<T> results = new List<T>();
+            List<T> results = GetPooledList();
             Query(center, radius, results);
             return results;
+        }
+        
+        /// <summary>
+        /// Get a list from the pool or create a new one.
+        /// </summary>
+        private List<T> GetPooledList()
+        {
+            return _listPool.Count > 0 ? _listPool.Pop() : new List<T>();
+        }
+        
+        /// <summary>
+        /// Return a list to the pool for reuse.
+        /// </summary>
+        public void ReturnListToPool(List<T> list)
+        {
+            if (list == null || _listPool.Count >= MaxPoolSize) return;
+            list.Clear();
+            _listPool.Push(list);
         }
         
         /// <summary>
@@ -165,8 +191,11 @@ namespace SwarmAI
                         // Filter by actual distance if position function provided
                         if (getPosition != null)
                         {
-                            foreach (var item in cellItems)
+                            // Use indexed for loop to avoid enumerator allocation
+                            int itemCount = cellItems.Count;
+                            for (int i = 0; i < itemCount; i++)
                             {
+                                T item = cellItems[i];
                                 Vector3 itemPos = getPosition(item);
                                 float distSq = (itemPos - center).sqrMagnitude;
                                 if (distSq <= radiusSq)
@@ -187,10 +216,11 @@ namespace SwarmAI
         /// <summary>
         /// Query all items within a radius, excluding a specific item.
         /// Useful for finding neighbors of an agent.
+        /// Note: The returned list should be returned to the pool via ReturnListToPool() when done.
         /// </summary>
         public List<T> QueryExcluding(Vector3 center, float radius, T exclude)
         {
-            List<T> results = new List<T>();
+            List<T> results = GetPooledList();
             QueryExcluding(center, radius, exclude, results);
             return results;
         }

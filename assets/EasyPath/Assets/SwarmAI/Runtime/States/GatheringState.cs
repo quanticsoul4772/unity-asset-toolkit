@@ -87,9 +87,11 @@ namespace SwarmAI
                 return;
             }
             
-            float distanceToResource = Vector3.Distance(Agent.Position, _targetResource.Position);
+            // Use sqrMagnitude to avoid sqrt
+            float distanceToResourceSq = (Agent.Position - _targetResource.Position).sqrMagnitude;
+            float harvestRadiusSq = _targetResource.HarvestRadius * _targetResource.HarvestRadius;
             
-            if (distanceToResource <= _targetResource.HarvestRadius)
+            if (distanceToResourceSq <= harvestRadiusSq)
             {
                 // In range - harvest
                 if (!_isHarvesting)
@@ -183,7 +185,7 @@ namespace SwarmAI
                 case SwarmMessageType.ResourceDepleted:
                     // Check if it's our resource
                     if (_targetResource != null && 
-                        Vector3.Distance(message.Position, _targetResource.Position) < 0.1f)
+                        (message.Position - _targetResource.Position).sqrMagnitude < 0.01f)
                     {
                         // Find new resource if we haven't gathered much yet (below 90% capacity threshold)
                         var newResource = ResourceNode.FindNearestAvailable(Agent.Position);

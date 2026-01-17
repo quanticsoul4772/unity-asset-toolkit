@@ -180,9 +180,10 @@ namespace SwarmAI
         {
             if (agent == null || !HasCapacity) return false;
             
-            // Check distance
-            float distance = Vector3.Distance(agent.Position, Position);
-            if (distance > _harvestRadius) return false;
+            // Check distance (use sqrMagnitude to avoid sqrt)
+            float distanceSq = (agent.Position - Position).sqrMagnitude;
+            float radiusSq = _harvestRadius * _harvestRadius;
+            if (distanceSq > radiusSq) return false;
             
             _activeHarvesters.Add(agent);
             OnHarvestStarted?.Invoke(agent);
@@ -220,9 +221,10 @@ namespace SwarmAI
         {
             if (agent == null || IsDepleted) return 0f;
             
-            // Check distance
-            float distance = Vector3.Distance(agent.Position, Position);
-            if (distance > _harvestRadius) return 0f;
+            // Check distance (use sqrMagnitude to avoid sqrt)
+            float distanceSq = (agent.Position - Position).sqrMagnitude;
+            float radiusSq = _harvestRadius * _harvestRadius;
+            if (distanceSq > radiusSq) return 0f;
             
             // Calculate harvest amount
             float harvestAmount = _harvestRate * deltaTime;
@@ -257,7 +259,10 @@ namespace SwarmAI
         public bool IsInRange(SwarmAgent agent)
         {
             if (agent == null) return false;
-            return Vector3.Distance(agent.Position, Position) <= _harvestRadius;
+            // Use sqrMagnitude to avoid sqrt
+            float distanceSq = (agent.Position - Position).sqrMagnitude;
+            float radiusSq = _harvestRadius * _harvestRadius;
+            return distanceSq <= radiusSq;
         }
         
         /// <summary>
@@ -348,8 +353,11 @@ namespace SwarmAI
             ResourceNode nearest = null;
             float nearestDistSq = maxDistance * maxDistance;
             
-            foreach (var node in _allNodes)
+            // Use indexed for loop to avoid enumerator allocation
+            int count = _allNodes.Count;
+            for (int i = 0; i < count; i++)
             {
+                var node = _allNodes[i];
                 if (node == null || node.gameObject == null) continue;
                 if (!predicate(node)) continue;
                 if (resourceType != null && node.ResourceType != resourceType) continue;

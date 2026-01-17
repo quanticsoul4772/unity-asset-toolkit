@@ -36,17 +36,20 @@ namespace SwarmAI
         
         public override void Execute()
         {
-            // Check if we've reached the destination
-            float distance = Vector3.Distance(Agent.Position, _destination);
-            if (distance <= Agent.StoppingDistance)
+            // Check if we've reached the destination (use sqrMagnitude to avoid sqrt)
+            float distanceSq = (Agent.Position - _destination).sqrMagnitude;
+            float stoppingDistSq = Agent.StoppingDistance * Agent.StoppingDistance;
+            if (distanceSq <= stoppingDistSq)
             {
                 // Reached destination
                 return;
             }
             
-            // Check if stuck
-            float movedDistance = Vector3.Distance(Agent.Position, _lastPosition);
-            if (movedDistance < _stuckThreshold * Time.deltaTime)
+            // Check if stuck (use sqrMagnitude to avoid sqrt)
+            float movedDistanceSq = (Agent.Position - _lastPosition).sqrMagnitude;
+            float stuckThresholdSq = _stuckThreshold * Time.deltaTime;
+            stuckThresholdSq *= stuckThresholdSq;
+            if (movedDistanceSq < stuckThresholdSq)
             {
                 _stuckTime += Time.deltaTime;
             }
@@ -60,9 +63,10 @@ namespace SwarmAI
         
         public override AgentState CheckTransitions()
         {
-            // Reached destination?
-            float distance = Vector3.Distance(Agent.Position, _destination);
-            if (distance <= Agent.StoppingDistance)
+            // Reached destination? (use sqrMagnitude to avoid sqrt)
+            float distanceSq = (Agent.Position - _destination).sqrMagnitude;
+            float stoppingDistSq = Agent.StoppingDistance * Agent.StoppingDistance;
+            if (distanceSq <= stoppingDistSq)
             {
                 return new IdleState();
             }

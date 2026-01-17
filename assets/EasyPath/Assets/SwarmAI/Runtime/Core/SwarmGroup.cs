@@ -76,13 +76,16 @@ namespace SwarmAI
         {
             get
             {
-                if (_members.Count == 0) return Vector3.zero;
+                int memberCount = _members.Count;
+                if (memberCount == 0) return Vector3.zero;
                 
                 Vector3 sum = Vector3.zero;
                 int validCount = 0;
                 
-                foreach (var member in _members)
+                // Use indexed for loop to avoid enumerator allocation
+                for (int i = 0; i < memberCount; i++)
                 {
+                    SwarmAgent member = _members[i];
                     if (member != null)
                     {
                         sum += member.Position;
@@ -101,13 +104,16 @@ namespace SwarmAI
         {
             get
             {
-                if (_members.Count == 0) return Vector3.zero;
+                int memberCount = _members.Count;
+                if (memberCount == 0) return Vector3.zero;
                 
                 Vector3 sum = Vector3.zero;
                 int validCount = 0;
                 
-                foreach (var member in _members)
+                // Use indexed for loop to avoid enumerator allocation
+                for (int i = 0; i < memberCount; i++)
                 {
+                    SwarmAgent member = _members[i];
                     if (member != null)
                     {
                         sum += member.Velocity;
@@ -283,16 +289,19 @@ namespace SwarmAI
             
             Vector3 center = CenterOfMass;
             SwarmAgent closest = null;
-            float closestDist = float.MaxValue;
+            float closestDistSq = float.MaxValue;
             
-            foreach (var member in _members)
+            // Use sqrMagnitude to avoid sqrt in distance calculations
+            int count = _members.Count;
+            for (int i = 0; i < count; i++)
             {
+                SwarmAgent member = _members[i];
                 if (member == null) continue;
                 
-                float dist = Vector3.Distance(member.Position, center);
-                if (dist < closestDist)
+                float distSq = (member.Position - center).sqrMagnitude;
+                if (distSq < closestDistSq)
                 {
-                    closestDist = dist;
+                    closestDistSq = distSq;
                     closest = member;
                 }
             }
@@ -351,8 +360,11 @@ namespace SwarmAI
         {
             if (_leader == null) return;
             
-            foreach (var member in _members)
+            // Use indexed for loop to avoid enumerator allocation
+            int count = _members.Count;
+            for (int i = 0; i < count; i++)
             {
+                SwarmAgent member = _members[i];
                 if (member != null && member != _leader)
                 {
                     SwarmManager.Instance?.SendMessage(member.AgentId,
@@ -370,8 +382,11 @@ namespace SwarmAI
             _broadcastCache.Clear();
             _broadcastCache.AddRange(_members);
             
-            foreach (var member in _broadcastCache)
+            // Use indexed for loop to avoid enumerator allocation
+            int count = _broadcastCache.Count;
+            for (int i = 0; i < count; i++)
             {
+                SwarmAgent member = _broadcastCache[i];
                 if (member != null && member.gameObject != null)
                 {
                     SwarmManager.Instance?.SendMessage(member.AgentId, message.Clone(null, member.AgentId));
@@ -391,9 +406,10 @@ namespace SwarmAI
             // Remove members from old formation
             if (_formation != null)
             {
-                foreach (var member in _members)
+                int count = _members.Count;
+                for (int i = 0; i < count; i++)
                 {
-                    _formation.RemoveAgent(member);
+                    _formation.RemoveAgent(_members[i]);
                 }
             }
             
@@ -403,8 +419,10 @@ namespace SwarmAI
             if (_formation != null)
             {
                 _formation.Leader = _leader;
-                foreach (var member in _members)
+                int count = _members.Count;
+                for (int i = 0; i < count; i++)
                 {
+                    SwarmAgent member = _members[i];
                     if (member != _leader) // Leader doesn't need a slot
                     {
                         _formation.AddAgent(member);

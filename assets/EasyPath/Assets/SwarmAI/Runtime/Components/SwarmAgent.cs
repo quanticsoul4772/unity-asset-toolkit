@@ -43,6 +43,11 @@ namespace SwarmAI
         private List<SwarmAgent> _cachedNeighbors;
         private float _lastNeighborQueryTime;
         
+        // Performance: dirty tracking for spatial hash updates
+        private Vector3 _lastSpatialHashPosition;
+        private bool _isPositionDirty = true;
+        private const float PositionDirtyThresholdSq = 0.0001f; // 0.01 units squared
+        
         // Behavior wrapper with weight
         private struct WeightedBehavior
         {
@@ -132,6 +137,12 @@ namespace SwarmAI
         /// </summary>
         public EasyPathAgent PathAgent => _pathAgent;
         
+        /// <summary>
+        /// Whether the agent's position has changed since last spatial hash update.
+        /// Used by SwarmManager to optimize spatial hash updates.
+        /// </summary>
+        public bool IsPositionDirty => _isPositionDirty;
+        
         #endregion
         
         #region Events
@@ -160,6 +171,7 @@ namespace SwarmAI
             _behaviors = new List<WeightedBehavior>();
             _cachedNeighbors = new List<SwarmAgent>();
             _pathAgent = GetComponent<EasyPathAgent>();
+            _lastSpatialHashPosition = transform.position;
             
             // Set initial state
             SetState(new IdleState());
@@ -290,10 +302,12 @@ namespace SwarmAI
                 Debug.Log($"[SwarmAgent {name}] CalculateSteering: {_behaviors.Count} behaviors registered");
             }
             
-            // Calculate behavior forces
+            // Calculate behavior forces (use indexed loop to avoid enumerator allocation)
             int activeCount = 0;
-            foreach (var wb in _behaviors)
+            int behaviorCount = _behaviors.Count;
+            for (int i = 0; i < behaviorCount; i++)
             {
+                var wb = _behaviors[i];
                 if (wb.Behavior.IsActive)
                 {
                     activeCount++;
@@ -387,6 +401,9 @@ namespace SwarmAI
                 // Move
                 Vector3 movement = _velocity * Time.deltaTime;
                 transform.position += movement;
+                
+                // Mark position dirty for spatial hash update
+                MarkPositionDirtyIfMoved();
                 
                 if (shouldLog)
                 {
@@ -499,13 +516,16 @@ namespace SwarmAI
         public SwarmAgent GetNearestNeighbor()
         {
             var neighbors = GetNeighbors();
-            if (neighbors.Count == 0) return null;
+            int count = neighbors.Count;
+            if (count == 0) return null;
             
             SwarmAgent nearest = null;
             float nearestDistSq = float.MaxValue;
             
-            foreach (var neighbor in neighbors)
+            // Use indexed for loop to avoid enumerator allocation
+            for (int i = 0; i < count; i++)
             {
+                var neighbor = neighbors[i];
                 float distSq = (neighbor.Position - Position).sqrMagnitude;
                 if (distSq < nearestDistSq)
                 {
@@ -608,6 +628,30 @@ namespace SwarmAI
         internal void SetAgentId(int id)
         {
             _agentId = id;
+        }
+        
+        /// <summary>
+        /// Clear the position dirty flag. Called by SwarmManager after spatial hash update.
+        /// </summary>
+        internal void ClearPositionDirty()
+        {
+            _isPositionDirty = false;
+            _lastSpatialHashPosition = transform.position;
+        }
+        
+        /// <summary>
+        /// Check if position moved significantly and mark dirty if so.
+        /// </summary>
+        private void MarkPositionDirtyIfMoved()
+        {
+            if (!_isPositionDirty)
+            {
+                float distSq = (transform.position - _lastSpatialHashPosition).sqrMagnitude;
+                if (distSq > PositionDirtyThresholdSq)
+                {
+                    _isPositionDirty = true;
+                }
+            }
         }
         
         #endregion

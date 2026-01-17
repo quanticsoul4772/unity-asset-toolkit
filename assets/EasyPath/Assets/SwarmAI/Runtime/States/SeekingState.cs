@@ -63,9 +63,10 @@ namespace SwarmAI
                 return new IdleState();
             }
             
-            // Check if arrived at target - use Agent.StoppingDistance for consistency
-            float distance = Vector3.Distance(Agent.Position, _targetPosition);
-            if (distance <= Agent.StoppingDistance)
+            // Check if arrived at target (use sqrMagnitude to avoid sqrt)
+            float distanceSq = (Agent.Position - _targetPosition).sqrMagnitude;
+            float stoppingDistSq = Agent.StoppingDistance * Agent.StoppingDistance;
+            if (distanceSq <= stoppingDistSq)
             {
                 return new IdleState();
             }

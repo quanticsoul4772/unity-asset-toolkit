@@ -68,8 +68,11 @@ namespace SwarmAI
             Vector3 separationForce = Vector3.zero;
             int count = 0;
             
-            foreach (var neighbor in neighbors)
+            // Use indexed for loop to avoid enumerator allocation
+            int neighborCount = neighbors.Count;
+            for (int i = 0; i < neighborCount; i++)
             {
+                var neighbor = neighbors[i];
                 if (neighbor == null || neighbor == agent) continue;
                 
                 Vector3 toAgent = agent.Position - neighbor.Position;

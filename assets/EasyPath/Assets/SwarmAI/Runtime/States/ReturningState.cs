@@ -96,10 +96,11 @@ namespace SwarmAI
                 Agent.SetTarget(_basePosition);
             }
             
-            // Check if at base
-            float distanceToBase = Vector3.Distance(Agent.Position, BasePosition);
+            // Check if at base (use sqrMagnitude to avoid sqrt)
+            float distanceToBaseSq = (Agent.Position - BasePosition).sqrMagnitude;
+            float depositRadiusSq = _depositRadius * _depositRadius;
             
-            if (distanceToBase <= _depositRadius && !_hasDeposited)
+            if (distanceToBaseSq <= depositRadiusSq && !_hasDeposited)
             {
                 // Deposit resources
                 DepositResources();
