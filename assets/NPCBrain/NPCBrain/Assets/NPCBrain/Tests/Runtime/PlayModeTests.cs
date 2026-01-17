@@ -3,9 +3,8 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using NPCBrain.BehaviorTree;
-// MoveTo tests temporarily disabled - Unity caching issue
-// using NPCBrain.BehaviorTree.Actions;
-// using System;
+using NPCBrain.BehaviorTree.Actions;
+// System namespace not needed - MoveTo tests disabled due to Unity caching issue
 
 namespace NPCBrain.Tests.Runtime
 {
