@@ -2,6 +2,8 @@
     "name": "NPCBrain.Tests.Runtime",
     "rootNamespace": "NPCBrain.Tests.Runtime",
     "references": [
+        "NPCBrain.Runtime",
+        "NPCBrain.Tests.Shared",
         "UnityEngine.TestRunner"
     ],
     "includePlatforms": [],
