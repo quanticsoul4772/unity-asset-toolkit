@@ -133,17 +133,13 @@ namespace SwarmAI.Demo
                 
                 // Add FormationSlotBehavior - this reads from agent.Target which is
                 // set by SwarmFormation.UpdateSlotPositions() every frame
-                // Using larger arrival radius and damping for stable formations
+                // Using larger arrival radius and strong damping for stable formations
                 var slotBehavior = new FormationSlotBehavior(
-                    slowingRadius: 2f,
-                    arrivalRadius: 0.5f,
-                    dampingFactor: 0.6f
+                    slowingRadius: 2.5f,
+                    arrivalRadius: 0.7f,  // Larger arrival radius = more stability
+                    dampingFactor: 0.7f
                 );
                 agent.AddBehavior(slotBehavior, 1.0f);
-                
-                // Light separation only to prevent exact overlap during transitions
-                // (weight is low so it doesn't overpower formation slots)
-                agent.AddBehavior(new SeparationBehavior(_formationSpacing * 0.3f), 0.3f);
                 
                 followerCount++;
             }

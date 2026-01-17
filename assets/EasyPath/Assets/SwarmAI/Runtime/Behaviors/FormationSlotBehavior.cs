@@ -83,11 +83,17 @@ namespace SwarmAI
             Vector3 toTarget = targetPosition - agent.Position;
             float distance = toTarget.magnitude;
             
-            // Already arrived - apply damping to stop oscillation
+            // Already arrived - apply strong braking to stop completely
             if (distance < _arrivalRadius)
             {
-                // Apply velocity damping to help agent settle
-                return -agent.Velocity * _dampingFactor * 2f;
+                // Full brake - return opposite of current velocity to stop quickly
+                return -agent.Velocity;
+            }
+            
+            // Avoid division by zero
+            if (distance < 0.001f)
+            {
+                return -agent.Velocity * _dampingFactor;
             }
             
             // Calculate desired speed based on distance
@@ -106,7 +112,7 @@ namespace SwarmAI
             // Calculate desired velocity
             Vector3 desiredVelocity = (toTarget / distance) * targetSpeed;
             
-            // Return steering force with some damping when close
+            // Return steering force with damping when close
             Vector3 steering = desiredVelocity - agent.Velocity;
             
             // Apply extra damping when within slowing radius to reduce oscillation
