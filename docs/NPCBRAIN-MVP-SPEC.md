@@ -131,9 +131,11 @@ NPCBrain/
 │   ├── NPCBrainDebugWindow.cs
 │   └── Gizmos/
 │       └── VisionConeGizmo.cs
-└── Demo/
-    ├── GuardDemo.unity
-    └── PatrolDemo.unity
+├── Demo/
+│   ├── GuardDemo.unity
+│   └── PatrolDemo.unity
+└── Tests/
+    └── TestScene.unity
 ```
 
 ---
@@ -141,11 +143,14 @@ NPCBrain/
 ## Development Phases
 
 ### Week 1: Core Framework
+- [ ] Project structure + assembly definitions
+- [ ] TestScene.unity (validation sandbox - create first!)
 - [ ] NPCBrain component
 - [ ] Blackboard with events
 - [ ] WaypointPath
 - [ ] BTNode base + Selector, Sequence
 - [ ] Basic actions: MoveTo, Wait
+- [ ] Validate in TestScene: NPC moves between waypoints
 
 ### Week 2: Behavior Trees + Perception
 - [ ] Remaining BT nodes
@@ -153,12 +158,14 @@ NPCBrain/
 - [ ] Memory system
 - [ ] TargetSelector
 - [ ] Vision cone gizmo
+- [ ] Validate in TestScene: NPC detects player, chases, loses sight
 
 ### Week 3: Utility AI + Criticality
 - [ ] UtilityBrain + actions
 - [ ] 3 response curves
-- [ ] CriticalityController (entropy → temp/inertia)
+- [ ] CriticalityController (entropy -> temp/inertia)
 - [ ] Integration with Utility AI softmax
+- [ ] Validate in TestScene: NPC behavior varies naturally over time
 
 ### Week 4: Archetypes + Polish
 - [ ] GuardNPC archetype
