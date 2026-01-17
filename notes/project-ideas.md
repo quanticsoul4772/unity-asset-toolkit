@@ -54,13 +54,30 @@ Features:
 - [ ] Combat Formations demo
 - [ ] Marketing materials for Asset Store 
  
-## Option 3: NPCBrain 
+## Option 3: NPCBrain ← CURRENT PROJECT
 **All-in-one AI toolkit** 
  
 - Price: $60 
 - Target: Intermediate developers 
 - Complexity: High (4-6 weeks) 
-- Combines pathfinding + behaviors + sensing 
+- Combines pathfinding + behaviors + sensing + decision making
+- **Status:** 🔄 Starting Development!
+- **Design Doc:** docs/NPCBRAIN-DESIGN.md (to be created)
+
+Features:
+- [ ] Design document
+- [ ] Folder structure and assembly definitions
+- [ ] Behavior Tree system (Selector, Sequence, Parallel, Decorator nodes)
+- [ ] Utility AI system (action scoring, considerations)
+- [ ] Perception system (sight, hearing, memory)
+- [ ] Knowledge/Blackboard system
+- [ ] Integration with EasyPath (pathfinding)
+- [ ] Integration with SwarmAI (steering behaviors)
+- [ ] Pre-built NPC archetypes (Guard, Patrol, Civilian, Enemy)
+- [ ] Visual debugging tools
+- [ ] Demo scenes
+- [ ] Documentation
+- [ ] Unit tests 
  
 ## Recommendation 
 ~~Start with EasyPath - lowest complexity, clear market demand.~~ 
@@ -84,4 +101,4 @@ Features:
 - ✅ Unit tests for all behaviors and components
 - 🔄 Combat Formations demo in progress
 
-**Next:** Create Combat Formations demo, then prepare both assets for Asset Store submission.
+**Next:** Start NPCBrain development - the all-in-one AI toolkit!
