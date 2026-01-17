@@ -4,7 +4,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using EasyPath;
 using EasyPath.Demo;
-using System.IO;
 using System.Collections.Generic;
 
 namespace EasyPath.Editor
@@ -127,15 +126,27 @@ namespace EasyPath.Editor
                 
                 // Also check for any GameObject named "Obstacle_*" anywhere in the scene
                 // This catches obstacles that may have been manually added elsewhere
+                int additionalObstaclesFixed = 0;
                 GameObject[] allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
                 foreach (GameObject obj in allObjects)
                 {
+                    // Skip if already processed under Environment/Obstacles
+                    if (obstaclesParent != null && obj.transform.parent == obstaclesParent.transform)
+                    {
+                        continue;
+                    }
+                    
                     if (obj.name.StartsWith("Obstacle_") && obj.layer != obstacleLayer)
                     {
                         obj.layer = obstacleLayer;
                         sceneModified = true;
-                        Debug.Log($"[EasyPath] Fixed layer on {obj.name}");
+                        additionalObstaclesFixed++;
                     }
+                }
+                
+                if (additionalObstaclesFixed > 0)
+                {
+                    Debug.Log($"[EasyPath] Fixed layer on {additionalObstaclesFixed} additional obstacle(s) outside Environment/Obstacles");
                 }
                 
                 // Also check RuntimeObstacles parent (for dynamically spawned obstacles)
