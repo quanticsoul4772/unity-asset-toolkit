@@ -29,11 +29,24 @@ Unity Asset Store project for AI/pathfinding tools. C#, Unity 7 LTS, Visual Stud
 ## Project Status 
  
 **Phase:** Development (January 2026) 
-**Current Project:** EasyPath - A* Pathfinding Asset 
-**Status:** ✅ Working! Pathfinding tested and functional in Unity 6 
-**Next Project:** SwarmAI - Multi-Agent Coordination System
-**SwarmAI Status:** Phase 1 Complete! Core framework implemented.
-**Next Step:** SwarmAI Phase 2 - Steering Behaviors (see docs/SWARMAI-DESIGN.md) 
+**Current Project:** SwarmAI - Multi-Agent Coordination System
+
+### EasyPath Status
+**Status:** ✅ Complete! Ready for Asset Store submission
+- A* pathfinding working and tested
+- Multi-agent click-to-move support
+- Demo scenes: Basic, Multi-Agent, Stress Test
+- Obstacle layer auto-configuration with "Fix Existing Demo Scenes" menu
+
+### SwarmAI Status  
+**Status:** ✅ Phase 1-4 Complete! All core features implemented.
+- ✅ Phase 1: Core Framework (SwarmManager, SwarmAgent, States, Spatial Hash)
+- ✅ Phase 2: Steering Behaviors (Seek, Flee, Arrive, Wander, Flocking, Obstacle Avoidance)
+- ✅ Phase 3: Advanced Features (Formations, Resource Gathering, Groups, Messaging)
+- ✅ Phase 4: Demo Scenes (Flocking, Formation, Resource Gathering)
+- 🔄 Phase 5: Combat Formations Demo (in progress)
+
+**Next Step:** Create Combat Formations demo, then prepare for Asset Store submission 
  
 ## Development Environment 
 
@@ -214,6 +227,8 @@ assets/EasyPath/Assets/SwarmAI/
 - Build → Quick Build / Release Build
 
 **Demo Scene Controls (during Play mode):**
+
+### EasyPath Demo Controls
 | Input | Action |
 |-------|--------|
 | Left-click | Move all agents to clicked position |
@@ -225,6 +240,22 @@ assets/EasyPath/Assets/SwarmAI/
 | G | Gather agents to center |
 | X | Scatter agents to corners |
 | R | Rebuild pathfinding grid |
+
+### SwarmAI Flocking Demo Controls
+| Input | Action |
+|-------|--------|
+| Left-click | Set flock target position |
+| 1-5 | Toggle behaviors (Separation, Alignment, Cohesion, Wander, Obstacle Avoidance) |
+| 6 | Toggle Seek behavior |
+| Space | Scatter flock |
+| G | Gather at center |
+
+### SwarmAI Formation Demo Controls
+| Input | Action |
+|-------|--------|
+| WASD | Move leader manually |
+| Left-click | Move formation to position |
+| 1-6 | Change formation (Line, Column, Circle, Wedge, V, Box) |
 
 ## Unity 6 Compatibility Notes
 
@@ -242,6 +273,10 @@ assets/EasyPath/Assets/SwarmAI/
 | All pathfinding fails | Grid detecting ground as obstacle | Set obstacle layer, increase check height |
 | Menu items not appearing | Domain reload needed | Reimport All or restart Unity |
 | PowerShell log reading fails | Environment variable stripping | Scripts now use `[Environment]::GetFolderPath()` |
+| EasyPath obstacle layer warning | Obstacle layer set to "Everything" | Run EasyPath → Fix Existing Demo Scenes |
+| SwarmManager cleanup warning | Singleton created during scene teardown | Use SwarmManager.HasInstance instead of Instance |
+| Formation agents oscillating | Conflicting behaviors | Use FormationSlotBehavior instead of FollowLeaderBehavior |
+| Input Manager deprecation warning | Legacy Input API detected | Set Active Input Handling to "Input System Package (New)" |
 
 ## Runtime Diagnostics
 
@@ -290,6 +325,8 @@ See: https://game.ci/docs/github/activation for license setup.
 ### Test Assemblies
 - **EasyPath.Tests.Editor** - EditMode unit tests (PathNode, PriorityQueue, benchmarks)
 - **EasyPath.Tests.Runtime** - PlayMode integration tests (pathfinding scenarios)
+- **SwarmAI.Tests.Editor** - EditMode unit tests (behaviors, formations, states, messages)
+- **SwarmAI.Tests.Runtime** - PlayMode integration tests (flocking, steering behaviors)
 
 ### Running Tests
 ```powershell

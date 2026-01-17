@@ -204,10 +204,11 @@ public class SpatialHash<T>
 ### Phase 4: Polish & Demo (Week 4) [Complete]
 - [x] Custom inspectors for all components (Phase 6)
 - [x] Debug visualization window (Phase 6)
-- [x] Demo scenes (3 minimum)
+- [x] Demo scenes (4 total)
   - [x] FlockingDemo - Separation, Alignment, Cohesion, Wander, Obstacle Avoidance
   - [x] FormationDemo - Line, Column, Circle, Wedge, V, Box formations
   - [x] ResourceGatheringDemo - GatheringState, ReturningState, ResourceNode
+  - [x] CombatFormationsDemo - Two teams, attack/retreat commands, formation controls
 - [x] Documentation (Phase 5)
 - [ ] Performance optimization
 - [x] Asset Store submission prep (Phase 7)
@@ -245,7 +246,7 @@ public class SpatialHash<T>
 - [x] Unity version compatibility checks in editor
 - [x] Package validation menu item
 - [x] Render pipeline shader fallbacks
-- [ ] Demo scenes created in Unity Editor (manual step)
+- [x] All 4 demo scenes implemented (Flocking, Formation, Resource Gathering, Combat Formations)
 - [ ] Tested on Unity 2021.3 LTS
 - [ ] Tested on Unity 2022.3 LTS
 - [ ] Tested on Unity 6
@@ -415,8 +416,8 @@ From MIT Battlecode 2026 experience:
 - [x] 100+ agents running at 60 FPS (spatial hash optimization)
 - [x] All behaviors working independently and combined
 - [x] Clean public API with XML documentation
-- [x] 3+ demo scenes showcasing features
+- [x] 4 demo scenes showcasing features (Flocking, Formation, Resource Gathering, Combat Formations)
 - [x] Editor tools for debugging
 - [x] Comprehensive documentation
-- [x] Unit tests for core systems
+- [x] Unit tests for core systems (behaviors, formations, states, messages)
 - [ ] Asset Store submission approved (pending)

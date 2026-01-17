@@ -56,6 +56,28 @@ SwarmAI demos use the new Input System - this warning appears when the legacy In
 
 ## Formation Problems
 
+### Agents Oscillating Around Formation Positions
+
+**Symptoms:** Agents move to formation positions but never settle, constantly jittering.
+
+**Cause:** Using `FollowLeaderBehavior` or `ArriveBehavior` which don't have strong enough damping.
+
+**Solution:** Use `FormationSlotBehavior` which is specifically designed for stable formations:
+
+```csharp
+// Replace FollowLeaderBehavior with FormationSlotBehavior
+agent.ClearBehaviors();
+agent.AddBehavior(new FormationSlotBehavior(3f, 0.7f, 0.5f), 1.5f);
+```
+
+### Formation Not Updating When Leader Moves
+
+**Symptoms:** Leader moves but followers don't follow.
+
+**Cause:** `SwarmFormation.UpdateSlotPositions()` not being called in Update.
+
+**Solution:** Ensure your demo controller calls `_formation.UpdateSlotPositions()` every frame.
+
 ### "Agents won't hold formation positions"
 
 **Symptoms:** Agents move to formation slots but keep oscillating, never settling.
