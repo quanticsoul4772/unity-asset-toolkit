@@ -1,1 +1,1 @@
-Fix all invalid GUID lengths in meta files - pad to 32 hex chars  
+Delete invalid meta files - Unity will regenerate valid ones  
