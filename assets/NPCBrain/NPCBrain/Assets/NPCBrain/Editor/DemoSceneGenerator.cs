@@ -64,7 +64,33 @@ namespace NPCBrain.Editor
             Debug.Log("Press Play to watch NPCs patrol their color-coded routes!");
         }
         
-        [MenuItem("NPCBrain/Create Utility Demo Scene", false, 202)]
+        [MenuItem("NPCBrain/Create Hearing Demo Scene", false, 202)]
+        public static void CreateHearingDemoScene()
+        {
+            if (!ConfirmSceneCreation("HearingDemo")) return;
+            
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            
+            SetupCamera(new Vector3(0f, 30f, -20f), 55f);
+            SetupLighting();
+            
+            // Create demo controller
+            var controller = new GameObject("HearingDemoSetup");
+            controller.AddComponent<Demo.HearingDemoSetup>();
+            
+            // Create info display
+            CreateSceneInfo("Hearing Demo", "Guards react to footsteps and gunshots");
+            
+            // Save scene
+            string scenePath = $"{DemoScenesPath}/HearingDemo.unity";
+            EnsureDirectoryExists(scenePath);
+            EditorSceneManager.SaveScene(scene, scenePath);
+            
+            Debug.Log($"<color=green>Hearing Demo Scene created at: {scenePath}</color>");
+            Debug.Log("Press Play to test. Use WASD to move (emits footsteps). Left-click to fire gunshots!");
+        }
+        
+        [MenuItem("NPCBrain/Create Utility Demo Scene", false, 203)]
         public static void CreateUtilityDemoScene()
         {
             if (!ConfirmSceneCreation("UtilityDemo")) return;
@@ -90,11 +116,11 @@ namespace NPCBrain.Editor
             Debug.Log("Press Play to watch NPCs make utility-based decisions. Temperature and Inertia will change!");
         }
         
-        [MenuItem("NPCBrain/Create All Demo Scenes", false, 203)]
+        [MenuItem("NPCBrain/Create All Demo Scenes", false, 204)]
         public static void CreateAllDemoScenes()
         {
             if (!EditorUtility.DisplayDialog("Create All Demo Scenes",
-                "This will create GuardDemo.unity, PatrolDemo.unity, and UtilityDemo.unity in the Demo/Scenes folder.\n\nContinue?",
+                "This will create GuardDemo.unity, PatrolDemo.unity, HearingDemo.unity, and UtilityDemo.unity in the Demo/Scenes folder.\n\nContinue?",
                 "Create All", "Cancel"))
             {
                 return;
@@ -102,6 +128,7 @@ namespace NPCBrain.Editor
             
             CreateGuardDemoSceneInternal();
             CreatePatrolDemoSceneInternal();
+            CreateHearingDemoSceneInternal();
             CreateUtilityDemoSceneInternal();
             
             Debug.Log("<color=green>All demo scenes created successfully!</color>");
@@ -119,7 +146,13 @@ namespace NPCBrain.Editor
             OpenDemoScene("PatrolDemo");
         }
         
-        [MenuItem("NPCBrain/Open Utility Demo", false, 212)]
+        [MenuItem("NPCBrain/Open Hearing Demo", false, 212)]
+        public static void OpenHearingDemo()
+        {
+            OpenDemoScene("HearingDemo");
+        }
+        
+        [MenuItem("NPCBrain/Open Utility Demo", false, 213)]
         public static void OpenUtilityDemo()
         {
             OpenDemoScene("UtilityDemo");
@@ -155,6 +188,23 @@ namespace NPCBrain.Editor
             CreateSceneInfo("Patrol Demo", "Simple waypoint patrol with timing variation");
             
             string scenePath = $"{DemoScenesPath}/PatrolDemo.unity";
+            EnsureDirectoryExists(scenePath);
+            EditorSceneManager.SaveScene(scene, scenePath);
+        }
+        
+        private static void CreateHearingDemoSceneInternal()
+        {
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            
+            SetupCamera(new Vector3(0f, 30f, -20f), 55f);
+            SetupLighting();
+            
+            var controller = new GameObject("HearingDemoSetup");
+            controller.AddComponent<Demo.HearingDemoSetup>();
+            
+            CreateSceneInfo("Hearing Demo", "Guards react to footsteps and gunshots");
+            
+            string scenePath = $"{DemoScenesPath}/HearingDemo.unity";
             EnsureDirectoryExists(scenePath);
             EditorSceneManager.SaveScene(scene, scenePath);
         }
@@ -204,6 +254,8 @@ namespace NPCBrain.Editor
                         CreateGuardDemoScene();
                     else if (sceneName == "PatrolDemo")
                         CreatePatrolDemoScene();
+                    else if (sceneName == "HearingDemo")
+                        CreateHearingDemoScene();
                     else if (sceneName == "UtilityDemo")
                         CreateUtilityDemoScene();
                 }

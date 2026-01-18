@@ -67,6 +67,7 @@ public class MyNPC : NPCBrainController
 Access demo scenes via the Unity menu:
 - **NPCBrain > Open Guard Demo** - Guards patrol and chase detected players
 - **NPCBrain > Open Patrol Demo** - NPCs follow waypoint paths
+- **NPCBrain > Open Hearing Demo** - Guards react to footsteps and gunshots
 - **NPCBrain > Open Utility Demo** - Utility AI with Criticality system
 
 ## Architecture
