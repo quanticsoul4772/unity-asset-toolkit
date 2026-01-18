@@ -111,12 +111,6 @@ namespace NPCBrain.Archetypes
             }
         }
         
-        private void IncreaseAlert(float amount)
-        {
-            float current = Blackboard.Get("alertLevel", 0f);
-            Blackboard.Set("alertLevel", Mathf.Clamp01(current + amount));
-        }
-        
         private void DecayAlert()
         {
             float current = Blackboard.Get("alertLevel", 0f);

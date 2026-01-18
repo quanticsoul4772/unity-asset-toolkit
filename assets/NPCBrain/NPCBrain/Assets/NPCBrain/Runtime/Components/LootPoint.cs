@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using NPCBrain.Perception;
 
 namespace NPCBrain.Components
 {
@@ -57,8 +58,8 @@ namespace NPCBrain.Components
             // Trigger alarm
             if (_triggersAlarm)
             {
-                Perception.SoundManager.EmitAlarm(transform.position, 1f, gameObject);
-                NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, $"[CopsAndRobbers] ALARM! Loot stolen at {transform.position}", this);
+                NPCBrain.Perception.SoundManager.EmitAlarm(transform.position, 1f, gameObject);
+                NPCBrain.NPCBrainDebug.Log(NPCBrain.NPCBrainDebug.Category.Hearing, $"[CopsAndRobbers] ALARM! Loot stolen at {transform.position}", this);
             }
             
             // Raise event
