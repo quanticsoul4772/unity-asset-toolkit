@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using NPCBrain.Archetypes;
 using NPCBrain.Perception;
+using NPCBrain.BehaviorTree.Composites;
 
 namespace NPCBrain.Demo
 {
@@ -244,12 +245,12 @@ namespace NPCBrain.Demo
         
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 380, 400));
+            GUILayout.BeginArea(new Rect(10, 10, 450, 550));
             
             // Title
             GUILayout.BeginVertical("box");
             GUILayout.Label("<size=16><b>NPCBrain Guard Demo</b></size>");
-            GUILayout.Label("<i>Demonstrating GuardNPC archetype</i>");
+            GUILayout.Label("<i>Demonstrating GuardNPC + Utility AI + Criticality</i>");
             GUILayout.EndVertical();
             
             GUILayout.Space(5);
@@ -263,36 +264,66 @@ namespace NPCBrain.Demo
             
             GUILayout.Space(5);
             
-            // Guard info
+            // Guard info with Criticality
             GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>Guards:</b>");
+            GUILayout.Label("<b>Guards (Utility AI):</b>");
             foreach (var guard in _guards)
             {
                 if (guard == null) continue;
                 
-                string state = "Patrol";
-                float alertLevel = guard.Blackboard.Get("alertLevel", 0f);
+                string state = guard.CurrentState;
+                float alertLevel = guard.AlertLevel;
+                
+                string stateColor = "green";
+                if (state.Contains("Chase")) stateColor = "red";
+                else if (state.Contains("Investigate")) stateColor = "yellow";
+                else if (state.Contains("Return")) stateColor = "cyan";
+                
+                // Get current action from UtilitySelector
+                string actionName = "(selecting)";
+                if (guard.BehaviorTree is UtilitySelector selector && selector.CurrentAction != null)
+                {
+                    actionName = selector.CurrentAction.Name;
+                }
+                
+                // Get Criticality info
+                string critInfo = "";
+                if (guard.Criticality != null)
+                {
+                    float temp = guard.Criticality.Temperature;
+                    float inertia = guard.Criticality.Inertia;
+                    string tempColor = temp < 1f ? "green" : (temp < 1.5f ? "yellow" : "red");
+                    critInfo = $" T:<color={tempColor}>{temp:F1}</color> I:{inertia:F1}";
+                }
+                
                 bool hasTarget = guard.Blackboard.Has("target");
-                bool hasLastKnown = guard.Blackboard.Has("lastKnownPosition");
+                string targetInfo = hasTarget ? " [Target visible]" : "";
                 
-                if (hasTarget) state = "<color=red>CHASE</color>";
-                else if (hasLastKnown) state = "<color=yellow>INVESTIGATE</color>";
-                else if (alertLevel > 0.1f) state = "<color=orange>RETURNING</color>";
-                else state = "<color=green>Patrol</color>";
-                
-                GUILayout.Label($"  {guard.name}: {state} (Alert: {alertLevel:F1})");
+                GUILayout.Label($"  {guard.name}: <color={stateColor}>{actionName}</color>{critInfo}");
+                GUILayout.Label($"      Alert: {alertLevel:F2}{targetInfo}");
             }
             GUILayout.EndVertical();
             
             GUILayout.Space(5);
             
-            // Behavior explanation
+            // Criticality explanation
             GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>Guard Behavior Priority:</b>");
-            GUILayout.Label("  1. Chase visible target");
-            GUILayout.Label("  2. Investigate last known position");
-            GUILayout.Label("  3. Return to post");
-            GUILayout.Label("  4. Patrol waypoints");
+            GUILayout.Label("<b>Criticality System:</b>");
+            GUILayout.Label("  <b>T</b> = Temperature (exploration vs exploitation)");
+            GUILayout.Label("    <color=green>Low</color> = Deterministic, picks best action");
+            GUILayout.Label("    <color=red>High</color> = Random, explores alternatives");
+            GUILayout.Label("  <b>I</b> = Inertia (tendency to repeat actions)");
+            GUILayout.EndVertical();
+            
+            GUILayout.Space(5);
+            
+            // Utility actions
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("<b>Utility Actions (scored dynamically):</b>");
+            GUILayout.Label("  <color=red>Chase</color> - Has visible target + close + alert");
+            GUILayout.Label("  <color=yellow>Investigate</color> - Has last known position + alert");
+            GUILayout.Label("  <color=cyan>Return</color> - Far from home + no threats");
+            GUILayout.Label("  <color=green>Patrol</color> - Baseline fallback");
             GUILayout.EndVertical();
             
             GUILayout.EndArea();

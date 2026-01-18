@@ -2,29 +2,27 @@ using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;
-using NPCBrain.BehaviorTree.Conditions;
 using NPCBrain.BehaviorTree.Decorators;
+using NPCBrain.UtilityAI;
 
 namespace NPCBrain.Archetypes
 {
     /// <summary>
-    /// Guard NPC archetype that patrols waypoints, investigates suspicious activity,
-    /// and chases visible targets before returning to patrol.
+    /// Guard NPC archetype that uses Utility AI with sight-aware scoring.
+    /// Responds to visual stimuli with dynamic, probabilistic behavior.
     /// </summary>
     /// <remarks>
-    /// <para>Behavior priority (highest to lowest):</para>
-    /// <list type="number">
-    ///   <item><description>Chase visible target</description></item>
-    ///   <item><description>Investigate last known position</description></item>
-    ///   <item><description>Return to patrol route</description></item>
-    ///   <item><description>Patrol waypoints</description></item>
-    /// </list>
-    /// <para>Blackboard keys used:</para>
+    /// <para>Utility-scored behaviors:</para>
     /// <list type="bullet">
-    ///   <item><description>"target" - Current chase target (GameObject)</description></item>
-    ///   <item><description>"lastKnownPosition" - Where target was last seen (Vector3)</description></item>
-    ///   <item><description>"homePosition" - Starting position to return to (Vector3)</description></item>
-    ///   <item><description>"alertLevel" - Current alert state (float, 0-1)</description></item>
+    ///   <item><description>Chase - High score when target visible and close</description></item>
+    ///   <item><description>Investigate - Medium score for last known positions</description></item>
+    ///   <item><description>Return - Score when far from home, no threats</description></item>
+    ///   <item><description>Patrol - Baseline fallback behavior</description></item>
+    /// </list>
+    /// <para>The Criticality system adjusts temperature based on action variety:</para>
+    /// <list type="bullet">
+    ///   <item><description>Repetitive behavior → Higher temperature → More exploration</description></item>
+    ///   <item><description>Varied behavior → Lower temperature → More exploitation</description></item>
     /// </list>
     /// </remarks>
     public class GuardNPC : NPCBrainController
@@ -43,7 +41,19 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _alertDecayRate = 0.1f;
         [SerializeField] private float _alertIncreaseRate = 0.5f;
         
+        [Header("Utility Weights")]
+        [SerializeField] private float _chaseWeight = 1.0f;
+        [SerializeField] private float _investigateWeight = 0.7f;
+        [SerializeField] private float _returnWeight = 0.4f;
+        [SerializeField] private float _patrolWeight = 0.3f;
+        
         private Vector3 _homePosition;
+        
+        /// <summary>Current behavior state for UI display.</summary>
+        public string CurrentState => Blackboard.Get("currentState", "Patrol");
+        
+        /// <summary>Current alert level (0-1).</summary>
+        public float AlertLevel => Blackboard.Get("alertLevel", 0f);
         
         protected override void Awake()
         {
@@ -51,6 +61,13 @@ namespace NPCBrain.Archetypes
             _homePosition = transform.position;
             Blackboard.Set("homePosition", _homePosition);
             Blackboard.Set("alertLevel", 0f);
+            Blackboard.Set("currentState", "Patrol");
+            
+            // Initialize action timestamps for TimeConsiderations
+            Blackboard.Set("lastChaseTime", -10f);
+            Blackboard.Set("lastInvestigateTime", -10f);
+            Blackboard.Set("lastPatrolTime", -10f);
+            Blackboard.Set("lastReturnTime", -10f);
             
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;
@@ -118,118 +135,135 @@ namespace NPCBrain.Archetypes
         /// <inheritdoc/>
         protected override BTNode CreateBehaviorTree()
         {
-            /*
-             * Guard Behavior Tree Structure:
-             * 
-             * Selector (priority fallback)
-             * ├── Sequence: CHASE (if target visible and in range)
-             * │   ├── CheckBlackboard("target")
-             * │   ├── CheckTargetInRange (custom)
-             * │   └── MoveTo(target position, chase speed)
-             * │
-             * ├── Sequence: INVESTIGATE (if last known position exists)
-             * │   ├── CheckBlackboard("lastKnownPosition")
-             * │   ├── Inverter(CheckBlackboard("target"))  // Only if no current target
-             * │   ├── MoveTo(lastKnownPosition)
-             * │   ├── Wait(investigate time)
-             * │   └── ClearLastKnownPosition (custom)
-             * │
-             * ├── Sequence: RETURN TO POST (if far from home and alert)
-             * │   ├── CheckAlertLevel (custom)
-             * │   ├── CheckFarFromHome (custom)
-             * │   └── MoveTo(homePosition)
-             * │
-             * └── Sequence: PATROL (default)
-             *     ├── MoveTo(current waypoint)
-             *     ├── Wait(waypointWaitTime)
-             *     └── AdvanceWaypoint
-             */
+            // Create utility actions with sight-aware considerations
+            var chaseAction = CreateChaseAction();
+            var investigateAction = CreateInvestigateAction();
+            var returnAction = CreateReturnAction();
+            var patrolAction = CreatePatrolAction();
             
-            return new Selector(
-                // Priority 1: Chase visible target
-                CreateChaseSequence(),
-                
-                // Priority 2: Investigate last known position
-                CreateInvestigateSequence(),
-                
-                // Priority 3: Return to patrol route if alerted and far from home
-                CreateReturnToPostSequence(),
-                
-                // Priority 4: Normal patrol
-                CreatePatrolSequence()
+            // Use UtilitySelector - this activates the Criticality system!
+            return new UtilitySelector(
+                chaseAction,
+                investigateAction,
+                returnAction,
+                patrolAction
             );
         }
         
-        private BTNode CreateChaseSequence()
+        private UtilityAction CreateChaseAction()
         {
-            var sequence = new Sequence(
-                new CheckBlackboard("target"),
-                new CheckBlackboard<float>("alertLevel", level => level > 0.2f),
-                // Check target is within chase range
-                new CheckDistance(
-                    brain => brain.transform.position,
-                    brain => GetTargetPositionForCheck(brain),
-                    _maxChaseDistance,
-                    CheckDistance.ComparisonType.LessThanOrEqual
-                ),
+            var chaseBehavior = new Sequence(
+                new SetBlackboard("lastChaseTime", () => Time.time),
+                new SetBlackboard("currentState", "Chase"),
                 new MoveTo(
                     () => GetTargetPosition(),
                     _chaseArrivalDistance,
                     _chaseSpeed,
-                    5f // Short timeout - re-evaluate often
+                    5f
                 )
             );
-            sequence.Name = "Chase";
-            return sequence;
+            chaseBehavior.Name = "ChaseBehavior";
+            
+            return new UtilityAction(
+                "Chase",
+                chaseBehavior,
+                _chaseWeight,
+                // Must have a visible target - this is the key gate
+                new BlackboardConsideration<GameObject>("HasTarget", "target",
+                    t => t != null ? 1f : 0f, null),
+                // Higher score when target is close
+                new DistanceConsideration(
+                    "TargetDistance",
+                    brain => GetTargetPositionForCheck(brain),
+                    _maxChaseDistance,
+                    true
+                ),
+                // Higher score when alert level is high
+                new BlackboardConsideration<float>("AlertForChase", "alertLevel",
+                    a => 0.5f + a * 0.5f, 0f)
+            );
         }
         
-        private BTNode CreateInvestigateSequence()
+        private UtilityAction CreateInvestigateAction()
         {
-            var sequence = new Sequence(
-                // Has a last known position to investigate
-                new CheckBlackboard("lastKnownPosition"),
-                // But no current visible target
-                new Inverter(new CheckBlackboard("target")),
-                // Still somewhat alert
-                new CheckBlackboard<float>("alertLevel", level => level > 0.1f),
-                // Go to last known position
+            var investigateBehavior = new Sequence(
+                new SetBlackboard("lastInvestigateTime", () => Time.time),
+                new SetBlackboard("currentState", "Investigate"),
                 new MoveTo(
                     () => Blackboard.Get<Vector3>("lastKnownPosition"),
                     _arrivalDistance,
                     _investigateSpeed
                 ),
-                // Look around
                 new Wait(_investigateTime),
-                // Clear investigation target
                 new ClearBlackboardKey("lastKnownPosition")
             );
-            sequence.Name = "Investigate";
-            return sequence;
+            investigateBehavior.Name = "InvestigateBehavior";
+            
+            return new UtilityAction(
+                "Investigate",
+                investigateBehavior,
+                _investigateWeight,
+                // Must have a last known position
+                new BlackboardConsideration<Vector3>("HasLastKnown", "lastKnownPosition",
+                    pos => pos != Vector3.zero ? 1f : 0f, Vector3.zero),
+                // Must not have a visible target (chase takes priority)
+                new BlackboardConsideration<GameObject>("NoVisibleTarget", "target",
+                    t => t == null ? 1f : 0f, null),
+                // Higher score when alert level is moderate to high
+                new BlackboardConsideration<float>("AlertForInvestigate", "alertLevel",
+                    a => a > 0.1f ? 0.5f + a * 0.5f : 0.2f, 0f),
+                // Distance to last known position - closer = higher priority
+                new DistanceConsideration(
+                    "LastKnownDistance",
+                    brain => brain.Blackboard.Get("lastKnownPosition", brain.transform.position),
+                    _maxChaseDistance,
+                    true
+                ),
+                // Cooldown between investigations
+                new TimeConsideration("InvestigateCooldown", "lastInvestigateTime", 2f)
+            );
         }
         
-        private BTNode CreateReturnToPostSequence()
+        private UtilityAction CreateReturnAction()
         {
-            var sequence = new Sequence(
-                // Not currently chasing or investigating
-                new Inverter(new CheckBlackboard("target")),
-                new Inverter(new CheckBlackboard("lastKnownPosition")),
-                // Far from home position
-                new CheckBlackboard<Vector3>("homePosition", 
-                    pos => Vector3.Distance(transform.position, pos) > 3f),
-                // Return home
+            var returnBehavior = new Sequence(
+                new SetBlackboard("lastReturnTime", () => Time.time),
+                new SetBlackboard("currentState", "Return"),
                 new MoveTo(
                     () => Blackboard.Get<Vector3>("homePosition"),
                     _arrivalDistance,
                     _patrolSpeed
                 )
             );
-            sequence.Name = "ReturnToPost";
-            return sequence;
+            returnBehavior.Name = "ReturnBehavior";
+            
+            return new UtilityAction(
+                "Return",
+                returnBehavior,
+                _returnWeight,
+                // Must not have target or investigation
+                new BlackboardConsideration<GameObject>("NoTarget", "target",
+                    t => t == null ? 1f : 0f, null),
+                // No pending investigation
+                new BlackboardConsideration<Vector3>("NoLastKnown", "lastKnownPosition",
+                    pos => pos == Vector3.zero ? 1f : 0.3f, Vector3.zero),
+                // Higher score when far from home
+                new DistanceConsideration(
+                    "DistanceFromHome",
+                    brain => brain.Blackboard.Get("homePosition", brain.transform.position),
+                    15f,
+                    false  // farther = higher score
+                ),
+                // Cooldown
+                new TimeConsideration("ReturnCooldown", "lastReturnTime", 5f)
+            );
         }
         
-        private BTNode CreatePatrolSequence()
+        private UtilityAction CreatePatrolAction()
         {
-            var sequence = new Sequence(
+            var patrolBehavior = new Sequence(
+                new SetBlackboard("lastPatrolTime", () => Time.time),
+                new SetBlackboard("currentState", "Patrol"),
                 new MoveTo(
                     () => GetCurrentWaypoint(),
                     _arrivalDistance,
@@ -238,8 +272,20 @@ namespace NPCBrain.Archetypes
                 new Wait(_waypointWaitTime),
                 new AdvanceWaypoint()
             );
-            sequence.Name = "Patrol";
-            return sequence;
+            patrolBehavior.Name = "PatrolBehavior";
+            
+            return new UtilityAction(
+                "Patrol",
+                patrolBehavior,
+                _patrolWeight,
+                // Always available as baseline (constant score)
+                new ConstantConsideration(0.8f),
+                // Less likely when alert is high
+                new BlackboardConsideration<float>("LowAlert", "alertLevel",
+                    a => 1f - a * 0.5f, 0f),
+                // Cooldown between patrol waypoints
+                new TimeConsideration("PatrolCooldown", "lastPatrolTime", 2f)
+            );
         }
         
         private Vector3 GetTargetPosition()
@@ -257,7 +303,7 @@ namespace NPCBrain.Archetypes
             {
                 return target.transform.position;
             }
-            return brain.transform.position; // Same position = 0 distance = will fail range check
+            return brain.transform.position;
         }
     }
 }
