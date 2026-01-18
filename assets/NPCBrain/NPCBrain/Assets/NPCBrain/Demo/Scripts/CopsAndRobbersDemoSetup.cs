@@ -43,9 +43,6 @@ namespace NPCBrain.Demo
         private bool _gameEnded;
         private string _winner;
         
-        // UI scroll
-        private Vector2 _scrollPosition;
-        
         private void Start()
         {
             if (_autoGenerate)
@@ -134,10 +131,41 @@ namespace NPCBrain.Demo
                     DestroyImmediate(obj);
             }
             
+            // Unsubscribe from events before clearing
+            foreach (var cop in _cops)
+            {
+                if (cop != null) cop.OnArrest -= OnCopArrest;
+            }
+            foreach (var loot in _lootPoints)
+            {
+                if (loot != null) loot.OnStolen -= OnLootStolen;
+            }
+            if (_escapeZone != null)
+            {
+                _escapeZone.OnRobberEscaped -= OnRobberEscaped;
+            }
+            
             _cops.Clear();
             _robbers.Clear();
             _lootPoints.Clear();
             _escapeZone = null;
+        }
+        
+        private void OnDestroy()
+        {
+            // Unsubscribe from all events to prevent memory leaks
+            foreach (var cop in _cops)
+            {
+                if (cop != null) cop.OnArrest -= OnCopArrest;
+            }
+            foreach (var loot in _lootPoints)
+            {
+                if (loot != null) loot.OnStolen -= OnLootStolen;
+            }
+            if (_escapeZone != null)
+            {
+                _escapeZone.OnRobberEscaped -= OnRobberEscaped;
+            }
         }
         
         private void CreateGround()
@@ -305,26 +333,24 @@ namespace NPCBrain.Demo
             // Bank vault loot (high value)
             Vector3 bankCenter = new Vector3(halfSize * 0.5f, 0.5f, halfSize * 0.5f);
             
-            var mainLoot = LootPoint.Create(bankCenter + new Vector3(0f, 0f, 0f), 500, transform);
-            mainLoot.name = "MainVaultLoot";
-            _lootPoints.Add(mainLoot);
-            mainLoot.OnStolen += OnLootStolen;
+            // Define loot positions and values
+            var lootDefinitions = new (Vector3 position, int value, string name)[]
+            {
+                (bankCenter + new Vector3(0f, 0f, 0f), 500, "MainVaultLoot"),
+                (bankCenter + new Vector3(-2f, 0f, 1f), 200, "SideLoot1"),
+                (new Vector3(-halfSize * 0.6f, 0.5f, -halfSize * 0.6f), 100, "ShopLoot1"),
+                (new Vector3(-halfSize * 0.3f, 0.5f, -halfSize * 0.7f), 100, "ShopLoot2"),
+            };
             
-            var sideLoot1 = LootPoint.Create(bankCenter + new Vector3(-2f, 0f, 1f), 200, transform);
-            sideLoot1.name = "SideLoot1";
-            _lootPoints.Add(sideLoot1);
-            sideLoot1.OnStolen += OnLootStolen;
-            
-            // Shop loot (lower value)
-            var shopLoot1 = LootPoint.Create(new Vector3(-halfSize * 0.6f, 0.5f, -halfSize * 0.6f), 100, transform);
-            shopLoot1.name = "ShopLoot1";
-            _lootPoints.Add(shopLoot1);
-            shopLoot1.OnStolen += OnLootStolen;
-            
-            var shopLoot2 = LootPoint.Create(new Vector3(-halfSize * 0.3f, 0.5f, -halfSize * 0.7f), 100, transform);
-            shopLoot2.name = "ShopLoot2";
-            _lootPoints.Add(shopLoot2);
-            shopLoot2.OnStolen += OnLootStolen;
+            // Create loot points up to the configured count
+            for (int i = 0; i < Mathf.Min(_lootCount, lootDefinitions.Length); i++)
+            {
+                var def = lootDefinitions[i];
+                var loot = LootPoint.Create(def.position, def.value, transform);
+                loot.name = def.name;
+                _lootPoints.Add(loot);
+                loot.OnStolen += OnLootStolen;
+            }
         }
         
         private void OnLootStolen(LootPoint loot, GameObject thief)

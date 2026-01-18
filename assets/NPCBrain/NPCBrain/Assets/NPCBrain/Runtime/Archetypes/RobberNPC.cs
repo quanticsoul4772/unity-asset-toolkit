@@ -56,6 +56,8 @@ namespace NPCBrain.Archetypes
         private List<LootPoint> _knownLootPoints = new List<LootPoint>();
         private float _lastCopSightTime;
         private bool _hasEscaped;
+        private CopNPC[] _cachedCops;
+        private float _lastCopCacheTime;
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => Blackboard.Get("currentState", "Scout");
@@ -127,37 +129,29 @@ namespace NPCBrain.Archetypes
             float closestCopDistance = float.MaxValue;
             Vector3 closestCopPosition = Vector3.zero;
             
-            // Find all cops (handle case where tag doesn't exist)
-            GameObject[] cops;
-            try
+            // Cache cop references to avoid expensive FindObjectsOfType every frame
+            // Refresh cache every 2 seconds or on first call
+            if (_cachedCops == null || Time.time - _lastCopCacheTime > 2f)
             {
-                cops = GameObject.FindGameObjectsWithTag(_copTag);
+                _cachedCops = FindObjectsOfType<CopNPC>();
+                _lastCopCacheTime = Time.time;
             }
-            catch (UnityException)
+            
+            foreach (var copNPC in _cachedCops)
             {
-                // Tag doesn't exist - find CopNPC components instead
-                var copNPCs = FindObjectsOfType<CopNPC>();
-                cops = new GameObject[copNPCs.Length];
-                for (int i = 0; i < copNPCs.Length; i++)
-                {
-                    cops[i] = copNPCs[i].gameObject;
-                }
-            }
-            foreach (var cop in cops)
-            {
-                if (cop == null) continue;
+                if (copNPC == null || !copNPC.gameObject.activeSelf) continue;
                 
-                float distance = Vector3.Distance(transform.position, cop.transform.position);
+                float distance = Vector3.Distance(transform.position, copNPC.transform.position);
                 if (distance < closestCopDistance)
                 {
                     closestCopDistance = distance;
-                    closestCopPosition = cop.transform.position;
+                    closestCopPosition = copNPC.transform.position;
                 }
                 
                 // Check if we can see this cop (simple line-of-sight)
                 if (distance <= _copDetectionRange)
                 {
-                    Vector3 dirToCop = (cop.transform.position - transform.position).normalized;
+                    Vector3 dirToCop = (copNPC.transform.position - transform.position).normalized;
                     if (!Physics.Raycast(transform.position + Vector3.up, dirToCop, distance - 0.5f))
                     {
                         canSeeCop = true;
