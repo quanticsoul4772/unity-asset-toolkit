@@ -139,12 +139,14 @@ namespace NPCBrain.Perception
         {
             _toRemove.Clear();
             
-            // Cache keys to avoid dictionary enumeration allocation
+            // Use struct enumerator directly to avoid allocation
+            var enumerator = _memories.GetEnumerator();
             _cachedKeys.Clear();
-            foreach (var key in _memories.Keys)
+            while (enumerator.MoveNext())
             {
-                _cachedKeys.Add(key);
+                _cachedKeys.Add(enumerator.Current.Key);
             }
+            enumerator.Dispose();
             
             float deltaTime = Time.deltaTime;
             for (int i = 0; i < _cachedKeys.Count; i++)
@@ -267,23 +269,18 @@ namespace NPCBrain.Perception
             GameObject mostRecent = null;
             float mostRecentTime = float.MinValue;
             
-            // Use cached keys for iteration
-            _cachedKeys.Clear();
-            foreach (var key in _memories.Keys)
+            // Use struct enumerator directly to avoid allocation
+            var enumerator = _memories.GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                _cachedKeys.Add(key);
-            }
-            
-            for (int i = 0; i < _cachedKeys.Count; i++)
-            {
-                var key = _cachedKeys[i];
-                var memory = _memories[key];
+                var memory = enumerator.Current.Value;
                 if (memory.LastSeenTime > mostRecentTime)
                 {
                     mostRecentTime = memory.LastSeenTime;
-                    mostRecent = key;
+                    mostRecent = enumerator.Current.Key;
                 }
             }
+            enumerator.Dispose();
             
             return mostRecent;
         }
@@ -350,23 +347,18 @@ namespace NPCBrain.Perception
             GameObject mostRecent = null;
             float mostRecentTime = float.MinValue;
             
-            // Use cached keys for iteration
-            _cachedKeys.Clear();
-            foreach (var key in _memories.Keys)
+            // Use struct enumerator directly to avoid allocation
+            var enumerator = _memories.GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                _cachedKeys.Add(key);
-            }
-            
-            for (int i = 0; i < _cachedKeys.Count; i++)
-            {
-                var key = _cachedKeys[i];
-                var memory = _memories[key];
+                var memory = enumerator.Current.Value;
                 if (memory.WasHeard && memory.LastHeardTime > mostRecentTime)
                 {
                     mostRecentTime = memory.LastHeardTime;
-                    mostRecent = key;
+                    mostRecent = enumerator.Current.Key;
                 }
             }
+            enumerator.Dispose();
             
             return mostRecent;
         }

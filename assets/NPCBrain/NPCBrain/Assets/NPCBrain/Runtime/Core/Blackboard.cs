@@ -264,11 +264,16 @@ namespace NPCBrain
         }
         
         /// <summary>
-        /// Removes all entries from the blackboard.
+        /// Removes all entries from the blackboard (including type-specific stores).
         /// </summary>
         public void Clear()
         {
             _data.Clear();
+            _floatData.Clear();
+            _intData.Clear();
+            _boolData.Clear();
+            _vectorData.Clear();
+            _expiringKeys.Clear();
         }
         
         /// <summary>

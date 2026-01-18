@@ -48,18 +48,15 @@ namespace NPCBrain.Perception
                 ? _soundEventPool.Pop() 
                 : new SoundEvent(position, type, volume, radius, source, customTag);
             
-            // Reset pooled sound with new values
-            if (_soundEventPool.Count >= 0) // Always reset since we might have gotten from pool
-            {
-                sound.Position = position;
-                sound.Type = type;
-                sound.Volume = Mathf.Clamp01(volume);
-                sound.Radius = Mathf.Max(0f, radius);
-                sound.Source = source;
-                sound.CustomTag = customTag;
-                sound.EffectiveVolume = volume;
-                sound.Priority = 0f;
-            }
+            // Always reset properties (whether from pool or new)
+            sound.Position = position;
+            sound.Type = type;
+            sound.Volume = Mathf.Clamp01(volume);
+            sound.Radius = Mathf.Max(0f, radius);
+            sound.Source = source;
+            sound.CustomTag = customTag;
+            sound.EffectiveVolume = volume;
+            sound.Priority = 0f;
             
             RegisterSound(sound);
             return sound;

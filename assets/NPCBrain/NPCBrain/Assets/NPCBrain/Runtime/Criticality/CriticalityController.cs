@@ -182,22 +182,18 @@ namespace NPCBrain.Criticality
             float total = _actionHistory.Count;
             float entropy = 0f;
             
-            // Cache keys to avoid dictionary enumeration allocation
-            _cachedActionIds.Clear();
-            foreach (var key in _actionCounts.Keys)
+            // Use struct enumerator directly to avoid allocation
+            var enumerator = _actionCounts.GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                _cachedActionIds.Add(key);
-            }
-            
-            for (int i = 0; i < _cachedActionIds.Count; i++)
-            {
-                int count = _actionCounts[_cachedActionIds[i]];
+                int count = enumerator.Current.Value;
                 if (count > 0)
                 {
                     float probability = count / total;
                     entropy -= probability * (float)Math.Log(probability);
                 }
             }
+            enumerator.Dispose();
             
             return entropy;
         }
