@@ -169,11 +169,11 @@ namespace NPCBrain.Demo
             guardObj.transform.position = position;
             guardObj.GetComponent<Renderer>().material.color = _guardColor;
             
-            // Add guard component
-            var guard = guardObj.AddComponent<GuardNPC>();
-            
-            // Add sight sensor with debug logging enabled
+            // Add sight sensor FIRST (before GuardNPC) so it's available in Awake()
             var sightSensor = guardObj.AddComponent<SightSensor>();
+            
+            // Add guard component (its Awake will find the SightSensor)
+            var guard = guardObj.AddComponent<GuardNPC>();
             
             // Enable debug logging via reflection to help diagnose issues
             var debugField = typeof(SightSensor).GetField("_debugLogging", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

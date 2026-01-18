@@ -1,1 +1,1 @@
-Add unconditional debug logging to SightSensor.Tick to verify it is being called  
+Fix guard detection - add SightSensor BEFORE GuardNPC so Perception is set in Awake  
