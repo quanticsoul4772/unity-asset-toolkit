@@ -624,6 +624,9 @@ namespace NPCBrain.Archetypes
             var sightSensor = robberObj.AddComponent<SightSensor>();
             sightSensor.SetTargetTag(""); // Clear tag filter to avoid "tag not defined" errors
             
+            // Add hearing sensor (required by NPCBrainController)
+            robberObj.AddComponent<HearingSensor>();
+            
             // Add robber component
             var robber = robberObj.AddComponent<RobberNPC>();
             
