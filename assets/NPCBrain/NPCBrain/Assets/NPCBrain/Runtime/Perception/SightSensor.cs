@@ -40,7 +40,10 @@ namespace NPCBrain.Perception
         [SerializeField] private int _maxRaycastsPerTick = 3;
         
         [Header("Debug")]
+        [Tooltip("Enable debug logging for this specific sensor (also requires NPCBrainDebug.Enabled)")]
         [SerializeField] private bool _debugLogging = false;
+        [Tooltip("Force debug logging even if global debug is disabled")]
+        [SerializeField] private bool _forceDebugLogging = false;
         [SerializeField] private bool _drawGizmos = true;
         [SerializeField] private Color _gizmoColorClear = new Color(0.3f, 1f, 0.3f, 0.3f);
         [SerializeField] private Color _gizmoColorAlert = new Color(1f, 0.3f, 0.3f, 0.3f);
@@ -81,15 +84,17 @@ namespace NPCBrain.Perception
             Vector3 eyePosition = transform.position + Vector3.up * _eyeHeight;
             int count = Physics.OverlapSphereNonAlloc(eyePosition, _viewDistance, _overlapResults, _targetMask);
             
-            if (_debugLogging)
+            if (ShouldLog())
             {
-                Debug.Log($"[SightSensor] OverlapSphere at {eyePosition} found {count} colliders within {_viewDistance}m (targetMask: {_targetMask.value})");
+                NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                    $"OverlapSphere at {eyePosition} found {count} colliders within {_viewDistance}m (targetMask: {_targetMask.value})", this);
                 for (int j = 0; j < count; j++)
                 {
                     var c = _overlapResults[j];
                     if (c != null && c.gameObject != gameObject)
                     {
-                        Debug.Log($"[SightSensor]   - Found: {c.name} (tag: {c.tag}, layer: {c.gameObject.layer})");
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                            $"  - Found: {c.name} (tag: {c.tag}, layer: {c.gameObject.layer})", this);
                     }
                 }
             }
@@ -110,16 +115,18 @@ namespace NPCBrain.Perception
                     {
                         if (!collider.CompareTag(_targetTag))
                         {
-                            if (_debugLogging)
+                            if (ShouldLog())
                             {
-                                Debug.Log($"[SightSensor] {collider.name} failed tag filter (has '{collider.tag}', need '{_targetTag}')");
+                                NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                                    $"{collider.name} failed tag filter (has '{collider.tag}', need '{_targetTag}')", this);
                             }
                             continue;
                         }
                     }
                     catch (UnityException)
                     {
-                        Debug.LogError($"[SightSensor] Tag '{_targetTag}' does not exist in Tag Manager! Add it via Edit > Project Settings > Tags and Layers");
+                        NPCBrainDebug.LogError(NPCBrainDebug.Category.Perception, 
+                            $"Tag '{_targetTag}' does not exist in Tag Manager! Add it via Edit > Project Settings > Tags and Layers", this);
                         continue;
                     }
                 }
@@ -132,9 +139,10 @@ namespace NPCBrain.Perception
                 float angleToTarget = Vector3.Angle(transform.forward, directionToTarget);
                 if (angleToTarget > _viewAngle * 0.5f)
                 {
-                    if (_debugLogging)
+                    if (ShouldLog())
                     {
-                        Debug.Log($"[SightSensor] {collider.name} outside view angle ({angleToTarget:F1}° > {_viewAngle * 0.5f:F1}°)");
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                            $"{collider.name} outside view angle ({angleToTarget:F1}° > {_viewAngle * 0.5f:F1}°)", this);
                     }
                     continue;
                 }
@@ -149,17 +157,19 @@ namespace NPCBrain.Perception
                         // Something blocks the view - check if it's the target
                         if (hit.collider.gameObject != collider.gameObject)
                         {
-                            if (_debugLogging)
+                            if (ShouldLog())
                             {
-                                Debug.Log($"[SightSensor] Raycast to {collider.name} blocked by {hit.collider.name}");
+                                NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                                    $"Raycast to {collider.name} blocked by {hit.collider.name}", this);
                             }
                             continue;
                         }
                     }
                     
-                    if (_debugLogging)
+                    if (ShouldLog())
                     {
-                        Debug.Log($"[SightSensor] <color=green>TARGET VISIBLE: {collider.name}</color>");
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                            $"<color=green>TARGET VISIBLE: {collider.name}</color>", this);
                     }
                     
                     // Target is visible!
@@ -282,6 +292,11 @@ namespace NPCBrain.Perception
                     }
                 }
             }
+        }
+        
+        private bool ShouldLog()
+        {
+            return _forceDebugLogging || (_debugLogging && NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Perception));
         }
     }
 }

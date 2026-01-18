@@ -54,7 +54,10 @@ namespace NPCBrain.Perception
         [SerializeField] private int _maxRaycastsPerTick = 5;
         
         [Header("Debug")]
+        [Tooltip("Enable debug logging for this specific sensor (also requires NPCBrainDebug.Enabled)")]
         [SerializeField] private bool _debugLogging = false;
+        [Tooltip("Force debug logging even if global debug is disabled")]
+        [SerializeField] private bool _forceDebugLogging = false;
         [SerializeField] private bool _drawGizmos = true;
         [SerializeField] private Color _gizmoColor = new Color(0.5f, 0.8f, 1f, 0.2f);
         [SerializeField] private Color _gizmoColorHeard = new Color(1f, 0.5f, 0.2f, 0.3f);
@@ -119,9 +122,10 @@ namespace NPCBrain.Perception
             // Get all sounds in range
             SoundManager.GetSoundsInRangeNonAlloc(earPosition, _hearingRange, _soundsInRange);
             
-            if (_debugLogging && _soundsInRange.Count > 0)
+            if (ShouldLog() && _soundsInRange.Count > 0)
             {
-                Debug.Log($"[HearingSensor] Found {_soundsInRange.Count} sounds in range");
+                NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, 
+                    $"Found {_soundsInRange.Count} sounds in range", this);
             }
             
             int raycastCount = 0;
@@ -132,9 +136,10 @@ namespace NPCBrain.Perception
                 // Skip sounds below minimum priority type
                 if (sound.Type < _minimumPriority)
                 {
-                    if (_debugLogging)
+                    if (ShouldLog())
                     {
-                        Debug.Log($"[HearingSensor] Skipping {sound.Type} - below minimum priority {_minimumPriority}");
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, 
+                            $"Skipping {sound.Type} - below minimum priority {_minimumPriority}", this);
                     }
                     continue;
                 }
@@ -164,9 +169,10 @@ namespace NPCBrain.Perception
                     if (Physics.Raycast(earPosition, direction, distance, _occlusionMask))
                     {
                         effectiveVolume *= _occlusionDamping;
-                        if (_debugLogging)
+                        if (ShouldLog())
                         {
-                            Debug.Log($"[HearingSensor] Sound occluded, volume reduced to {effectiveVolume:F2}");
+                            NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, 
+                                $"Sound occluded, volume reduced to {effectiveVolume:F2}", this);
                         }
                     }
                 }
@@ -174,9 +180,10 @@ namespace NPCBrain.Perception
                 // Skip if below threshold
                 if (effectiveVolume < _hearingThreshold)
                 {
-                    if (_debugLogging)
+                    if (ShouldLog())
                     {
-                        Debug.Log($"[HearingSensor] Sound too quiet ({effectiveVolume:F2} < {_hearingThreshold})");
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, 
+                            $"Sound too quiet ({effectiveVolume:F2} < {_hearingThreshold})", this);
                     }
                     continue;
                 }
@@ -196,9 +203,10 @@ namespace NPCBrain.Perception
                         HighestPrioritySound = sound;
                     }
                     
-                    if (_debugLogging)
+                    if (ShouldLog())
                     {
-                        Debug.Log($"[HearingSensor] <color=cyan>SOUND HEARD: {sound.Type} at {sound.Position}, volume={effectiveVolume:F2}, priority={sound.Priority:F2}</color>");
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, 
+                            $"<color=cyan>SOUND HEARD: {sound.Type} at {sound.Position}, volume={effectiveVolume:F2}, priority={sound.Priority:F2}</color>", this);
                     }
                 }
             }

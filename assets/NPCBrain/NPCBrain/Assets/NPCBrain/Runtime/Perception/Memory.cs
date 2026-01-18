@@ -12,8 +12,9 @@ namespace NPCBrain.Perception
     {
         /// <summary>
         /// When true, logs warnings when operations fail (e.g., target not in memory).
+        /// Also enabled when NPCBrainDebug.LogMemory is true.
         /// </summary>
-        public bool LogWarnings { get; set; } = true;
+        public bool LogWarnings { get; set; } = false;
         
         /// <summary>
         /// Information about a remembered target.
@@ -187,9 +188,10 @@ namespace NPCBrain.Perception
         {
             if (target == null)
             {
-                if (LogWarnings)
+                if (ShouldLogWarning())
                 {
-                    Debug.LogWarning($"[Memory] GetPredictedPosition called with null target. Returning Vector3.zero.");
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Memory, 
+                        "GetPredictedPosition called with null target. Returning Vector3.zero.");
                 }
                 return Vector3.zero;
             }
@@ -200,9 +202,10 @@ namespace NPCBrain.Perception
                 return memory.LastKnownPosition + memory.LastKnownVelocity * timeSinceSeen;
             }
             
-            if (LogWarnings)
+            if (ShouldLogWarning())
             {
-                Debug.LogWarning($"[Memory] GetPredictedPosition called for target '{target.name}' which is not in memory. " +
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Memory, 
+                    $"GetPredictedPosition called for target '{target.name}' which is not in memory. " +
                     $"Returning Vector3.zero. Use TryGetPredictedPosition or Remembers() to check first.");
             }
             return Vector3.zero;
@@ -326,6 +329,11 @@ namespace NPCBrain.Perception
             }
             
             return mostRecent;
+        }
+        
+        private bool ShouldLogWarning()
+        {
+            return LogWarnings || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Memory);
         }
     }
 }

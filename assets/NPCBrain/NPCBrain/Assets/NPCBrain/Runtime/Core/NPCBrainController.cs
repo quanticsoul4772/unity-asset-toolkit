@@ -113,13 +113,15 @@ namespace NPCBrain
             {
                 if (Perception == null)
                 {
-                    Debug.LogWarning($"[NPCBrainController] No SightSensor component found on '{gameObject.name}'. " +
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.General, 
+                        $"No SightSensor component found on '{gameObject.name}'. " +
                         $"Vision-based behaviors (CheckTargetVisible, etc.) will not work. " +
                         $"Add a SightSensor component or disable this warning via _warnOnMissingComponents.", this);
                 }
                 if (Hearing == null)
                 {
-                    Debug.LogWarning($"[NPCBrainController] No HearingSensor component found on '{gameObject.name}'. " +
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.General, 
+                        $"No HearingSensor component found on '{gameObject.name}'. " +
                         $"Hearing-based behaviors (CheckSoundHeard, etc.) will not work. " +
                         $"Add a HearingSensor component or disable this warning via _warnOnMissingComponents.", this);
                 }

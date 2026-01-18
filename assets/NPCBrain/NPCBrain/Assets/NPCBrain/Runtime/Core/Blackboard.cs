@@ -42,7 +42,7 @@ namespace NPCBrain
         
         /// <summary>
         /// When true, logs warnings when type mismatches occur in Get/TryGet.
-        /// Useful for debugging blackboard issues.
+        /// Also enabled when NPCBrainDebug.LogBlackboard is true.
         /// </summary>
         public bool LogTypeMismatches { get; set; } = false;
         
@@ -137,13 +137,13 @@ namespace NPCBrain
             }
             
             // Type mismatch - value exists but is wrong type
-            if (LogTypeMismatches)
+            if (LogTypeMismatches || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Blackboard))
             {
                 string actualType = entry.Value?.GetType().Name ?? "null";
                 string requestedType = typeof(T).Name;
-                Debug.LogWarning($"[Blackboard] Type mismatch for key '{key}': " +
-                    $"stored type is '{actualType}', but requested type is '{requestedType}'. " +
-                    $"Returning default value.");
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Blackboard, 
+                    $"Type mismatch for key '{key}': stored type is '{actualType}', " +
+                    $"but requested type is '{requestedType}'. Returning default value.");
             }
             
             return false;
