@@ -376,19 +376,20 @@ namespace NPCBrain.Demo
             car.transform.SetParent(transform);
             car.transform.position = position;
             
-            // Car body
+            // Car body - larger collider for better NPC collision
             var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
             body.name = "Body";
             body.transform.SetParent(car.transform);
-            body.transform.localPosition = new Vector3(0f, 0.6f, 0f);
-            body.transform.localScale = new Vector3(2f, 1f, 4f);
+            body.transform.localPosition = new Vector3(0f, 0.75f, 0f);
+            body.transform.localScale = new Vector3(2.2f, 1.5f, 4.2f);  // Slightly larger for collision
             body.GetComponent<Renderer>().material.color = new Color(0.6f, 0.1f, 0.1f); // Red car
+            body.isStatic = true;
             
             // Car roof
             var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
             roof.name = "Roof";
             roof.transform.SetParent(car.transform);
-            roof.transform.localPosition = new Vector3(0f, 1.3f, -0.3f);
+            roof.transform.localPosition = new Vector3(0f, 1.5f, -0.3f);
             roof.transform.localScale = new Vector3(1.8f, 0.6f, 2f);
             roof.GetComponent<Renderer>().material.color = new Color(0.5f, 0.08f, 0.08f);
             Object.Destroy(roof.GetComponent<Collider>());
@@ -411,13 +412,14 @@ namespace NPCBrain.Demo
             fountain.transform.SetParent(transform);
             fountain.transform.position = position;
             
-            // Fountain base (circular)
+            // Fountain base (circular) - make thicker so NPCs don't get stuck
             var baseObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             baseObj.name = "Base";
             baseObj.transform.SetParent(fountain.transform);
-            baseObj.transform.localPosition = new Vector3(0f, 0.3f, 0f);
-            baseObj.transform.localScale = new Vector3(6f, 0.3f, 6f);
+            baseObj.transform.localPosition = new Vector3(0f, 0.5f, 0f);
+            baseObj.transform.localScale = new Vector3(6f, 0.5f, 6f);  // Thicker base
             baseObj.GetComponent<Renderer>().material.color = new Color(0.5f, 0.5f, 0.55f); // Stone gray
+            baseObj.isStatic = true;
             
             // Fountain center pillar
             var center = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -426,6 +428,7 @@ namespace NPCBrain.Demo
             center.transform.localPosition = new Vector3(0f, 1.5f, 0f);
             center.transform.localScale = new Vector3(1.5f, 1.2f, 1.5f);
             center.GetComponent<Renderer>().material.color = new Color(0.45f, 0.45f, 0.5f);
+            center.isStatic = true;
         }
         
         private void CreateBarrier(string name, Vector3 position)
