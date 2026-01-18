@@ -51,7 +51,6 @@ namespace NPCBrain.Perception
         private readonly List<GameObject> _visibleTargets = new List<GameObject>();
         private readonly List<GameObject> _previousTargets = new List<GameObject>();
         private readonly Collider[] _overlapResults = new Collider[20];
-        private readonly HashSet<string> _invalidTags = new HashSet<string>();
         private bool _tagValidityChecked;
         private bool _targetTagIsValid;
         
@@ -309,12 +308,6 @@ namespace NPCBrain.Perception
         /// </summary>
         private bool IsTagValid(string tag)
         {
-            // Already know this tag is invalid
-            if (_invalidTags.Contains(tag))
-            {
-                return false;
-            }
-            
             // Try to validate the tag using a dummy comparison
             try
             {
@@ -324,8 +317,6 @@ namespace NPCBrain.Perception
             }
             catch (UnityException)
             {
-                // Cache that this tag is invalid
-                _invalidTags.Add(tag);
                 NPCBrainDebug.LogError(NPCBrainDebug.Category.Perception, 
                     $"Tag '{tag}' does not exist in Tag Manager! Add it via Edit > Project Settings > Tags and Layers. " +
                     $"This error will only be logged once.", this);
@@ -339,7 +330,6 @@ namespace NPCBrain.Perception
         public void ClearTagCache()
         {
             _tagValidityChecked = false;
-            _invalidTags.Clear();
         }
     }
 }
