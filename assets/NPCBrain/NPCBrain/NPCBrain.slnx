@@ -1,10 +1,10 @@
 ﻿<Solution>
+  <Project Path="NPCBrain.Demo.csproj" />
   <Project Path="NPCBrain.Editor.csproj" />
   <Project Path="NPCBrain.Tests.Editor.csproj" />
   <Project Path="NPCBrain.Runtime.csproj" />
   <Project Path="NPCBrain.Tests.Runtime.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="NPCBrain.Tests.Shared.csproj" />
-  <Project Path="NPCBrain.Demo.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
 </Solution>

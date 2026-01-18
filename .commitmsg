@@ -1,1 +1,1 @@
-Fix UtilityDemoSetup GUID length - must be 32 hex chars  
+Fix all invalid GUID lengths in meta files - pad to 32 hex chars  
