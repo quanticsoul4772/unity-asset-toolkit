@@ -92,6 +92,13 @@ namespace NPCBrain.Archetypes
             NPCRegistry<RobberNPC>.Register(this);
             _homePosition = transform.position;
             
+            // Explicitly initialize state (important if Unity's domain reload is disabled)
+            _hasEscaped = false;
+            _isCarryingLoot = false;
+            _carriedLootValue = 0;
+            _targetLoot = null;
+            _targetCover = null;
+            
             Blackboard.Set("currentState", "Scout");
             Blackboard.Set("fearLevel", 0f);
             Blackboard.Set("canSeeCop", false);
