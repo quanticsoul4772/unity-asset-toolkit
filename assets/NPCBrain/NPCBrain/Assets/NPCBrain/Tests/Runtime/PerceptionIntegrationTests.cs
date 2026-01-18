@@ -22,6 +22,9 @@ namespace NPCBrain.Tests.Runtime
         [SetUp]
         public void SetUp()
         {
+            // Suppress missing component warnings during tests
+            NPCBrainDebug.AlwaysLogWarnings = false;
+            
             // Create NPC with sight sensor
             _npcObject = new GameObject("TestNPC");
             _sightSensor = _npcObject.AddComponent<SightSensor>();
@@ -41,6 +44,9 @@ namespace NPCBrain.Tests.Runtime
         [TearDown]
         public void TearDown()
         {
+            // Restore default warning behavior
+            NPCBrainDebug.AlwaysLogWarnings = true;
+            
             if (_npcObject != null)
                 Object.Destroy(_npcObject);
             if (_targetObject != null)
