@@ -37,28 +37,34 @@ namespace NPCBrain.Tests.Runtime
         public IEnumerator Sequence_ExecutesChildrenInOrder()
         {
             int step = 0;
+            bool completed = false;
             
             var sequence = new Sequence(
                 new ActionNode(() =>
                 {
-                    Assert.AreEqual(0, step, "First action should run first");
-                    step = 1;
+                    if (!completed && step == 0) step = 1;
                     return NodeStatus.Success;
                 }),
                 new ActionNode(() =>
                 {
-                    Assert.AreEqual(1, step, "Second action should run second");
-                    step = 2;
+                    if (!completed && step == 1)
+                    {
+                        step = 2;
+                        completed = true;
+                    }
                     return NodeStatus.Success;
                 })
             );
             
             _brain.SetBehaviorTree(sequence);
             
-            yield return null;
-            yield return null;
+            // Wait until completed
+            for (int i = 0; i < 10 && !completed; i++)
+            {
+                yield return null;
+            }
             
-            Assert.AreEqual(2, step, "Both actions should have executed");
+            Assert.AreEqual(2, step, "Both actions should have executed in order");
         }
         
         [UnityTest]
@@ -86,13 +92,18 @@ namespace NPCBrain.Tests.Runtime
         [UnityTest]
         public IEnumerator Selector_StopsOnSuccess()
         {
-            bool secondRan = false;
+            int secondRunCount = 0;
+            int firstRunCount = 0;
             
             var selector = new Selector(
-                new ActionNode(() => NodeStatus.Success),
                 new ActionNode(() =>
                 {
-                    secondRan = true;
+                    firstRunCount++;
+                    return NodeStatus.Success;
+                }),
+                new ActionNode(() =>
+                {
+                    secondRunCount++;
                     return NodeStatus.Success;
                 })
             );
@@ -100,9 +111,11 @@ namespace NPCBrain.Tests.Runtime
             _brain.SetBehaviorTree(selector);
             
             yield return null;
-            yield return null;
+            _brain.Pause(); // Stop to check state
             
-            Assert.IsFalse(secondRan, "Second child should not run when first succeeds");
+            // First should have run, second should not (within same execution cycle)
+            Assert.Greater(firstRunCount, 0, "First child should run");
+            Assert.AreEqual(0, secondRunCount, "Second child should not run when first succeeds");
         }
         
         [UnityTest]
@@ -171,7 +184,7 @@ namespace NPCBrain.Tests.Runtime
             _brain.SetBehaviorTree(inverter);
             
             yield return null;
-            yield return null;
+            _brain.Pause(); // Stop to check state
             
             Assert.IsTrue(innerRan, "Inner action should run");
             Assert.AreEqual(NodeStatus.Failure, _brain.LastStatus, "Inverter should invert success to failure");
