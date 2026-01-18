@@ -2,6 +2,49 @@
 
 This folder contains polished demo scenes showcasing NPCBrain's archetype NPCs.
 
+## Cops and Robbers Demo (NEW!)
+
+**File:** `Scenes/CopsAndRobbersDemo.unity`
+
+A unified demo showcasing ALL NPC archetypes working together in an interactive heist scenario.
+
+### Features
+- **CopNPC** - Police officers that patrol, investigate sounds/alarms, chase and arrest robbers
+- **RobberNPC** - Thieves that steal loot, evade cops, hide, and escape
+- **LootPoints** - Stealable objectives that trigger alarms when stolen
+- **EscapeZone** - Victory condition for robbers carrying loot
+- **CoverPoints** - Hiding spots for robbers
+- Full Utility AI with Criticality system for all NPCs
+- Scoring system tracking arrests vs escapes
+- Real-time UI showing all NPC states and Criticality values
+
+### How It Works
+1. Robbers spawn near the escape zone and seek out loot
+2. Cops patrol the area, listening for alarms and footsteps
+3. When a robber steals loot, an alarm sounds alerting nearby cops
+4. Robbers must evade cops and reach the escape zone with their loot
+5. Cops win by arresting robbers; Robbers win by escaping with loot
+
+### Behaviors
+
+**Cops (CopNPC)**
+- Arrest - Capture robbers when very close
+- Chase - Pursue visible robbers
+- InvestigateAlarm - Rush to alarm locations
+- InvestigateSound - Check suspicious footsteps
+- Return - Go back to patrol area
+- Patrol - Follow waypoints
+
+**Robbers (RobberNPC)**
+- Flee - Run away from visible cops
+- CarryToEscape - Head to escape zone with loot
+- StealLoot - Pick up loot when safe
+- Hide - Take cover when pursued
+- Sneak - Move carefully when cops are nearby
+- Scout - Look for loot opportunities
+
+---
+
 ## Creating Demo Scenes
 
 Use the Unity menu to create demo scenes:
