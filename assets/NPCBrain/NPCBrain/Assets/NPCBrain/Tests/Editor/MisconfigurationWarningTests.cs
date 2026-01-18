@@ -204,10 +204,15 @@ namespace NPCBrain.Tests.Editor
             var pathObject = new GameObject("Path");
             var path = pathObject.AddComponent<WaypointPath>();
             
+            // Enable debug logging for waypoints
+            NPCBrainDebug.Enabled = true;
+            NPCBrainDebug.LogWaypoints = true;
+            
             LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*GetCurrent.*no waypoints configured"));
             
             path.GetCurrent();
             
+            NPCBrainDebug.Enabled = false;
             Object.DestroyImmediate(pathObject);
         }
         
@@ -217,10 +222,15 @@ namespace NPCBrain.Tests.Editor
             var pathObject = new GameObject("Path");
             var path = pathObject.AddComponent<WaypointPath>();
             
+            // Enable debug logging for waypoints
+            NPCBrainDebug.Enabled = true;
+            NPCBrainDebug.LogWaypoints = true;
+            
             LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*GetWaypoint.*no waypoints configured"));
             
             path.GetWaypoint(0);
             
+            NPCBrainDebug.Enabled = false;
             Object.DestroyImmediate(pathObject);
         }
         
@@ -235,10 +245,15 @@ namespace NPCBrain.Tests.Editor
             wp1.transform.SetParent(pathObject.transform);
             path.PopulateFromChildren();
             
+            // Enable debug logging for waypoints
+            NPCBrainDebug.Enabled = true;
+            NPCBrainDebug.LogWaypoints = true;
+            
             LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*Invalid waypoint index"));
             
             path.GetWaypoint(5); // Invalid index
             
+            NPCBrainDebug.Enabled = false;
             Object.DestroyImmediate(pathObject);
         }
         
@@ -266,6 +281,10 @@ namespace NPCBrain.Tests.Editor
             var pathObject = new GameObject("Path");
             var path = pathObject.AddComponent<WaypointPath>();
             
+            // Enable debug logging for waypoints
+            NPCBrainDebug.Enabled = true;
+            NPCBrainDebug.LogWaypoints = true;
+            
             // Should only warn once, not spam
             LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*no waypoints configured"));
             
@@ -275,6 +294,7 @@ namespace NPCBrain.Tests.Editor
             
             LogAssert.NoUnexpectedReceived();
             
+            NPCBrainDebug.Enabled = false;
             Object.DestroyImmediate(pathObject);
         }
         
