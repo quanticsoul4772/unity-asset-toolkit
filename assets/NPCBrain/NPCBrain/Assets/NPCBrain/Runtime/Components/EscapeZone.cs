@@ -4,8 +4,6 @@ using UnityEngine;
 
 namespace NPCBrain.Components
 {
-    using NPCBrain; // For NPCBrainDebug
-
     /// <summary>
     /// A zone where robbers can escape with stolen loot.
     /// Triggers victory when a robber with loot enters.

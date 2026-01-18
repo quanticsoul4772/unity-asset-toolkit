@@ -3,8 +3,6 @@ using UnityEngine;
 
 namespace NPCBrain.Components
 {
-    using NPCBrain; // For NPCBrainDebug
-
     /// <summary>
     /// A point of interest that can be stolen by RobberNPCs.
     /// Emits an alarm sound when stolen to alert nearby cops.
