@@ -91,6 +91,7 @@ namespace NPCBrain.UtilityAI
     public class SoundDistanceConsideration : Consideration
     {
         private readonly float _maxDistance;
+        private readonly float _maxDistanceSqr;
         private readonly bool _invertScore;
         
         /// <summary>
@@ -108,6 +109,7 @@ namespace NPCBrain.UtilityAI
             : base(name, curve)
         {
             _maxDistance = maxDistance > 0 ? maxDistance : 30f;
+            _maxDistanceSqr = _maxDistance * _maxDistance;
             _invertScore = invertScore;
         }
         
@@ -119,8 +121,11 @@ namespace NPCBrain.UtilityAI
             }
             
             Vector3 soundPos = brain.Blackboard.Get<Vector3>("investigatePosition");
-            float distance = Vector3.Distance(brain.transform.position, soundPos);
-            float normalized = Mathf.Clamp01(distance / _maxDistance);
+            // Use sqrMagnitude to avoid sqrt operation
+            float distanceSqr = (soundPos - brain.transform.position).sqrMagnitude;
+            float normalizedSqr = distanceSqr / _maxDistanceSqr;
+            // sqrt only the normalized value (cheaper than full distance)
+            float normalized = Mathf.Clamp01(Mathf.Sqrt(normalizedSqr));
             
             return _invertScore ? 1f - normalized : normalized;
         }

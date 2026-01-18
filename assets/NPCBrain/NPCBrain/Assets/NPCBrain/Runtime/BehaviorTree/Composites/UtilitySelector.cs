@@ -284,11 +284,12 @@ namespace NPCBrain.BehaviorTree.Composites
         /// <returns>The action, or null if not found.</returns>
         public UtilityAction GetAction(string name)
         {
-            foreach (var action in _actions)
+            // Use for loop instead of foreach to avoid enumerator allocation
+            for (int i = 0; i < _actions.Count; i++)
             {
-                if (action.Name == name)
+                if (_actions[i].Name == name)
                 {
-                    return action;
+                    return _actions[i];
                 }
             }
             return null;

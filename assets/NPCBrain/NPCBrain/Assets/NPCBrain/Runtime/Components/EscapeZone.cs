@@ -38,8 +38,9 @@ namespace NPCBrain.Components
         {
             if (_escapedRobbers.Contains(robber)) return false;
             
-            float distance = Vector3.Distance(transform.position, robber.transform.position);
-            if (distance > _zoneRadius) return false;
+            float distanceSqr = (transform.position - robber.transform.position).sqrMagnitude;
+            float zoneRadiusSqr = _zoneRadius * _zoneRadius;
+            if (distanceSqr > zoneRadiusSqr) return false;
             
             if (_requiresLoot && lootValue <= 0) return false;
             
@@ -56,7 +57,8 @@ namespace NPCBrain.Components
         /// </summary>
         public bool IsInZone(Vector3 position)
         {
-            return Vector3.Distance(transform.position, position) <= _zoneRadius;
+            float distSqr = (transform.position - position).sqrMagnitude;
+            return distSqr <= _zoneRadius * _zoneRadius;
         }
         
         /// <summary>

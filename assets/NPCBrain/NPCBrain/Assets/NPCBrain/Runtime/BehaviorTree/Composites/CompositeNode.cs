@@ -58,9 +58,10 @@ namespace NPCBrain.BehaviorTree.Composites
         {
             base.Reset();
             CurrentChildIndex = 0;
-            foreach (var child in Children)
+            // Use for loop instead of foreach to avoid enumerator allocation
+            for (int i = 0; i < Children.Length; i++)
             {
-                child.Reset();
+                Children[i].Reset();
             }
         }
         

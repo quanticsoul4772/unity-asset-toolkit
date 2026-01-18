@@ -123,9 +123,11 @@ namespace NPCBrain.BehaviorTree.Conditions
             // Check with custom predicate
             if (_predicate != null)
             {
-                foreach (var sound in sensor.HeardSounds)
+                // Use for loop instead of foreach to avoid enumerator allocation
+                var heardSounds = sensor.HeardSounds;
+                for (int i = 0; i < heardSounds.Count; i++)
                 {
-                    if (_predicate(sound))
+                    if (_predicate(heardSounds[i]))
                     {
                         return NodeStatus.Success;
                     }
@@ -136,9 +138,11 @@ namespace NPCBrain.BehaviorTree.Conditions
             // Check for minimum sound type
             if (_minimumType.HasValue)
             {
-                foreach (var sound in sensor.HeardSounds)
+                // Use for loop instead of foreach to avoid enumerator allocation
+                var heardSounds = sensor.HeardSounds;
+                for (int i = 0; i < heardSounds.Count; i++)
                 {
-                    if (sound.Type >= _minimumType.Value)
+                    if (heardSounds[i].Type >= _minimumType.Value)
                     {
                         return NodeStatus.Success;
                     }

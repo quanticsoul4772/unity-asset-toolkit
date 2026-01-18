@@ -79,9 +79,11 @@ namespace NPCBrain.BehaviorTree.Conditions
                 return NodeStatus.Failure;
             }
             
-            foreach (var visibleTarget in sensor.VisibleTargets)
+            // Use for loop instead of foreach to avoid enumerator allocation
+            var visibleTargets = sensor.VisibleTargets;
+            for (int i = 0; i < visibleTargets.Count; i++)
             {
-                if (visibleTarget == target)
+                if (visibleTargets[i] == target)
                 {
                     return NodeStatus.Success;
                 }

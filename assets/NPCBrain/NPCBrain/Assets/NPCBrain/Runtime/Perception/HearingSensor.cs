@@ -148,8 +148,10 @@ namespace NPCBrain.Perception
             int raycastCount = 0;
             float highestPriority = float.MinValue;
             
-            foreach (var sound in _soundsInRange)
+            for (int soundIndex = 0; soundIndex < _soundsInRange.Count; soundIndex++)
             {
+                var sound = _soundsInRange[soundIndex];
+                
                 // Skip sounds below minimum priority type
                 if (sound.Type < _minimumPriority)
                 {

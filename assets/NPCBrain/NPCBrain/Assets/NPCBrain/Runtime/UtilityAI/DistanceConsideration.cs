@@ -10,6 +10,7 @@ namespace NPCBrain.UtilityAI
     {
         private readonly System.Func<NPCBrainController, Vector3> _targetGetter;
         private readonly float _maxDistance;
+        private readonly float _maxDistanceSqr;
         private readonly bool _invertScore;
         
         /// <summary>
@@ -30,14 +31,18 @@ namespace NPCBrain.UtilityAI
         {
             _targetGetter = targetGetter;
             _maxDistance = maxDistance > 0 ? maxDistance : 10f;
+            _maxDistanceSqr = _maxDistance * _maxDistance;
             _invertScore = invertScore;
         }
         
         protected override float Evaluate(NPCBrainController brain)
         {
             Vector3 target = _targetGetter(brain);
-            float distance = Vector3.Distance(brain.transform.position, target);
-            float normalized = Mathf.Clamp01(distance / _maxDistance);
+            // Use sqrMagnitude to avoid sqrt operation
+            float distanceSqr = (target - brain.transform.position).sqrMagnitude;
+            float normalizedSqr = distanceSqr / _maxDistanceSqr;
+            // sqrt only the normalized value (cheaper than full distance)
+            float normalized = Mathf.Clamp01(Mathf.Sqrt(normalizedSqr));
             
             return _invertScore ? 1f - normalized : normalized;
         }

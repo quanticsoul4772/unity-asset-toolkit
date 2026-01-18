@@ -37,8 +37,9 @@ namespace NPCBrain.Components
         {
             if (IsOccupied && _occupant != hider) return false;
             
-            float distance = Vector3.Distance(transform.position, hider.transform.position);
-            return distance <= _hideRadius * 2f; // Can approach from 2x radius
+            float distanceSqr = (transform.position - hider.transform.position).sqrMagnitude;
+            float approachRadiusSqr = (_hideRadius * 2f) * (_hideRadius * 2f);
+            return distanceSqr <= approachRadiusSqr; // Can approach from 2x radius
         }
         
         /// <summary>

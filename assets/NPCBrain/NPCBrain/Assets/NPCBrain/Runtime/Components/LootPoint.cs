@@ -49,8 +49,9 @@ namespace NPCBrain.Components
         {
             if (_isStolen) return false;
             
-            float distance = Vector3.Distance(transform.position, thief.transform.position);
-            if (distance > _stealRadius) return false;
+            float distanceSqr = (transform.position - thief.transform.position).sqrMagnitude;
+            float stealRadiusSqr = _stealRadius * _stealRadius;
+            if (distanceSqr > stealRadiusSqr) return false;
             
             _isStolen = true;
             _stolenBy = thief;

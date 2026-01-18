@@ -104,9 +104,10 @@ namespace NPCBrain.UtilityAI
             
             float score = BaseScore;
             
-            foreach (var consideration in _considerations)
+            // Use for loop instead of foreach to avoid enumerator allocation
+            for (int i = 0; i < _considerations.Count; i++)
             {
-                float considerationScore = consideration.Score(brain);
+                float considerationScore = _considerations[i].Score(brain);
                 score *= considerationScore;
                 
                 if (score <= 0f)

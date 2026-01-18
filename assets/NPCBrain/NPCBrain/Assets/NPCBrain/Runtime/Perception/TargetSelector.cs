@@ -203,10 +203,10 @@ namespace NPCBrain.Perception
             
             // Get threat level from blackboard if available
             float threatLevel = 1f;
-            if (blackboard != null)
+            if (blackboard != null && blackboard.Has("threat_" + target.name))
             {
-                string threatKey = $"threat_{target.name}";
-                threatLevel = blackboard.Get(threatKey, 1f);
+                // Only allocate string if key exists
+                threatLevel = blackboard.Get("threat_" + target.name, 1f);
             }
             
             // Calculate total score

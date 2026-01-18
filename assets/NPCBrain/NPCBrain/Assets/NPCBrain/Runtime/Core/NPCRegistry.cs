@@ -12,6 +12,7 @@ namespace NPCBrain
     public static class NPCRegistry<T> where T : NPCBrainController
     {
         private static readonly List<T> _instances = new List<T>();
+        private static readonly HashSet<T> _instanceSet = new HashSet<T>();
         private static T[] _cachedArray;
         private static bool _isDirty = true;
         
@@ -40,7 +41,8 @@ namespace NPCBrain
         public static void Register(T instance)
         {
             if (instance == null) return;
-            if (!_instances.Contains(instance))
+            // Use HashSet for O(1) lookup instead of List.Contains() which is O(n)
+            if (_instanceSet.Add(instance))
             {
                 _instances.Add(instance);
                 _isDirty = true;
@@ -53,8 +55,9 @@ namespace NPCBrain
         public static void Unregister(T instance)
         {
             if (instance == null) return;
-            if (_instances.Remove(instance))
+            if (_instanceSet.Remove(instance))
             {
+                _instances.Remove(instance);
                 _isDirty = true;
             }
         }
@@ -65,6 +68,7 @@ namespace NPCBrain
         public static void Clear()
         {
             _instances.Clear();
+            _instanceSet.Clear();
             _cachedArray = null;
             _isDirty = true;
         }
@@ -77,8 +81,10 @@ namespace NPCBrain
             T nearest = null;
             float nearestDistSqr = maxDistance * maxDistance;
             
-            foreach (var instance in _instances)
+            // Use for loop instead of foreach to avoid enumerator allocation
+            for (int i = 0; i < _instances.Count; i++)
             {
+                var instance = _instances[i];
                 if (instance == null || !instance.gameObject.activeSelf) continue;
                 
                 float distSqr = (instance.transform.position - position).sqrMagnitude;
@@ -100,8 +106,10 @@ namespace NPCBrain
             results.Clear();
             float radiusSqr = radius * radius;
             
-            foreach (var instance in _instances)
+            // Use for loop instead of foreach to avoid enumerator allocation
+            for (int i = 0; i < _instances.Count; i++)
             {
+                var instance = _instances[i];
                 if (instance == null || !instance.gameObject.activeSelf) continue;
                 
                 float distSqr = (instance.transform.position - position).sqrMagnitude;
@@ -116,6 +124,7 @@ namespace NPCBrain
         private static void ResetStatics()
         {
             _instances.Clear();
+            _instanceSet.Clear();
             _cachedArray = null;
             _isDirty = true;
         }

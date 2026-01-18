@@ -85,14 +85,16 @@ namespace NPCBrain.BehaviorTree.Conditions
         {
             Vector3 source = _getSourcePosition(brain);
             Vector3 target = _getTargetPosition(brain);
-            float distance = Vector3.Distance(source, target);
+            // Use sqrMagnitude to avoid sqrt - comparisons work with squared values
+            float distanceSqr = (target - source).sqrMagnitude;
+            float thresholdSqr = _threshold * _threshold;
             
             bool result = _comparison switch
             {
-                ComparisonType.LessThan => distance < _threshold,
-                ComparisonType.LessThanOrEqual => distance <= _threshold,
-                ComparisonType.GreaterThan => distance > _threshold,
-                ComparisonType.GreaterThanOrEqual => distance >= _threshold,
+                ComparisonType.LessThan => distanceSqr < thresholdSqr,
+                ComparisonType.LessThanOrEqual => distanceSqr <= thresholdSqr,
+                ComparisonType.GreaterThan => distanceSqr > thresholdSqr,
+                ComparisonType.GreaterThanOrEqual => distanceSqr >= thresholdSqr,
                 _ => false
             };
             
