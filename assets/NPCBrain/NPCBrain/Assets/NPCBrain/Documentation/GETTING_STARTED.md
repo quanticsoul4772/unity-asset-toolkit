@@ -133,6 +133,8 @@ public class GuardNPC : NPCBrainController
 ### Step 3: Use Memory for Lost Targets
 
 ```csharp
+using NPCBrain.Perception; // Add this import for Memory
+
 private Memory _memory = new Memory();
 
 protected override void Awake()
@@ -353,6 +355,11 @@ return new Parallel(
 1. **Explore the Demos**: Menu > NPCBrain > Open [Demo Name]
 2. **Read the API Reference**: [API.md](API.md)
 3. **Experiment**: Combine different nodes to create unique behaviors
+
+## Requirements
+
+- Unity 6000.0 or later
+- **Input System package** (required for demo scenes)
 
 ## Tips
 
