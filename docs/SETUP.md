@@ -122,7 +122,7 @@ Use this checklist to verify your environment is correctly configured.
 ### Unity Setup
 - [ ] Visual Studio 2022 set as external editor
 - [ ] Unity ID/account created
-- [ ] Publisher account created (for Asset Store submissions)
+- [ ] Publisher account created (Optional - for Asset Store publishing)
 
 ### IDE Setup
 - [ ] Unity workload installed (VS 2022) or extensions installed (VS Code)
