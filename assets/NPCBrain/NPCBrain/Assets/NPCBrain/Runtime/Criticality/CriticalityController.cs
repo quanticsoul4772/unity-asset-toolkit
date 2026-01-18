@@ -49,7 +49,6 @@ namespace NPCBrain.Criticality
         
         private readonly Queue<int> _actionHistory;
         private readonly Dictionary<int, int> _actionCounts;
-        private readonly List<int> _cachedActionIds = new List<int>(8);
         private float _temperature = 1f;
         private float _inertia = DefaultInertia;
         private float _entropy;
