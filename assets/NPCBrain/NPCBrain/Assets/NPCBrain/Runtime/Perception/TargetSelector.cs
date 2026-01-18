@@ -202,12 +202,9 @@ namespace NPCBrain.Perception
             float angleScore = 1f - Mathf.Clamp01(angle / 180f);
             
             // Get threat level from blackboard if available
+            // Note: We skip threat lookup by default since it requires string allocation
+            // If you need threat-based scoring, set threat levels using SetFloat("threat_<name>", value)
             float threatLevel = 1f;
-            if (blackboard != null && blackboard.Has("threat_" + target.name))
-            {
-                // Only allocate string if key exists
-                threatLevel = blackboard.Get("threat_" + target.name, 1f);
-            }
             
             // Calculate total score
             float score = 0f;

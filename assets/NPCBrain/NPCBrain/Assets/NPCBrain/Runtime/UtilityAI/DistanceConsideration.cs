@@ -38,11 +38,13 @@ namespace NPCBrain.UtilityAI
         protected override float Evaluate(NPCBrainController brain)
         {
             Vector3 target = _targetGetter(brain);
-            // Use sqrMagnitude to avoid sqrt operation
             float distanceSqr = (target - brain.transform.position).sqrMagnitude;
-            float normalizedSqr = distanceSqr / _maxDistanceSqr;
-            // sqrt only the normalized value (cheaper than full distance)
-            float normalized = Mathf.Clamp01(Mathf.Sqrt(normalizedSqr));
+            // Clamp before sqrt to avoid unnecessary computation when out of range
+            if (distanceSqr >= _maxDistanceSqr)
+            {
+                return _invertScore ? 0f : 1f;
+            }
+            float normalized = Mathf.Sqrt(distanceSqr) / _maxDistance;
             
             return _invertScore ? 1f - normalized : normalized;
         }

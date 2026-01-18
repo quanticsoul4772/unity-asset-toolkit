@@ -121,11 +121,13 @@ namespace NPCBrain.UtilityAI
             }
             
             Vector3 soundPos = brain.Blackboard.Get<Vector3>("investigatePosition");
-            // Use sqrMagnitude to avoid sqrt operation
             float distanceSqr = (soundPos - brain.transform.position).sqrMagnitude;
-            float normalizedSqr = distanceSqr / _maxDistanceSqr;
-            // sqrt only the normalized value (cheaper than full distance)
-            float normalized = Mathf.Clamp01(Mathf.Sqrt(normalizedSqr));
+            // Early out if beyond max distance
+            if (distanceSqr >= _maxDistanceSqr)
+            {
+                return _invertScore ? 0f : 1f;
+            }
+            float normalized = Mathf.Sqrt(distanceSqr) / _maxDistance;
             
             return _invertScore ? 1f - normalized : normalized;
         }
