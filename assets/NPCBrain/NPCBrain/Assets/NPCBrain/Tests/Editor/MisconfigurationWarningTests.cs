@@ -46,7 +46,7 @@ namespace NPCBrain.Tests.Editor
             var selector = new UtilitySelector();
             selector.LogWarnings = true;
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[UtilitySelector\] No actions configured"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Utility\].*No actions configured"));
             
             selector.Execute(_brain);
         }
@@ -58,7 +58,7 @@ namespace NPCBrain.Tests.Editor
             var selector = new UtilitySelector(action);
             selector.LogWarnings = true;
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[UtilitySelector\] Brain is null"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Utility\].*Brain is null"));
             
             selector.Execute(null);
         }
@@ -70,7 +70,7 @@ namespace NPCBrain.Tests.Editor
             var selector = new UtilitySelector(action);
             selector.LogWarnings = true;
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[UtilitySelector\] All.*action.*scored <= 0"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Utility\].*All.*action.*scored <= 0"));
             
             selector.Execute(_brain);
         }
@@ -96,7 +96,7 @@ namespace NPCBrain.Tests.Editor
         {
             var inverter = new Inverter(null);
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Inverter\] Child node is null"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.BehaviorTree\].*Inverter.*Child node is null"));
             
             inverter.Execute(_brain);
         }
@@ -106,7 +106,7 @@ namespace NPCBrain.Tests.Editor
         {
             var repeater = new Repeater(null, 3);
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Repeater\] Child node is null"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.BehaviorTree\].*Repeater.*Child node is null"));
             
             repeater.Execute(_brain);
         }
@@ -116,7 +116,7 @@ namespace NPCBrain.Tests.Editor
         {
             var cooldown = new Cooldown(null, 1f);
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Cooldown\] Child node is null"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.BehaviorTree\].*Cooldown.*Child node is null"));
             
             cooldown.Execute(_brain);
         }
@@ -126,7 +126,7 @@ namespace NPCBrain.Tests.Editor
         {
             var succeeder = new Succeeder(null);
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Succeeder\] Child node is null"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.BehaviorTree\].*Succeeder.*Child node is null"));
             
             succeeder.Execute(_brain);
         }
@@ -153,7 +153,7 @@ namespace NPCBrain.Tests.Editor
             blackboard.LogTypeMismatches = true;
             blackboard.Set("health", "not an int");
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Blackboard\] Type mismatch for key 'health'"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Blackboard\].*Type mismatch for key 'health'"));
             
             blackboard.Get<int>("health", 42);
         }
@@ -189,7 +189,7 @@ namespace NPCBrain.Tests.Editor
             blackboard.LogTypeMismatches = true;
             blackboard.Set("position", "not a vector");
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Blackboard\] Type mismatch for key 'position'"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Blackboard\].*Type mismatch for key 'position'"));
             
             blackboard.TryGet<Vector3>("position", out _);
         }
@@ -204,7 +204,7 @@ namespace NPCBrain.Tests.Editor
             var pathObject = new GameObject("Path");
             var path = pathObject.AddComponent<WaypointPath>();
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[WaypointPath\].*GetCurrent.*no waypoints configured"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*GetCurrent.*no waypoints configured"));
             
             path.GetCurrent();
             
@@ -217,7 +217,7 @@ namespace NPCBrain.Tests.Editor
             var pathObject = new GameObject("Path");
             var path = pathObject.AddComponent<WaypointPath>();
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[WaypointPath\].*GetWaypoint.*no waypoints configured"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*GetWaypoint.*no waypoints configured"));
             
             path.GetWaypoint(0);
             
@@ -235,7 +235,7 @@ namespace NPCBrain.Tests.Editor
             wp1.transform.SetParent(pathObject.transform);
             path.PopulateFromChildren();
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[WaypointPath\] Invalid waypoint index"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*Invalid waypoint index"));
             
             path.GetWaypoint(5); // Invalid index
             
@@ -267,7 +267,7 @@ namespace NPCBrain.Tests.Editor
             var path = pathObject.AddComponent<WaypointPath>();
             
             // Should only warn once, not spam
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[WaypointPath\].*no waypoints configured"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Waypoints\].*no waypoints configured"));
             
             path.GetCurrent();
             path.GetCurrent(); // Second call should not warn again
@@ -288,7 +288,7 @@ namespace NPCBrain.Tests.Editor
             var memory = new Memory();
             memory.LogWarnings = true;
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Memory\] GetPredictedPosition called with null target"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Memory\].*GetPredictedPosition called with null target"));
             
             memory.GetPredictedPosition(null);
         }
@@ -301,7 +301,7 @@ namespace NPCBrain.Tests.Editor
             
             var target = new GameObject("Target");
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Memory\] GetPredictedPosition called for target.*not in memory"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Memory\].*GetPredictedPosition called for target.*not in memory"));
             
             memory.GetPredictedPosition(target);
             
@@ -392,8 +392,8 @@ namespace NPCBrain.Tests.Editor
             var repeater = new Repeater(null, 2);
             
             // Both should warn
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Inverter\] Child node is null"));
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[Repeater\] Child node is null"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.BehaviorTree\].*Inverter.*Child node is null"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.BehaviorTree\].*Repeater.*Child node is null"));
             
             inverter1.Execute(_brain);
             repeater.Execute(_brain);
@@ -425,7 +425,7 @@ namespace NPCBrain.Tests.Editor
             var selector = new UtilitySelector(action1, action2, action3);
             selector.LogWarnings = true;
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"All 3 action.*scored <= 0"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Utility\].*All 3 action.*scored <= 0"));
             
             selector.Execute(_brain);
         }
