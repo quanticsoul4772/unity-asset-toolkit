@@ -2,33 +2,29 @@ using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;
-using NPCBrain.BehaviorTree.Conditions;
 using NPCBrain.BehaviorTree.Decorators;
 using NPCBrain.Perception;
+using NPCBrain.UtilityAI;
 
 namespace NPCBrain.Archetypes
 {
     /// <summary>
-    /// Guard NPC archetype that responds to both visual and audio stimuli.
-    /// Patrols waypoints, investigates sounds, and chases visible targets.
+    /// Guard NPC archetype that uses Utility AI with hearing-aware scoring.
+    /// Responds to both visual and audio stimuli with dynamic, probabilistic behavior.
     /// </summary>
     /// <remarks>
-    /// <para>Behavior priority (highest to lowest):</para>
-    /// <list type="number">
-    ///   <item><description>Chase visible target</description></item>
-    ///   <item><description>Investigate gunshots (high priority sounds)</description></item>
-    ///   <item><description>Investigate footsteps (low priority sounds)</description></item>
-    ///   <item><description>Return to patrol route</description></item>
-    ///   <item><description>Patrol waypoints</description></item>
-    /// </list>
-    /// <para>Blackboard keys used:</para>
+    /// <para>Utility-scored behaviors:</para>
     /// <list type="bullet">
-    ///   <item><description>"target" - Current chase target (GameObject)</description></item>
-    ///   <item><description>"investigatePosition" - Position to investigate (Vector3)</description></item>
-    ///   <item><description>"lastSoundType" - Type of last heard sound (SoundType)</description></item>
-    ///   <item><description>"homePosition" - Starting position to return to (Vector3)</description></item>
-    ///   <item><description>"alertLevel" - Current alert state (float, 0-1)</description></item>
-    ///   <item><description>"currentState" - Current behavior state name (string)</description></item>
+    ///   <item><description>Chase - High score when target visible and close</description></item>
+    ///   <item><description>InvestigateGunshot - High score for loud sounds</description></item>
+    ///   <item><description>InvestigateFootstep - Medium score for quiet sounds</description></item>
+    ///   <item><description>ReturnToPost - Score when far from home, no threats</description></item>
+    ///   <item><description>Patrol - Baseline fallback behavior</description></item>
+    /// </list>
+    /// <para>The Criticality system adjusts temperature based on action variety:</para>
+    /// <list type="bullet">
+    ///   <item><description>Repetitive behavior → Higher temperature → More exploration</description></item>
+    ///   <item><description>Varied behavior → Lower temperature → More exploitation</description></item>
     /// </list>
     /// </remarks>
     public class HearingGuardNPC : NPCBrainController
@@ -49,6 +45,13 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _alertIncreaseRate = 0.5f;
         [SerializeField] private float _gunshotAlertBoost = 0.8f;
         [SerializeField] private float _footstepAlertBoost = 0.2f;
+        
+        [Header("Utility Weights")]
+        [SerializeField] private float _chaseWeight = 1.0f;
+        [SerializeField] private float _gunshotInvestigateWeight = 0.85f;
+        [SerializeField] private float _footstepInvestigateWeight = 0.5f;
+        [SerializeField] private float _returnWeight = 0.4f;
+        [SerializeField] private float _patrolWeight = 0.3f;
         
         private Vector3 _homePosition;
         
@@ -71,6 +74,12 @@ namespace NPCBrain.Archetypes
             Blackboard.Set("alertLevel", 0f);
             Blackboard.Set("currentState", "Patrol");
             
+            // Initialize action timestamps for TimeConsiderations
+            Blackboard.Set("lastChaseTime", -10f);
+            Blackboard.Set("lastInvestigateTime", -10f);
+            Blackboard.Set("lastPatrolTime", -10f);
+            Blackboard.Set("lastReturnTime", -10f);
+            
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;
             OnTargetLost += HandleTargetLost;
@@ -90,7 +99,6 @@ namespace NPCBrain.Archetypes
             Blackboard.Set("target", target);
             Blackboard.Set("investigatePosition", target.transform.position);
             IncreaseAlert(0.5f);
-            Blackboard.Set("currentState", "Chase");
         }
         
         private void HandleTargetLost(GameObject target)
@@ -101,7 +109,6 @@ namespace NPCBrain.Archetypes
                 if (currentTarget == target)
                 {
                     Blackboard.Remove("target");
-                    Blackboard.Set("currentState", "Investigate");
                 }
             }
         }
@@ -111,12 +118,10 @@ namespace NPCBrain.Archetypes
             // Only update investigate position if we don't have a visible target
             if (!Blackboard.Has("target"))
             {
-                // Check if this sound is higher priority than current investigation
                 bool shouldUpdate = true;
                 if (Blackboard.Has("lastSoundType"))
                 {
                     var currentType = (SoundType)Blackboard.Get<int>("lastSoundType");
-                    // Only update if new sound is higher or equal priority
                     shouldUpdate = sound.Type >= currentType;
                 }
                 
@@ -125,16 +130,13 @@ namespace NPCBrain.Archetypes
                     Blackboard.Set("investigatePosition", sound.Position);
                     Blackboard.Set("lastSoundType", (int)sound.Type);
                     
-                    // Increase alert based on sound type
                     if (sound.Type >= SoundType.Gunshot)
                     {
                         IncreaseAlert(_gunshotAlertBoost);
-                        Blackboard.Set("currentState", "Alert-Gunshot");
                     }
                     else if (sound.Type >= SoundType.Footstep)
                     {
                         IncreaseAlert(_footstepAlertBoost);
-                        Blackboard.Set("currentState", "Alert-Footstep");
                     }
                 }
             }
@@ -174,34 +176,27 @@ namespace NPCBrain.Archetypes
         /// <inheritdoc/>
         protected override BTNode CreateBehaviorTree()
         {
-            return new Selector(
-                // Priority 1: Chase visible target
-                CreateChaseSequence(),
-                
-                // Priority 2: Investigate high-priority sounds (gunshots, explosions)
-                CreateUrgentInvestigateSequence(),
-                
-                // Priority 3: Investigate low-priority sounds (footsteps)
-                CreateCasualInvestigateSequence(),
-                
-                // Priority 4: Return to patrol route if alerted and far from home
-                CreateReturnToPostSequence(),
-                
-                // Priority 5: Normal patrol
-                CreatePatrolSequence()
+            // Create utility actions with hearing-aware considerations
+            var chaseAction = CreateChaseAction();
+            var gunshotAction = CreateGunshotInvestigateAction();
+            var footstepAction = CreateFootstepInvestigateAction();
+            var returnAction = CreateReturnAction();
+            var patrolAction = CreatePatrolAction();
+            
+            // Use UtilitySelector - this activates the Criticality system!
+            return new UtilitySelector(
+                chaseAction,
+                gunshotAction,
+                footstepAction,
+                returnAction,
+                patrolAction
             );
         }
         
-        private BTNode CreateChaseSequence()
+        private UtilityAction CreateChaseAction()
         {
-            var sequence = new Sequence(
-                new CheckBlackboard("target"),
-                new CheckDistance(
-                    brain => brain.transform.position,
-                    brain => GetTargetPositionForCheck(brain),
-                    _maxChaseDistance,
-                    CheckDistance.ComparisonType.LessThanOrEqual
-                ),
+            var chaseBehavior = new Sequence(
+                new SetBlackboard("lastChaseTime", () => Time.time),
                 new SetBlackboard("currentState", "Chase"),
                 new MoveTo(
                     () => GetTargetPosition(),
@@ -210,89 +205,137 @@ namespace NPCBrain.Archetypes
                     5f
                 )
             );
-            sequence.Name = "Chase";
-            return sequence;
+            chaseBehavior.Name = "ChaseBehavior";
+            
+            return new UtilityAction(
+                "Chase",
+                chaseBehavior,
+                _chaseWeight,
+                // Must have a visible target - this is the key gate
+                new BlackboardConsideration<GameObject>("HasTarget", "target",
+                    t => t != null ? 1f : 0f, null),
+                // Higher score when target is close
+                new DistanceConsideration(
+                    "TargetDistance",
+                    brain => GetTargetPositionForCheck(brain),
+                    _maxChaseDistance,
+                    true
+                ),
+                // Higher score when alert level is high
+                new BlackboardConsideration<float>("AlertForChase", "alertLevel",
+                    a => 0.5f + a * 0.5f, 0f)
+            );
         }
         
-        private BTNode CreateUrgentInvestigateSequence()
+        private UtilityAction CreateGunshotInvestigateAction()
         {
-            var sequence = new Sequence(
-                // Has an investigate position
-                new CheckBlackboard("investigatePosition"),
-                // No current visible target
-                new Inverter(new CheckBlackboard("target")),
-                // Sound was high priority (gunshot or higher)
-                new CheckBlackboard<int>("lastSoundType", type => type >= (int)SoundType.Gunshot),
-                // Update state
-                new SetBlackboard("currentState", "Investigate-Urgent"),
-                // Go to sound location quickly
+            var investigateBehavior = new Sequence(
+                new SetBlackboard("lastInvestigateTime", () => Time.time),
+                new SetBlackboard("currentState", "Investigate-Gunshot"),
                 new MoveTo(
                     () => Blackboard.Get<Vector3>("investigatePosition"),
                     _arrivalDistance,
                     _urgentInvestigateSpeed
                 ),
-                // Look around
                 new Wait(_investigateTime * 0.5f),
-                // Clear investigation
                 new ClearBlackboardKey("investigatePosition"),
                 new ClearBlackboardKey("lastSoundType")
             );
-            sequence.Name = "UrgentInvestigate";
-            return sequence;
+            investigateBehavior.Name = "GunshotInvestigateBehavior";
+            
+            return new UtilityAction(
+                "InvestigateGunshot",
+                investigateBehavior,
+                _gunshotInvestigateWeight,
+                // Must have heard a gunshot or higher
+                new HasHeardSoundConsideration("HeardGunshot", SoundType.Gunshot),
+                // Must not have a visible target (chase takes priority)
+                new BlackboardConsideration<GameObject>("NoVisibleTarget", "target",
+                    t => t == null ? 1f : 0f, null),
+                // Higher score when sound is close
+                new SoundDistanceConsideration("GunshotDistance", 40f, true),
+                // Higher score when alert level is high
+                new BlackboardConsideration<float>("AlertForGunshot", "alertLevel",
+                    a => 0.3f + a * 0.7f, 0f),
+                // Cooldown between investigations
+                new TimeConsideration("InvestigateCooldown", "lastInvestigateTime", 2f)
+            );
         }
         
-        private BTNode CreateCasualInvestigateSequence()
+        private UtilityAction CreateFootstepInvestigateAction()
         {
-            var sequence = new Sequence(
-                // Has an investigate position
-                new CheckBlackboard("investigatePosition"),
-                // No current visible target
-                new Inverter(new CheckBlackboard("target")),
-                // Still somewhat alert
-                new CheckBlackboard<float>("alertLevel", level => level > 0.1f),
-                // Update state
-                new SetBlackboard("currentState", "Investigate"),
-                // Go to sound location
+            var investigateBehavior = new Sequence(
+                new SetBlackboard("lastInvestigateTime", () => Time.time),
+                new SetBlackboard("currentState", "Investigate-Footstep"),
                 new MoveTo(
                     () => Blackboard.Get<Vector3>("investigatePosition"),
                     _arrivalDistance,
                     _investigateSpeed
                 ),
-                // Look around
                 new Wait(_investigateTime),
-                // Clear investigation
                 new ClearBlackboardKey("investigatePosition"),
                 new ClearBlackboardKey("lastSoundType")
             );
-            sequence.Name = "CasualInvestigate";
-            return sequence;
+            investigateBehavior.Name = "FootstepInvestigateBehavior";
+            
+            return new UtilityAction(
+                "InvestigateFootstep",
+                investigateBehavior,
+                _footstepInvestigateWeight,
+                // Must have heard at least a footstep
+                new HasHeardSoundConsideration("HeardFootstep", SoundType.Footstep),
+                // Must not have a visible target
+                new BlackboardConsideration<GameObject>("NoVisibleTarget", "target",
+                    t => t == null ? 1f : 0f, null),
+                // Higher score when sound is close
+                new SoundDistanceConsideration("FootstepDistance", 25f, true),
+                // Moderate alert needed
+                new BlackboardConsideration<float>("AlertForFootstep", "alertLevel",
+                    a => a > 0.1f ? 0.5f + a * 0.5f : 0.3f, 0f),
+                // Cooldown between investigations
+                new TimeConsideration("InvestigateCooldown", "lastInvestigateTime", 3f)
+            );
         }
         
-        private BTNode CreateReturnToPostSequence()
+        private UtilityAction CreateReturnAction()
         {
-            var sequence = new Sequence(
-                // Not currently chasing or investigating
-                new Inverter(new CheckBlackboard("target")),
-                new Inverter(new CheckBlackboard("investigatePosition")),
-                // Far from home position
-                new CheckBlackboard<Vector3>("homePosition", 
-                    pos => Vector3.Distance(transform.position, pos) > 3f),
-                // Update state
+            var returnBehavior = new Sequence(
+                new SetBlackboard("lastReturnTime", () => Time.time),
                 new SetBlackboard("currentState", "Return"),
-                // Return home
                 new MoveTo(
                     () => Blackboard.Get<Vector3>("homePosition"),
                     _arrivalDistance,
                     _patrolSpeed
                 )
             );
-            sequence.Name = "ReturnToPost";
-            return sequence;
+            returnBehavior.Name = "ReturnBehavior";
+            
+            return new UtilityAction(
+                "Return",
+                returnBehavior,
+                _returnWeight,
+                // Must not have target or investigation
+                new BlackboardConsideration<GameObject>("NoTarget", "target",
+                    t => t == null ? 1f : 0f, null),
+                // No pending investigation
+                new BlackboardConsideration<Vector3>("NoInvestigation", "investigatePosition",
+                    pos => pos == Vector3.zero ? 1f : 0.3f, Vector3.zero),
+                // Higher score when far from home
+                new DistanceConsideration(
+                    "DistanceFromHome",
+                    brain => brain.Blackboard.Get("homePosition", brain.transform.position),
+                    15f,
+                    false  // farther = higher score
+                ),
+                // Cooldown
+                new TimeConsideration("ReturnCooldown", "lastReturnTime", 5f)
+            );
         }
         
-        private BTNode CreatePatrolSequence()
+        private UtilityAction CreatePatrolAction()
         {
-            var sequence = new Sequence(
+            var patrolBehavior = new Sequence(
+                new SetBlackboard("lastPatrolTime", () => Time.time),
                 new SetBlackboard("currentState", "Patrol"),
                 new MoveTo(
                     () => GetCurrentWaypoint(),
@@ -302,8 +345,20 @@ namespace NPCBrain.Archetypes
                 new Wait(_waypointWaitTime),
                 new AdvanceWaypoint()
             );
-            sequence.Name = "Patrol";
-            return sequence;
+            patrolBehavior.Name = "PatrolBehavior";
+            
+            return new UtilityAction(
+                "Patrol",
+                patrolBehavior,
+                _patrolWeight,
+                // Always available as baseline (constant score)
+                new ConstantConsideration(0.8f),
+                // Less likely when alert is high
+                new BlackboardConsideration<float>("LowAlert", "alertLevel",
+                    a => 1f - a * 0.5f, 0f),
+                // Cooldown between patrol waypoints
+                new TimeConsideration("PatrolCooldown", "lastPatrolTime", 2f)
+            );
         }
         
         private Vector3 GetTargetPosition()
