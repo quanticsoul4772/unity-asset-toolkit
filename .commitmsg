@@ -1,1 +1,1 @@
-Add UtilityDemo to DemoSceneGenerator menu items  
+Fix UtilityDemoSetup to use new Input System instead of legacy Input class  

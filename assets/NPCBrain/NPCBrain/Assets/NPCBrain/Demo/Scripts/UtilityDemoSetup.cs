@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using NPCBrain.Archetypes;
 
 namespace NPCBrain.Demo
@@ -239,10 +240,15 @@ namespace NPCBrain.Demo
         
         private void HandleInput()
         {
+            var mouse = Mouse.current;
+            var keyboard = Keyboard.current;
+            
+            if (mouse == null || keyboard == null) return;
+            
             // Left click to create interest point at mouse position
-            if (Input.GetMouseButtonDown(0))
+            if (mouse.leftButton.wasPressedThisFrame)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     SpawnInterestPoint(hit.point);
@@ -250,7 +256,7 @@ namespace NPCBrain.Demo
             }
             
             // R to reset all NPC criticality
-            if (Input.GetKeyDown(KeyCode.R))
+            if (keyboard.rKey.wasPressedThisFrame)
             {
                 foreach (var npc in _npcs)
                 {
@@ -263,7 +269,7 @@ namespace NPCBrain.Demo
             }
             
             // Space to spawn random interest point
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (keyboard.spaceKey.wasPressedThisFrame)
             {
                 SpawnRandomInterestPoint();
             }
