@@ -76,15 +76,19 @@ namespace NPCBrain.Tests.Runtime
         [UnityTest]
         public IEnumerator SightSensor_DoesNotDetectTargetTooFar()
         {
-            // Position target beyond view distance
+            // Position target beyond view distance (default is 20)
             _targetObject.transform.position = new Vector3(0f, 0f, 100f);
             _npcObject.transform.forward = Vector3.forward;
             
+            // Wait for physics to sync
+            yield return new WaitForFixedUpdate();
             yield return null;
             
             _sightSensor.Tick(_brain);
             
-            Assert.IsFalse(_sightSensor.HasVisibleTargets, "Should not detect target too far away");
+            // ViewDistance is 20 by default, target is at 100, should not be detected
+            Assert.IsFalse(_sightSensor.HasVisibleTargets, 
+                $"Should not detect target at 100 units (ViewDistance={_sightSensor.ViewDistance})");
         }
         
         [UnityTest]
