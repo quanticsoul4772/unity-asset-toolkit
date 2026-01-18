@@ -368,6 +368,11 @@ namespace NPCBrain.Perception
             }
         }
         
+        private bool ShouldLog()
+        {
+            return _forceDebugLogging || (_debugLogging && NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Hearing));
+        }
+        
         private void DrawCircle(Vector3 center, float radius, int segments)
         {
             float angleStep = 360f / segments;
