@@ -27,6 +27,10 @@ namespace NPCBrain.Tests.Runtime
             _sightSensor = _npcObject.AddComponent<SightSensor>();
             _brain = _npcObject.AddComponent<NPCBrainController>();
             
+            // Pause the brain to prevent automatic ticking during tests
+            // This gives us full control over when Tick() is called
+            _brain.Pause();
+            
             // Create target
             _targetObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             _targetObject.name = "Target";
@@ -149,9 +153,12 @@ namespace NPCBrain.Tests.Runtime
             
             yield return null;
             
+            // Evaluate with memory only (no sensor needed for this test)
             var result = selector.Evaluate(null, memory, Vector3.zero, Vector3.forward, null);
             
-            Assert.GreaterOrEqual(result.Count, 2);
+            // Memory should have 2 targets
+            Assert.AreEqual(2, memory.Count, "Memory should have 2 targets");
+            Assert.GreaterOrEqual(result.Count, 2, $"Selector should return 2 scored targets, got {result.Count}");
             Assert.AreEqual(_targetObject, result[0].Target, "Closer target should be ranked first");
             
             Object.Destroy(target2);
@@ -226,24 +233,22 @@ namespace NPCBrain.Tests.Runtime
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
             _npcObject.transform.forward = Vector3.forward;
             
-            // Wait for physics to fully sync - multiple fixed updates may be needed
+            // Wait for physics to fully sync
             yield return new WaitForFixedUpdate();
             yield return new WaitForFixedUpdate();
             yield return null;
             
+            // This is the FIRST tick (brain was paused in SetUp), so target should be newly acquired
             _sightSensor.Tick(_brain);
             
-            // If detection worked, event should have fired
-            if (_sightSensor.HasVisibleTargets)
+            if (!_sightSensor.HasVisibleTargets)
             {
-                Assert.IsTrue(eventFired, "OnTargetAcquired event should fire when target detected");
-                Assert.AreEqual(_targetObject, acquiredTarget);
-            }
-            else
-            {
-                // Physics didn't sync in time - skip this test iteration
                 Assert.Inconclusive("Physics did not sync in time - target not detected");
+                yield break;
             }
+            
+            Assert.IsTrue(eventFired, "OnTargetAcquired event should fire when target first detected");
+            Assert.AreEqual(_targetObject, acquiredTarget);
         }
         
         [UnityTest]
@@ -279,7 +284,7 @@ namespace NPCBrain.Tests.Runtime
             yield return null;
             _sightSensor.Tick(_brain);
             
-            Assert.IsTrue(lostEventFired, "OnTargetLost event should fire");
+            Assert.IsTrue(lostEventFired, "OnTargetLost event should fire when target moves out of view");
         }
     }
 }
