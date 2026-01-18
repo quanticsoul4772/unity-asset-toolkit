@@ -57,8 +57,8 @@ namespace NPCBrain.Components
             // Trigger alarm
             if (_triggersAlarm)
             {
-                NPCBrain.Perception.SoundManager.EmitAlarm(transform.position, 1f, gameObject);
-                NPCBrain.NPCBrainDebug.Log(NPCBrain.NPCBrainDebug.Category.Hearing, $"[CopsAndRobbers] ALARM! Loot stolen at {transform.position}", this);
+                Perception.SoundManager.EmitAlarm(transform.position, 1f, gameObject);
+                NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, $"[CopsAndRobbers] ALARM! Loot stolen at {transform.position}", this);
             }
             
             // Raise event

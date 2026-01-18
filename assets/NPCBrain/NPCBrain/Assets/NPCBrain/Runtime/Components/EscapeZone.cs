@@ -46,7 +46,7 @@ namespace NPCBrain.Components
             _escapedRobbers.Add(robber);
             OnRobberEscaped?.Invoke(robber, lootValue);
             
-            NPCBrain.NPCBrainDebug.Log(NPCBrain.NPCBrainDebug.Category.General, $"[CopsAndRobbers] Robber escaped with ${lootValue}!");
+            NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] Robber escaped with ${lootValue}!");
             
             return true;
         }
