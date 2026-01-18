@@ -228,6 +228,7 @@ namespace NPCBrain
         
         internal void RaiseTargetAcquired(GameObject target)
         {
+            Debug.Log($"[NPCBrain] {name} RaiseTargetAcquired: {target?.name} (subscribers: {OnTargetAcquired?.GetInvocationList()?.Length ?? 0})");
             OnTargetAcquired?.Invoke(target);
         }
         
