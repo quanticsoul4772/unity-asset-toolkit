@@ -81,6 +81,8 @@ While running any demo, you can use NPCBrain's debug tools:
 - Current state display
 - Blackboard key viewer
 - Criticality stats (Temperature, Entropy, Inertia)
+
+**Note:** To see Criticality values change, use the **Utility Demo** scene which uses `UtilitySelector`. The Guard and Patrol demos use regular BT nodes which don't record actions to the Criticality system.
 - Pause/Step/Resume controls
 
 ---
