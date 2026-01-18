@@ -35,6 +35,9 @@ namespace NPCBrain
         [SerializeField] private WaypointPath _waypointPath;
         [SerializeField] private bool _logExceptions = true;
         
+        [Tooltip("Log warnings when optional components (SightSensor, HearingSensor) are missing.")]
+        [SerializeField] private bool _warnOnMissingComponents = true;
+        
         /// <summary>
         /// Shared data storage for the behavior tree. Store and retrieve values by key.
         /// </summary>
@@ -105,6 +108,22 @@ namespace NPCBrain
             Hearing = GetComponent<HearingSensor>();
             Criticality = new CriticalityController();
             _behaviorTree = CreateBehaviorTree();
+            
+            if (_warnOnMissingComponents)
+            {
+                if (Perception == null)
+                {
+                    Debug.LogWarning($"[NPCBrainController] No SightSensor component found on '{gameObject.name}'. " +
+                        $"Vision-based behaviors (CheckTargetVisible, etc.) will not work. " +
+                        $"Add a SightSensor component or disable this warning via _warnOnMissingComponents.", this);
+                }
+                if (Hearing == null)
+                {
+                    Debug.LogWarning($"[NPCBrainController] No HearingSensor component found on '{gameObject.name}'. " +
+                        $"Hearing-based behaviors (CheckSoundHeard, etc.) will not work. " +
+                        $"Add a HearingSensor component or disable this warning via _warnOnMissingComponents.", this);
+                }
+            }
         }
         
         protected virtual void OnDestroy()

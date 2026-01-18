@@ -11,6 +11,11 @@ namespace NPCBrain.Perception
     public class Memory
     {
         /// <summary>
+        /// When true, logs warnings when operations fail (e.g., target not in memory).
+        /// </summary>
+        public bool LogWarnings { get; set; } = true;
+        
+        /// <summary>
         /// Information about a remembered target.
         /// </summary>
         public class TargetMemory
@@ -176,10 +181,18 @@ namespace NPCBrain.Perception
         /// Gets the predicted current position based on last known position and velocity.
         /// </summary>
         /// <param name="target">The target to predict.</param>
-        /// <returns>Predicted position, or last known position if no velocity data.</returns>
+        /// <returns>Predicted position, or Vector3.zero if target not in memory.</returns>
+        /// <remarks>Consider using TryGetPredictedPosition for safer access.</remarks>
         public Vector3 GetPredictedPosition(GameObject target)
         {
-            if (target == null) return Vector3.zero;
+            if (target == null)
+            {
+                if (LogWarnings)
+                {
+                    Debug.LogWarning($"[Memory] GetPredictedPosition called with null target. Returning Vector3.zero.");
+                }
+                return Vector3.zero;
+            }
             
             if (_memories.TryGetValue(target, out var memory))
             {
@@ -187,7 +200,37 @@ namespace NPCBrain.Perception
                 return memory.LastKnownPosition + memory.LastKnownVelocity * timeSinceSeen;
             }
             
+            if (LogWarnings)
+            {
+                Debug.LogWarning($"[Memory] GetPredictedPosition called for target '{target.name}' which is not in memory. " +
+                    $"Returning Vector3.zero. Use TryGetPredictedPosition or Remembers() to check first.");
+            }
             return Vector3.zero;
+        }
+        
+        /// <summary>
+        /// Attempts to get the predicted current position based on last known position and velocity.
+        /// </summary>
+        /// <param name="target">The target to predict.</param>
+        /// <param name="position">The predicted position if successful.</param>
+        /// <returns>True if the target is in memory and position was calculated.</returns>
+        public bool TryGetPredictedPosition(GameObject target, out Vector3 position)
+        {
+            position = Vector3.zero;
+            
+            if (target == null)
+            {
+                return false;
+            }
+            
+            if (_memories.TryGetValue(target, out var memory))
+            {
+                float timeSinceSeen = memory.TimeSinceLastSeen;
+                position = memory.LastKnownPosition + memory.LastKnownVelocity * timeSinceSeen;
+                return true;
+            }
+            
+            return false;
         }
         
         /// <summary>

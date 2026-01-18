@@ -22,7 +22,11 @@ namespace NPCBrain
         [Tooltip("Should waypoints be collected from child objects on Awake?")]
         [SerializeField] private bool _autoPopulateFromChildren = true;
         
+        [Tooltip("Log warnings when waypoint access fails (no waypoints, invalid index, etc.).")]
+        [SerializeField] private bool _logWarnings = true;
+        
         private int _currentIndex = 0;
+        private bool _hasWarnedNoWaypoints = false;
         
         /// <summary>Current waypoint index.</summary>
         public int CurrentIndex => _currentIndex;
@@ -104,8 +108,18 @@ namespace NPCBrain
         /// <returns>Current waypoint position, or this transform's position if no waypoints.</returns>
         public Vector3 GetCurrent()
         {
-            if (_waypoints.Count == 0 || _waypoints[_currentIndex] == null)
+            if (_waypoints.Count == 0)
             {
+                WarnNoWaypoints("GetCurrent");
+                return transform.position;
+            }
+            if (_waypoints[_currentIndex] == null)
+            {
+                if (_logWarnings)
+                {
+                    Debug.LogWarning($"[WaypointPath] Waypoint at index {_currentIndex} is null on '{gameObject.name}'. " +
+                        $"Returning transform position as fallback.", this);
+                }
                 return transform.position;
             }
             return _waypoints[_currentIndex].position;
@@ -118,8 +132,18 @@ namespace NPCBrain
         /// <returns>Waypoint position, or this transform's position if invalid index.</returns>
         public Vector3 GetWaypoint(int index)
         {
-            if (_waypoints.Count == 0 || index < 0 || index >= _waypoints.Count)
+            if (_waypoints.Count == 0)
             {
+                WarnNoWaypoints("GetWaypoint");
+                return transform.position;
+            }
+            if (index < 0 || index >= _waypoints.Count)
+            {
+                if (_logWarnings)
+                {
+                    Debug.LogWarning($"[WaypointPath] Invalid waypoint index {index} on '{gameObject.name}'. " +
+                        $"Valid range is 0-{_waypoints.Count - 1}. Returning transform position.", this);
+                }
                 return transform.position;
             }
             return _waypoints[index]?.position ?? transform.position;
@@ -206,6 +230,16 @@ namespace NPCBrain
             }
             
             return nearest;
+        }
+        
+        private void WarnNoWaypoints(string methodName)
+        {
+            if (_logWarnings && !_hasWarnedNoWaypoints)
+            {
+                Debug.LogWarning($"[WaypointPath] {methodName}() called but no waypoints configured on '{gameObject.name}'. " +
+                    $"Add waypoints as children or assign them manually. Returning transform position as fallback.", this);
+                _hasWarnedNoWaypoints = true; // Only warn once per path to avoid spam
+            }
         }
         
         /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace NPCBrain
 {
@@ -38,6 +39,12 @@ namespace NPCBrain
         
         private readonly Dictionary<string, Entry> _data = new Dictionary<string, Entry>();
         private readonly List<string> _keysToRemove = new List<string>();
+        
+        /// <summary>
+        /// When true, logs warnings when type mismatches occur in Get/TryGet.
+        /// Useful for debugging blackboard issues.
+        /// </summary>
+        public bool LogTypeMismatches { get; set; } = false;
         
         /// <summary>Raised when any value is set or updated.</summary>
         public event Action<string, object> OnValueChanged;
@@ -127,6 +134,16 @@ namespace NPCBrain
             {
                 value = typedValue;
                 return true;
+            }
+            
+            // Type mismatch - value exists but is wrong type
+            if (LogTypeMismatches)
+            {
+                string actualType = entry.Value?.GetType().Name ?? "null";
+                string requestedType = typeof(T).Name;
+                Debug.LogWarning($"[Blackboard] Type mismatch for key '{key}': " +
+                    $"stored type is '{actualType}', but requested type is '{requestedType}'. " +
+                    $"Returning default value.");
             }
             
             return false;
