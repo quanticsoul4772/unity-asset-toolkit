@@ -1,1 +1,1 @@
-Fix code review issues: camera null check, interest point cleanup, unused import, separate file  
+Complete NPCBrain MVP: add Memory, TargetSelector, perception tests, integration tests, and documentation  

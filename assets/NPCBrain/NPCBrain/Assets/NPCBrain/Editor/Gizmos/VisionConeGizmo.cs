@@ -2,159 +2,162 @@ using UnityEngine;
 using UnityEditor;
 using NPCBrain.Perception;
 
-namespace NPCBrain.Editor
+namespace NPCBrain.Editor.Gizmos
 {
     /// <summary>
-    /// Custom editor that draws vision cone gizmos for SightSensor components.
+    /// Custom gizmo drawer for SightSensor vision cones.
+    /// Draws vision cones in the scene view with alert state coloring.
+    /// </summary>
+    public static class VisionConeGizmo
+    {
+        private static readonly Color ClearColor = new Color(0.3f, 1f, 0.3f, 0.3f);
+        private static readonly Color AlertColor = new Color(1f, 0.3f, 0.3f, 0.3f);
+        private static readonly Color MemoryColor = new Color(1f, 1f, 0.3f, 0.3f);
+        
+        /// <summary>
+        /// Draws a vision cone gizmo for a SightSensor.
+        /// </summary>
+        /// <param name="sensor">The sight sensor to draw.</param>
+        /// <param name="memory">Optional memory system to visualize remembered positions.</param>
+        public static void Draw(SightSensor sensor, Memory memory = null)
+        {
+            if (sensor == null) return;
+            
+            Transform transform = sensor.transform;
+            Vector3 eyePosition = transform.position + Vector3.up * 1.5f; // Default eye height
+            Vector3 forward = transform.forward;
+            float viewDistance = sensor.ViewDistance;
+            float viewAngle = sensor.ViewAngle;
+            
+            // Determine color based on state
+            bool hasTargets = Application.isPlaying && sensor.HasVisibleTargets;
+            Color coneColor = hasTargets ? AlertColor : ClearColor;
+            
+            // Draw the vision cone
+            DrawCone(eyePosition, forward, viewDistance, viewAngle, coneColor);
+            
+            // Draw lines to visible targets
+            if (Application.isPlaying)
+            {
+                UnityEngine.Gizmos.color = Color.red;
+                foreach (var target in sensor.VisibleTargets)
+                {
+                    if (target != null)
+                    {
+                        UnityEngine.Gizmos.DrawLine(eyePosition, target.transform.position);
+                        DrawTargetMarker(target.transform.position, 0.5f);
+                    }
+                }
+                
+                // Draw remembered positions
+                if (memory != null)
+                {
+                    UnityEngine.Gizmos.color = MemoryColor;
+                    foreach (var kvp in memory.Memories)
+                    {
+                        var mem = kvp.Value;
+                        if (mem.Target != null && !mem.IsCurrentlyVisible)
+                        {
+                            UnityEngine.Gizmos.DrawLine(eyePosition, mem.LastKnownPosition);
+                            DrawMemoryMarker(mem.LastKnownPosition, mem.Confidence);
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Draws a vision cone with the specified parameters.
+        /// </summary>
+        public static void DrawCone(Vector3 origin, Vector3 forward, float distance, float angle, Color color)
+        {
+            UnityEngine.Gizmos.color = color;
+            
+            float halfAngle = angle * 0.5f;
+            Vector3 leftDir = Quaternion.Euler(0, -halfAngle, 0) * forward;
+            Vector3 rightDir = Quaternion.Euler(0, halfAngle, 0) * forward;
+            
+            // Draw main rays
+            UnityEngine.Gizmos.DrawRay(origin, forward * distance);
+            UnityEngine.Gizmos.DrawRay(origin, leftDir * distance);
+            UnityEngine.Gizmos.DrawRay(origin, rightDir * distance);
+            
+            // Draw arc at the end
+            int segments = 20;
+            float angleStep = angle / segments;
+            Vector3 prevPoint = origin + leftDir * distance;
+            
+            for (int i = 1; i <= segments; i++)
+            {
+                float a = -halfAngle + angleStep * i;
+                Vector3 dir = Quaternion.Euler(0, a, 0) * forward;
+                Vector3 point = origin + dir * distance;
+                UnityEngine.Gizmos.DrawLine(prevPoint, point);
+                prevPoint = point;
+            }
+            
+            // Draw filled mesh for better visibility
+            DrawFilledCone(origin, forward, distance, angle, new Color(color.r, color.g, color.b, color.a * 0.3f));
+        }
+        
+        private static void DrawFilledCone(Vector3 origin, Vector3 forward, float distance, float angle, Color color)
+        {
+            Handles.color = color;
+            
+            float halfAngle = angle * 0.5f;
+            Vector3 leftDir = Quaternion.Euler(0, -halfAngle, 0) * forward;
+            
+            // Draw filled arc using Handles
+            Handles.DrawSolidArc(origin, Vector3.up, leftDir, angle, distance);
+        }
+        
+        private static void DrawTargetMarker(Vector3 position, float size)
+        {
+            UnityEngine.Gizmos.DrawWireSphere(position, size);
+            UnityEngine.Gizmos.DrawLine(position - Vector3.right * size, position + Vector3.right * size);
+            UnityEngine.Gizmos.DrawLine(position - Vector3.forward * size, position + Vector3.forward * size);
+        }
+        
+        private static void DrawMemoryMarker(Vector3 position, float confidence)
+        {
+            float size = 0.3f + confidence * 0.3f;
+            UnityEngine.Gizmos.DrawWireCube(position, Vector3.one * size);
+            
+            // Draw question mark above
+            Vector3 above = position + Vector3.up * (size + 0.2f);
+            Handles.Label(above, "?");
+        }
+    }
+    
+    /// <summary>
+    /// Custom editor for SightSensor that draws gizmos.
     /// </summary>
     [CustomEditor(typeof(SightSensor))]
     public class SightSensorEditor : UnityEditor.Editor
     {
         private void OnSceneGUI()
         {
-            var sensor = (SightSensor)target;
+            SightSensor sensor = (SightSensor)target;
             if (sensor == null) return;
             
-            DrawVisionCone(sensor);
-        }
-        
-        private void DrawVisionCone(SightSensor sensor)
-        {
-            Transform transform = sensor.transform;
-            Vector3 position = transform.position + Vector3.up * 0.5f; // Eye height offset
-            Vector3 forward = transform.forward;
+            // Draw handles for adjusting view distance and angle
+            Handles.color = new Color(0.3f, 1f, 0.3f, 0.8f);
             
-            float viewDistance = sensor.ViewDistance;
+            Vector3 eyePos = sensor.transform.position + Vector3.up * 1.5f;
+            Vector3 forward = sensor.transform.forward;
+            float viewDist = sensor.ViewDistance;
             float viewAngle = sensor.ViewAngle;
             
-            // Determine color based on whether targets are detected
-            var visibleTargets = sensor.VisibleTargets;
-            Color coneColor = visibleTargets != null && visibleTargets.Count > 0 
-                ? new Color(1f, 0.3f, 0.3f, 0.3f)  // Red when detecting
-                : new Color(0.3f, 1f, 0.3f, 0.3f); // Green when clear
-            
-            Color wireColor = visibleTargets != null && visibleTargets.Count > 0
-                ? new Color(1f, 0.3f, 0.3f, 0.8f)
-                : new Color(0.3f, 1f, 0.3f, 0.8f);
-            
-            // Draw the vision cone
-            Handles.color = coneColor;
-            
-            // Calculate cone edges
+            // Draw arc handle for view angle
             float halfAngle = viewAngle * 0.5f;
             Vector3 leftDir = Quaternion.Euler(0, -halfAngle, 0) * forward;
             Vector3 rightDir = Quaternion.Euler(0, halfAngle, 0) * forward;
             
-            Vector3 leftPoint = position + leftDir * viewDistance;
-            Vector3 rightPoint = position + rightDir * viewDistance;
+            Handles.DrawWireArc(eyePos, Vector3.up, leftDir, viewAngle, viewDist);
             
-            // Draw filled arc
-            Handles.DrawSolidArc(position, Vector3.up, leftDir, viewAngle, viewDistance);
-            
-            // Draw wire outline
-            Handles.color = wireColor;
-            Handles.DrawWireArc(position, Vector3.up, leftDir, viewAngle, viewDistance);
-            
-            // Draw edge lines
-            Handles.DrawLine(position, leftPoint);
-            Handles.DrawLine(position, rightPoint);
-            
-            // Draw forward direction
-            Handles.color = Color.blue;
-            Handles.DrawLine(position, position + forward * viewDistance * 0.5f);
-            
-            // Draw range indicator
-            Handles.color = new Color(1f, 1f, 1f, 0.3f);
-            Handles.DrawWireDisc(position, Vector3.up, viewDistance);
-            
-            // Draw label
-            Handles.Label(position + Vector3.up * 0.3f, 
-                $"FOV: {viewAngle}° | Range: {viewDistance}m",
-                new GUIStyle { normal = { textColor = Color.white }, fontSize = 10 });
-            
-            // Draw lines to visible targets
-            if (visibleTargets != null)
-            {
-                Handles.color = Color.red;
-                foreach (var target in visibleTargets)
-                {
-                    if (target != null)
-                    {
-                        Handles.DrawDottedLine(position, target.transform.position, 4f);
-                    }
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Static class for drawing vision cone gizmos without a custom editor.
-    /// Can be called from OnDrawGizmos in any MonoBehaviour.
-    /// </summary>
-    public static class VisionConeGizmoHelper
-    {
-        /// <summary>
-        /// Draws a vision cone gizmo for the given sensor.
-        /// </summary>
-        public static void Draw(SightSensor sensor)
-        {
-            if (sensor == null) return;
-            
-            Transform transform = sensor.transform;
-            Vector3 position = transform.position + Vector3.up * 0.5f;
-            Vector3 forward = transform.forward;
-            
-            float viewDistance = sensor.ViewDistance;
-            float viewAngle = sensor.ViewAngle;
-            float halfAngle = viewAngle * 0.5f;
-            
-            // Determine color
-            var visibleTargets = sensor.VisibleTargets;
-            bool hasTargets = visibleTargets != null && visibleTargets.Count > 0;
-            UnityEngine.Gizmos.color = hasTargets 
-                ? new Color(1f, 0.3f, 0.3f, 0.5f) 
-                : new Color(0.3f, 1f, 0.3f, 0.5f);
-            
-            // Draw cone edges
-            Vector3 leftDir = Quaternion.Euler(0, -halfAngle, 0) * forward;
-            Vector3 rightDir = Quaternion.Euler(0, halfAngle, 0) * forward;
-            
-            UnityEngine.Gizmos.DrawRay(position, leftDir * viewDistance);
-            UnityEngine.Gizmos.DrawRay(position, rightDir * viewDistance);
-            UnityEngine.Gizmos.DrawRay(position, forward * viewDistance);
-            
-            // Draw arc segments
-            int segments = 20;
-            float angleStep = viewAngle / segments;
-            Vector3 prevPoint = position + leftDir * viewDistance;
-            
-            for (int i = 1; i <= segments; i++)
-            {
-                float angle = -halfAngle + angleStep * i;
-                Vector3 dir = Quaternion.Euler(0, angle, 0) * forward;
-                Vector3 point = position + dir * viewDistance;
-                UnityEngine.Gizmos.DrawLine(prevPoint, point);
-                prevPoint = point;
-            }
-            
-            // Draw range circle
-            UnityEngine.Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
-            DrawWireCircle(position, viewDistance, 32);
-        }
-        
-        private static void DrawWireCircle(Vector3 center, float radius, int segments)
-        {
-            float angleStep = 360f / segments;
-            Vector3 prevPoint = center + Vector3.forward * radius;
-            
-            for (int i = 1; i <= segments; i++)
-            {
-                float angle = angleStep * i;
-                Vector3 dir = Quaternion.Euler(0, angle, 0) * Vector3.forward;
-                Vector3 point = center + dir * radius;
-                UnityEngine.Gizmos.DrawLine(prevPoint, point);
-                prevPoint = point;
-            }
+            // Label with current values
+            Handles.Label(eyePos + forward * viewDist, 
+                $"View: {viewAngle}° / {viewDist}m");
         }
     }
 }

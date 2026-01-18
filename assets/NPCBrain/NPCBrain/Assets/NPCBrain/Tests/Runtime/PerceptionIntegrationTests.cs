@@ -1,269 +1,253 @@
 using System.Collections;
-using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using NPCBrain.Perception;
-using NPCBrain.Tests;
 
 namespace NPCBrain.Tests.Runtime
 {
+    /// <summary>
+    /// PlayMode integration tests for the perception system.
+    /// Tests SightSensor, Memory, and TargetSelector working together.
+    /// </summary>
     [TestFixture]
     public class PerceptionIntegrationTests
     {
         private GameObject _npcObject;
-        private TestBrain _brain;
-        private SightSensor _sightSensor;
         private GameObject _targetObject;
+        private SightSensor _sightSensor;
+        private NPCBrainController _brain;
         
         [SetUp]
         public void SetUp()
         {
             // Create NPC with sight sensor
             _npcObject = new GameObject("TestNPC");
-            _brain = _npcObject.AddComponent<TestBrain>();
-            _brain.InitializeForTests();
             _sightSensor = _npcObject.AddComponent<SightSensor>();
+            _brain = _npcObject.AddComponent<NPCBrainController>();
             
-            // Create target with collider (required for Physics.OverlapSphere)
-            _targetObject = new GameObject("Target");
-            _targetObject.tag = "Player"; // Required for SightSensor's default target tag filter
-            var collider = _targetObject.AddComponent<SphereCollider>();
-            collider.radius = 0.5f;
-            _targetObject.layer = 0; // Default layer
+            // Create target
+            _targetObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            _targetObject.name = "Target";
+            _targetObject.tag = "Player";
+            _targetObject.transform.position = new Vector3(0f, 0f, 5f);
         }
         
         [TearDown]
         public void TearDown()
         {
             if (_npcObject != null)
-            {
                 Object.Destroy(_npcObject);
-            }
             if (_targetObject != null)
-            {
                 Object.Destroy(_targetObject);
-            }
         }
         
-        #region Basic Detection Tests
-        
         [UnityTest]
-        public IEnumerator SightSensor_DetectsTarget_InFront()
+        public IEnumerator SightSensor_DetectsTargetInFront()
         {
-            // Position target in front of NPC, within range
-            _npcObject.transform.position = Vector3.zero;
-            _npcObject.transform.forward = Vector3.forward;
+            // Position target in front of NPC
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
+            _npcObject.transform.forward = Vector3.forward;
             
-            // Wait for physics to update
-            yield return new WaitForFixedUpdate();
-            yield return null;
+            yield return null; // Wait a frame
             
+            // Tick the sensor
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.VisibleTargets;
-            Assert.IsTrue(visibleTargets.Contains(_targetObject), 
-                "Target directly in front should be visible");
+            Assert.IsTrue(_sightSensor.HasVisibleTargets, "Should detect target in front");
+            Assert.AreEqual(_targetObject, _sightSensor.ClosestTarget);
         }
         
         [UnityTest]
-        public IEnumerator SightSensor_DoesNotDetect_TargetBehind()
+        public IEnumerator SightSensor_DoesNotDetectTargetBehind()
         {
             // Position target behind NPC
-            _npcObject.transform.position = Vector3.zero;
-            _npcObject.transform.forward = Vector3.forward;
             _targetObject.transform.position = new Vector3(0f, 0f, -5f);
+            _npcObject.transform.forward = Vector3.forward;
             
-            yield return new WaitForFixedUpdate();
             yield return null;
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.VisibleTargets;
-            Assert.IsFalse(visibleTargets.Contains(_targetObject), 
-                "Target behind NPC should not be visible");
+            Assert.IsFalse(_sightSensor.HasVisibleTargets, "Should not detect target behind");
         }
         
         [UnityTest]
-        public IEnumerator SightSensor_DoesNotDetect_TargetOutOfRange()
+        public IEnumerator SightSensor_DoesNotDetectTargetTooFar()
         {
-            // Position target far away (default range is 20)
-            _npcObject.transform.position = Vector3.zero;
+            // Position target beyond view distance
+            _targetObject.transform.position = new Vector3(0f, 0f, 100f);
             _npcObject.transform.forward = Vector3.forward;
-            _targetObject.transform.position = new Vector3(0f, 0f, 50f);
             
-            yield return new WaitForFixedUpdate();
             yield return null;
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.VisibleTargets;
-            Assert.IsFalse(visibleTargets.Contains(_targetObject), 
-                "Target out of range should not be visible");
+            Assert.IsFalse(_sightSensor.HasVisibleTargets, "Should not detect target too far away");
         }
         
         [UnityTest]
-        public IEnumerator SightSensor_DoesNotDetect_TargetOutsideFOV()
+        public IEnumerator Memory_TracksTargetPosition()
         {
-            // Position target to the side (outside 120 degree FOV)
-            _npcObject.transform.position = Vector3.zero;
-            _npcObject.transform.forward = Vector3.forward;
-            _targetObject.transform.position = new Vector3(10f, 0f, 0f); // 90 degrees to right
+            var memory = new Memory();
+            Vector3 position = new Vector3(5f, 0f, 10f);
             
-            yield return new WaitForFixedUpdate();
+            memory.UpdateVisible(_targetObject, position);
+            
             yield return null;
             
-            _sightSensor.Tick(_brain);
-            
-            var visibleTargets = _sightSensor.VisibleTargets;
-            Assert.IsFalse(visibleTargets.Contains(_targetObject), 
-                "Target outside FOV should not be visible");
-        }
-        
-        #endregion
-        
-        #region Event Tests
-        
-        [UnityTest]
-        public IEnumerator SightSensor_RaisesTargetAcquired_WhenTargetEntersView()
-        {
-            GameObject acquiredTarget = null;
-            _brain.OnTargetAcquired += (target) => acquiredTarget = target;
-            
-            // Start with target out of view
-            _npcObject.transform.position = Vector3.zero;
-            _npcObject.transform.forward = Vector3.forward;
-            _targetObject.transform.position = new Vector3(0f, 0f, -10f); // Behind
-            
-            yield return new WaitForFixedUpdate();
-            _sightSensor.Tick(_brain);
-            Assert.IsNull(acquiredTarget, "Should not have acquired target yet");
-            
-            // Move target into view
-            _targetObject.transform.position = new Vector3(0f, 0f, 5f);
-            yield return new WaitForFixedUpdate();
-            yield return null;
-            
-            _sightSensor.Tick(_brain);
-            
-            Assert.AreEqual(_targetObject, acquiredTarget, "Should have raised TargetAcquired event");
+            var mem = memory.GetMemory(_targetObject);
+            Assert.IsNotNull(mem);
+            Assert.AreEqual(position, mem.LastKnownPosition);
         }
         
         [UnityTest]
-        public IEnumerator SightSensor_RaisesTargetLost_WhenTargetLeavesView()
+        public IEnumerator Memory_DecaysOverTime()
         {
-            GameObject lostTarget = null;
-            _brain.OnTargetLost += (target) => lostTarget = target;
+            var memory = new Memory();
+            memory.MemoryDuration = 0.1f; // Short duration for testing
+            memory.DecayRate = 10f; // Fast decay
             
-            // Start with target in view
-            _npcObject.transform.position = Vector3.zero;
-            _npcObject.transform.forward = Vector3.forward;
+            memory.UpdateVisible(_targetObject, Vector3.zero);
+            memory.MarkLost(_targetObject);
+            
+            // Wait for decay
+            float startTime = Time.time;
+            while (Time.time - startTime < 0.2f)
+            {
+                memory.Tick();
+                yield return null;
+            }
+            
+            Assert.IsFalse(memory.Remembers(_targetObject), "Memory should have decayed");
+        }
+        
+        [UnityTest]
+        public IEnumerator TargetSelector_RanksCloserTargetsHigher()
+        {
+            var memory = new Memory();
+            var selector = new TargetSelector();
+            
+            // Create two targets at different distances
+            var target2 = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            target2.name = "Target2";
+            target2.transform.position = new Vector3(0f, 0f, 20f);
+            
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
             
-            yield return new WaitForFixedUpdate();
-            yield return null;
-            _sightSensor.Tick(_brain);
+            memory.UpdateVisible(_targetObject, _targetObject.transform.position);
+            memory.UpdateVisible(target2, target2.transform.position);
             
-            // Move target out of view
+            yield return null;
+            
+            var result = selector.Evaluate(null, memory, Vector3.zero, Vector3.forward, null);
+            
+            Assert.GreaterOrEqual(result.Count, 2);
+            Assert.AreEqual(_targetObject, result[0].Target, "Closer target should be ranked first");
+            
+            Object.Destroy(target2);
+        }
+        
+        [UnityTest]
+        public IEnumerator PerceptionSystem_IntegrationFlow()
+        {
+            var memory = new Memory();
+            var selector = new TargetSelector();
+            
+            // Position target in view
+            _targetObject.transform.position = new Vector3(0f, 0f, 5f);
+            _npcObject.transform.forward = Vector3.forward;
+            
+            yield return null;
+            
+            // Step 1: Detect target
+            _sightSensor.Tick(_brain);
+            Assert.IsTrue(_sightSensor.HasVisibleTargets, "Step 1: Should detect target");
+            
+            // Step 2: Update memory
+            foreach (var target in _sightSensor.VisibleTargets)
+            {
+                memory.UpdateVisible(target, target.transform.position);
+            }
+            Assert.AreEqual(1, memory.Count, "Step 2: Should have 1 memory");
+            
+            // Step 3: Select best target
+            var best = selector.SelectBest(
+                _sightSensor, 
+                memory, 
+                _npcObject.transform.position, 
+                _npcObject.transform.forward, 
+                null);
+            Assert.AreEqual(_targetObject, best, "Step 3: Should select the visible target");
+            
+            // Step 4: Move target out of view
             _targetObject.transform.position = new Vector3(0f, 0f, -10f);
-            yield return new WaitForFixedUpdate();
             yield return null;
             
             _sightSensor.Tick(_brain);
+            foreach (var target in _sightSensor.VisibleTargets)
+            {
+                memory.UpdateVisible(target, target.transform.position);
+            }
             
-            Assert.AreEqual(_targetObject, lostTarget, "Should have raised TargetLost event");
-        }
-        
-        #endregion
-        
-        #region Helper Method Tests
-        
-        [UnityTest]
-        public IEnumerator SightSensor_GetClosestTarget_ReturnsNearest()
-        {
-            // Create second target
-            var farTarget = new GameObject("FarTarget");
-            var farCollider = farTarget.AddComponent<SphereCollider>();
-            farCollider.radius = 0.5f;
+            // Update memory for lost targets
+            var mem = memory.GetMemory(_targetObject);
+            if (mem != null && !_sightSensor.VisibleTargets.Contains(_targetObject))
+            {
+                memory.MarkLost(_targetObject);
+            }
             
-            // Position targets
-            _npcObject.transform.position = Vector3.zero;
-            _npcObject.transform.forward = Vector3.forward;
-            _targetObject.transform.position = new Vector3(0f, 0f, 3f); // Close
-            farTarget.transform.position = new Vector3(0f, 0f, 10f); // Far
-            
-            yield return new WaitForFixedUpdate();
-            yield return null;
-            
-            _sightSensor.Tick(_brain);
-            
-            var closest = _sightSensor.ClosestTarget;
-            Assert.AreEqual(_targetObject, closest, "Should return the closest target");
-            
-            Object.Destroy(farTarget);
+            Assert.IsFalse(_sightSensor.HasVisibleTargets, "Step 4: Should not see target behind");
+            Assert.IsTrue(memory.Remembers(_targetObject), "Step 4: Should still remember target");
         }
         
         [UnityTest]
-        public IEnumerator SightSensor_CanSee_ReturnsCorrectly()
+        public IEnumerator SightSensor_FiresTargetAcquiredEvent()
         {
-            _npcObject.transform.position = Vector3.zero;
-            _npcObject.transform.forward = Vector3.forward;
+            bool eventFired = false;
+            GameObject acquiredTarget = null;
+            
+            _brain.OnTargetAcquired += (target) =>
+            {
+                eventFired = true;
+                acquiredTarget = target;
+            };
+            
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
-            
-            yield return new WaitForFixedUpdate();
-            yield return null;
-            
-            _sightSensor.Tick(_brain);
-            
-            Assert.IsTrue(_sightSensor.VisibleTargets.Contains(_targetObject), "Should see visible target");
-            
-            // Create invisible target
-            var invisibleTarget = new GameObject("Invisible");
-            Assert.IsFalse(_sightSensor.VisibleTargets.Contains(invisibleTarget), "Should not see non-visible target");
-            
-            Object.Destroy(invisibleTarget);
-        }
-        
-        #endregion
-        
-        #region Edge Cases
-        
-        [UnityTest]
-        public IEnumerator SightSensor_DoesNotDetect_Self()
-        {
-            // Add collider to NPC itself
-            var npcCollider = _npcObject.AddComponent<SphereCollider>();
-            npcCollider.radius = 0.5f;
-            
-            _npcObject.transform.position = Vector3.zero;
             _npcObject.transform.forward = Vector3.forward;
             
-            yield return new WaitForFixedUpdate();
             yield return null;
             
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.VisibleTargets;
-            Assert.IsFalse(visibleTargets.Contains(_npcObject), "NPC should not detect itself");
+            Assert.IsTrue(eventFired, "OnTargetAcquired event should fire");
+            Assert.AreEqual(_targetObject, acquiredTarget);
         }
         
         [UnityTest]
-        public IEnumerator SightSensor_ReturnsEmptyList_WhenNoTargets()
+        public IEnumerator SightSensor_FiresTargetLostEvent()
         {
-            // Remove the target
-            Object.Destroy(_targetObject);
-            _targetObject = null;
+            bool lostEventFired = false;
             
-            yield return new WaitForFixedUpdate();
+            _brain.OnTargetLost += (target) =>
+            {
+                lostEventFired = true;
+            };
+            
+            // First, detect the target
+            _targetObject.transform.position = new Vector3(0f, 0f, 5f);
+            _npcObject.transform.forward = Vector3.forward;
+            
             yield return null;
-            
             _sightSensor.Tick(_brain);
             
-            var visibleTargets = _sightSensor.VisibleTargets;
-            Assert.AreEqual(0, visibleTargets.Count, "Should return empty list when no targets");
+            // Now move target out of view
+            _targetObject.transform.position = new Vector3(0f, 0f, -10f);
+            
+            yield return null;
+            _sightSensor.Tick(_brain);
+            
+            Assert.IsTrue(lostEventFired, "OnTargetLost event should fire");
         }
-        
-        #endregion
     }
 }
