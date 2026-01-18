@@ -40,6 +40,7 @@ namespace NPCBrain.Perception
         [SerializeField] private int _maxRaycastsPerTick = 3;
         
         [Header("Debug")]
+        [SerializeField] private bool _debugLogging = false;
         [SerializeField] private bool _drawGizmos = true;
         [SerializeField] private Color _gizmoColorClear = new Color(0.3f, 1f, 0.3f, 0.3f);
         [SerializeField] private Color _gizmoColorAlert = new Color(1f, 0.3f, 0.3f, 0.3f);
@@ -80,6 +81,11 @@ namespace NPCBrain.Perception
             Vector3 eyePosition = transform.position + Vector3.up * _eyeHeight;
             int count = Physics.OverlapSphereNonAlloc(eyePosition, _viewDistance, _overlapResults, _targetMask);
             
+            if (_debugLogging && count > 0)
+            {
+                Debug.Log($"[SightSensor] OverlapSphere found {count} colliders within {_viewDistance}m");
+            }
+            
             float closestDistance = float.MaxValue;
             int raycastCount = 0;
             
@@ -89,7 +95,26 @@ namespace NPCBrain.Perception
                 if (collider == null || collider.gameObject == gameObject) continue;
                 
                 // Filter by tag if specified
-                if (!string.IsNullOrEmpty(_targetTag) && !collider.CompareTag(_targetTag)) continue;
+                if (!string.IsNullOrEmpty(_targetTag))
+                {
+                    // Check if tag exists - CompareTag throws if tag doesn't exist
+                    try
+                    {
+                        if (!collider.CompareTag(_targetTag))
+                        {
+                            if (_debugLogging)
+                            {
+                                Debug.Log($"[SightSensor] {collider.name} failed tag filter (has '{collider.tag}', need '{_targetTag}')");
+                            }
+                            continue;
+                        }
+                    }
+                    catch (UnityException)
+                    {
+                        Debug.LogError($"[SightSensor] Tag '{_targetTag}' does not exist in Tag Manager! Add it via Edit > Project Settings > Tags and Layers");
+                        continue;
+                    }
+                }
                 
                 Vector3 targetPosition = collider.transform.position;
                 Vector3 directionToTarget = (targetPosition - eyePosition).normalized;
@@ -97,7 +122,14 @@ namespace NPCBrain.Perception
                 
                 // Check if within view angle
                 float angleToTarget = Vector3.Angle(transform.forward, directionToTarget);
-                if (angleToTarget > _viewAngle * 0.5f) continue;
+                if (angleToTarget > _viewAngle * 0.5f)
+                {
+                    if (_debugLogging)
+                    {
+                        Debug.Log($"[SightSensor] {collider.name} outside view angle ({angleToTarget:F1}° > {_viewAngle * 0.5f:F1}°)");
+                    }
+                    continue;
+                }
                 
                 // Check line of sight with raycast (limited per tick)
                 if (raycastCount < _maxRaycastsPerTick)
@@ -107,7 +139,19 @@ namespace NPCBrain.Perception
                     if (Physics.Raycast(eyePosition, directionToTarget, out RaycastHit hit, distanceToTarget, _obstacleMask))
                     {
                         // Something blocks the view - check if it's the target
-                        if (hit.collider.gameObject != collider.gameObject) continue;
+                        if (hit.collider.gameObject != collider.gameObject)
+                        {
+                            if (_debugLogging)
+                            {
+                                Debug.Log($"[SightSensor] Raycast to {collider.name} blocked by {hit.collider.name}");
+                            }
+                            continue;
+                        }
+                    }
+                    
+                    if (_debugLogging)
+                    {
+                        Debug.Log($"[SightSensor] <color=green>TARGET VISIBLE: {collider.name}</color>");
                     }
                     
                     // Target is visible!

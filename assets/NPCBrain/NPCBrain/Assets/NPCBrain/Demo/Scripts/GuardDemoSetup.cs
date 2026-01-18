@@ -172,8 +172,15 @@ namespace NPCBrain.Demo
             // Add guard component
             var guard = guardObj.AddComponent<GuardNPC>();
             
-            // Add sight sensor
+            // Add sight sensor with debug logging enabled
             var sightSensor = guardObj.AddComponent<SightSensor>();
+            
+            // Enable debug logging via reflection to help diagnose issues
+            var debugField = typeof(SightSensor).GetField("_debugLogging", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (debugField != null)
+            {
+                debugField.SetValue(sightSensor, true);
+            }
             
             // Create patrol waypoints
             var waypointPath = CreatePatrolRoute(name + "_Patrol", position, patrolIndex);
