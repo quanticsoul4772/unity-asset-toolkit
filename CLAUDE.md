@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Unity Asset Store toolkit for AI/pathfinding tools. Current focus: **EasyPath** - A* pathfinding asset for Unity 7 LTS.
 
-**Technology Stack**: C#, Unity 7 LTS, Visual Studio 2022, Windows 11, PowerShell automation
+**Technology Stack**: C#, Unity 6 (6000.x), Visual Studio 2022, Windows 11, PowerShell automation
 
 ## Quick Commands
 

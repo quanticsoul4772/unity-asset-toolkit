@@ -26,16 +26,16 @@ NPCBrain is a modular AI toolkit that combines **Behavior Trees**, **Utility AI*
 
 ## Features
 
-- ✅ **Behavior Trees** - Composable, hierarchical decision making
-- ✅ **Utility AI** - Score-based action selection with softmax
-- ✅ **Blackboard System** - Key-value data sharing with TTL support
-- ✅ **Perception** - Vision cone with line-of-sight checking
-- ✅ **Criticality Controller** - Adaptive exploration vs exploitation
-- ✅ **Ready-to-Use Archetypes** - GuardNPC and PatrolNPC
-- ✅ **Debug Window** - Real-time NPC state inspection
-- ✅ **Scene Gizmos** - Vision cones and waypoint visualization
-- ✅ **Full Source Code** - Extend and customize everything
-- ✅ **100+ Unit Tests** - Production-quality code
+- **Behavior Trees** - Composable, hierarchical decision making
+- **Utility AI** - Score-based action selection with softmax
+- **Blackboard System** - Key-value data sharing with TTL support
+- **Perception** - Vision cone with line-of-sight checking
+- **Criticality Controller** - Adaptive exploration vs exploitation
+- **Ready-to-Use Archetypes** - GuardNPC and PatrolNPC
+- **Debug Window** - Real-time NPC state inspection
+- **Scene Gizmos** - Vision cones and waypoint visualization
+- **Full Source Code** - Extend and customize everything
+- **100+ Unit Tests** - Production-quality code
 
 ---
 
@@ -69,11 +69,11 @@ public class SimplePatroller : NPCBrainController
 3. Add a `NavMeshAgent` component (optional, for pathfinding)
 4. Create waypoints as empty GameObjects
 5. Add a `WaypointPath` component and assign waypoints
-6. Press **Play**!
+6. Press Play
 
 ### 3. Use Built-in Archetypes
 
-For instant results, use the included archetypes:
+Use the included archetypes for quick setup:
 
 ```csharp
 // Just add PatrolNPC component - no code needed!
@@ -322,7 +322,7 @@ Advanced guard with chase, investigate, and patrol behaviors.
 2. Add `GuardNPC` component
 3. Add `WaypointPath` with patrol route
 4. Make sure targets have the "Player" tag
-5. Play!
+5. Play
 
 ---
 
@@ -730,7 +730,5 @@ Demonstrates PatrolNPC with multiple patrol patterns:
 - 100+ unit tests
 
 ---
-
-**Thank you for using NPCBrain!**
 
 © 2025 - All Rights Reserved

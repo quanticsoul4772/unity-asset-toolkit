@@ -2,7 +2,7 @@
 
 **Last Updated:** January 2026 
  
-Unity Asset Store project for AI/pathfinding tools. C#, Unity 7 LTS, Visual Studio 2022, Windows 11. 
+Unity Asset Store project for AI/pathfinding tools. C#, Unity 6 (6000.x), Visual Studio 2022, Windows 11. 
  
 ## Quickstart 
 
@@ -34,25 +34,25 @@ Unity Asset Store project for AI/pathfinding tools. C#, Unity 7 LTS, Visual Stud
 **Current Project:** NPCBrain - All-in-One AI Toolkit (4-week MVP)
 
 ### EasyPath Status
-**Status:** ✅ Complete! Ready for Asset Store submission
+**Status:** Complete - Ready for Asset Store submission
 - A* pathfinding working and tested
 - Multi-agent click-to-move support
 - Demo scenes: Basic, Multi-Agent, Stress Test
 - Obstacle layer auto-configuration with "Fix Existing Demo Scenes" menu
 
 ### SwarmAI Status  
-**Status:** ✅ Phase 1-4 Complete! All core features implemented.
-- ✅ Phase 1: Core Framework (SwarmManager, SwarmAgent, States, Spatial Hash)
-- ✅ Phase 2: Steering Behaviors (Seek, Flee, Arrive, Wander, Flocking, Obstacle Avoidance)
-- ✅ Phase 3: Advanced Features (Formations, Resource Gathering, Groups, Messaging)
-- ✅ Phase 4: Demo Scenes (Flocking, Formation, Resource Gathering)
-- 🔄 Phase 5: Combat Formations Demo (in progress)
+**Status:** Phase 1-4 Complete - All core features implemented.
+- Phase 1: Core Framework (SwarmManager, SwarmAgent, States, Spatial Hash)
+- Phase 2: Steering Behaviors (Seek, Flee, Arrive, Wander, Flocking, Obstacle Avoidance)
+- Phase 3: Advanced Features (Formations, Resource Gathering, Groups, Messaging)
+- Phase 4: Demo Scenes (Flocking, Formation, Resource Gathering)
+- Phase 5: Combat Formations Demo (in progress)
 
 **Next Step:** Create Combat Formations demo, then prepare for Asset Store submission 
  
 ## Development Environment 
 
-- **Unity 7 LTS** - Installed via Unity Hub 
+- **Unity 6** (6000.x) - Installed via Unity Hub 
 - **Visual Studio 2022** - Primary IDE (C:\Program Files\Microsoft Visual Studio\2022\Community)
 - **Git 2.45.1** - Version control 
 - **Git LFS 3.5.1** - Large file storage for binary assets
@@ -92,8 +92,8 @@ unity-asset-toolkit/
 
 | Asset | Description | Price | Status |
 |-------|-------------|-------|--------|
-| **EasyPath** | A* pathfinding for Unity | $35 | ✅ Complete |
-| **SwarmAI** | Multi-agent coordination | $45 | ✅ Complete |
+| **EasyPath** | A* pathfinding for Unity | $35 | Complete |
+| **SwarmAI** | Multi-agent coordination | $45 | Complete |
 
 ### EasyPath Features
 - Grid-based A* pathfinding

@@ -1,6 +1,6 @@
 # EasyPath - A* Pathfinding for Unity
 
-Simple, efficient A* pathfinding for Unity games. Perfect for beginners and prototyping!
+Simple, efficient A* pathfinding for Unity games.
 
 ## Features
 
@@ -8,14 +8,14 @@ Simple, efficient A* pathfinding for Unity games. Perfect for beginners and prot
 - **A* Algorithm** - Optimal pathfinding with diagonal movement
 - **Custom Inspectors** - User-friendly editor tools
 - **Debug Visualization** - See paths and grids in Scene view
-- **Demo Scenes** - Learn by example
-- **Well Documented** - Full API documentation
+- **Demo Scenes** - Working examples included
+- **Full Documentation** - Complete API reference
 
 ## Quick Start
 
 1. Create Grid: `GameObject > EasyPath > Create Grid`
 2. Create Agent: `GameObject > EasyPath > Create Agent`
-3. Call `agent.SetDestination(target)` to pathfind!
+3. Call `agent.SetDestination(target)` to pathfind
 
 ## Requirements
 
@@ -30,7 +30,7 @@ Simple, efficient A* pathfinding for Unity games. Perfect for beginners and prot
 ## Support
 
 - Email: support@yourdomain.com
-- Unity Forum: [Asset Store Page]
+- Unity Forum: Asset Store Page
 
 ## License
 
@@ -38,4 +38,4 @@ This asset is licensed for use in your Unity projects. See the Asset Store EULA 
 
 ---
 
-**Version 1.0.0** | January 2026
+Version 1.0.0 | January 2026

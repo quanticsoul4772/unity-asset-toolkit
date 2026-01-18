@@ -7,8 +7,8 @@
 
 | Version | Compilation | Errors | Warnings | Duration |
 |---------|-------------|--------|----------|----------|
-| Unity 2021.3 LTS | **FAIL** | 0 | 0 | 33.3s |
-| Unity 2022.3 LTS | **FAIL** | 0 | 0 | 8.1s |
+| Unity 2021.3 LTS | Fail | 0 | 0 | 33.3s |
+| Unity 2022.3 LTS | Fail | 0 | 0 | 8.1s |
 | Unity 6 | Pass | 0 | 8 | 72.7s |
 
 ## Assembly Status

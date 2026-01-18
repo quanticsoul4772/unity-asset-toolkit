@@ -1,13 +1,8 @@
 # SwarmAI - Multi-Agent Coordination System
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Unity](https://img.shields.io/badge/Unity-2021.3%2B-green.svg)
-![License](https://img.shields.io/badge/license-Asset%20Store%20EULA-orange.svg)
-
 **Version:** 1.0.0  
 **Unity Compatibility:** Unity 2021.3+ (LTS), Unity 2022.x, Unity 6+  
-**License:** [Asset Store EULA](https://unity.com/legal/as-terms)  
-**Asset Store:** [View on Asset Store](#) <!-- Update with actual link after publishing -->
+**License:** Asset Store EULA
 
 SwarmAI is a Unity asset for creating swarm behaviors, multi-agent coordination, and emergent AI systems. Built from MIT Battlecode 2026 experience, it provides patterns for RTS games, colony simulators, and AI-driven projects.
 
@@ -89,7 +84,7 @@ SwarmAI uses assembly definitions for clean compilation:
 
 ```csharp
 // The SwarmManager is created automatically as a singleton
-// Or add it manually to a GameObject in your scene
+// Or add it to a GameObject manually
 var manager = SwarmManager.Instance;
 ```
 
