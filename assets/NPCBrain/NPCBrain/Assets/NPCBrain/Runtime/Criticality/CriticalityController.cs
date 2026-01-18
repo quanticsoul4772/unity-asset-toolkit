@@ -49,9 +49,11 @@ namespace NPCBrain.Criticality
         
         private readonly Queue<int> _actionHistory;
         private readonly Dictionary<int, int> _actionCounts;
+        private readonly List<int> _cachedActionIds = new List<int>(8);
         private float _temperature = 1f;
         private float _inertia = DefaultInertia;
         private float _entropy;
+        private bool _entropyDirty = true;
         
         /// <summary>
         /// Current temperature for softmax selection.
@@ -115,6 +117,7 @@ namespace NPCBrain.Criticality
             }
             
             _actionHistory.Enqueue(actionId);
+            _entropyDirty = true;
             
             if (_actionCounts.ContainsKey(actionId))
             {
@@ -141,7 +144,12 @@ namespace NPCBrain.Criticality
         /// </summary>
         public void Update()
         {
-            _entropy = CalculateEntropy();
+            // Only recalculate entropy when action history changes
+            if (_entropyDirty)
+            {
+                _entropy = CalculateEntropy();
+                _entropyDirty = false;
+            }
             
             float normalizedEntropy = _actionCounts.Count > 1 
                 ? _entropy / (float)Math.Log(_actionCounts.Count) 
@@ -174,11 +182,19 @@ namespace NPCBrain.Criticality
             float total = _actionHistory.Count;
             float entropy = 0f;
             
-            foreach (var kvp in _actionCounts)
+            // Cache keys to avoid dictionary enumeration allocation
+            _cachedActionIds.Clear();
+            foreach (var key in _actionCounts.Keys)
             {
-                if (kvp.Value > 0)
+                _cachedActionIds.Add(key);
+            }
+            
+            for (int i = 0; i < _cachedActionIds.Count; i++)
+            {
+                int count = _actionCounts[_cachedActionIds[i]];
+                if (count > 0)
                 {
-                    float probability = kvp.Value / total;
+                    float probability = count / total;
                     entropy -= probability * (float)Math.Log(probability);
                 }
             }
@@ -196,6 +212,7 @@ namespace NPCBrain.Criticality
             _temperature = 1f;
             _inertia = DefaultInertia;
             _entropy = 0f;
+            _entropyDirty = true;
         }
         
         /// <summary>

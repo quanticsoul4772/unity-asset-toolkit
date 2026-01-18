@@ -56,10 +56,14 @@ namespace NPCBrain.Archetypes
         private int _carriedLootValue;
         private bool _isCarryingLoot;
         private Vector3 _homePosition;
-        private List<CoverPoint> _knownCoverPoints = new List<CoverPoint>();
-        private List<LootPoint> _knownLootPoints = new List<LootPoint>();
+        private List<CoverPoint> _knownCoverPoints = new List<CoverPoint>(16);
+        private List<LootPoint> _knownLootPoints = new List<LootPoint>(16);
         private float _lastCopSightTime;
         private bool _hasEscaped;
+        
+        [Header("Performance")]
+        [SerializeField] private int _maxCopRaycastsPerFrame = 2;
+        private int _raycastCount;
 
         
         /// <summary>Current behavior state for UI display.</summary>
@@ -151,25 +155,35 @@ namespace NPCBrain.Archetypes
             float closestCopDistance = float.MaxValue;
             Vector3 closestCopPosition = Vector3.zero;
             
+            // Cache transform.position to avoid repeated property access
+            Vector3 myPosition = transform.position;
+            Vector3 myEyePosition = myPosition + Vector3.up;
+            
             // Use registry instead of expensive FindObjectsOfType
             var cops = NPCRegistry<CopNPC>.GetAll();
             
-            foreach (var copNPC in cops)
+            // Reset raycast budget per frame
+            _raycastCount = 0;
+            
+            for (int i = 0; i < cops.Length; i++)
             {
+                var copNPC = cops[i];
                 if (copNPC == null || !copNPC.gameObject.activeSelf) continue;
                 
-                float distance = Vector3.Distance(transform.position, copNPC.transform.position);
+                Vector3 copPosition = copNPC.transform.position;
+                float distance = Vector3.Distance(myPosition, copPosition);
                 if (distance < closestCopDistance)
                 {
                     closestCopDistance = distance;
-                    closestCopPosition = copNPC.transform.position;
+                    closestCopPosition = copPosition;
                 }
                 
-                // Check if we can see this cop (simple line-of-sight)
-                if (distance <= _copDetectionRange)
+                // Check if we can see this cop (simple line-of-sight) with raycast budget
+                if (distance <= _copDetectionRange && _raycastCount < _maxCopRaycastsPerFrame)
                 {
-                    Vector3 dirToCop = (copNPC.transform.position - transform.position).normalized;
-                    if (!Physics.Raycast(transform.position + Vector3.up, dirToCop, distance - 0.5f))
+                    _raycastCount++;
+                    Vector3 dirToCop = (copPosition - myPosition).normalized;
+                    if (!Physics.Raycast(myEyePosition, dirToCop, distance - 0.5f))
                     {
                         canSeeCop = true;
                         _lastCopSightTime = Time.time;
@@ -508,11 +522,15 @@ namespace NPCBrain.Archetypes
             LootPoint nearest = null;
             float nearestDist = float.MaxValue;
             
-            foreach (var loot in _knownLootPoints)
+            // Cache transform.position
+            Vector3 myPosition = transform.position;
+            
+            for (int i = 0; i < _knownLootPoints.Count; i++)
             {
+                var loot = _knownLootPoints[i];
                 if (loot == null || loot.IsStolen) continue;
                 
-                float dist = Vector3.Distance(transform.position, loot.transform.position);
+                float dist = Vector3.Distance(myPosition, loot.transform.position);
                 if (dist < nearestDist && dist <= _lootDetectionRange)
                 {
                     nearestDist = dist;
@@ -540,11 +558,15 @@ namespace NPCBrain.Archetypes
             CoverPoint nearest = null;
             float nearestDist = float.MaxValue;
             
-            foreach (var cover in _knownCoverPoints)
+            // Cache transform.position
+            Vector3 myPosition = transform.position;
+            
+            for (int i = 0; i < _knownCoverPoints.Count; i++)
             {
+                var cover = _knownCoverPoints[i];
                 if (cover == null || !cover.CanHide(gameObject)) continue;
                 
-                float dist = Vector3.Distance(transform.position, cover.transform.position);
+                float dist = Vector3.Distance(myPosition, cover.transform.position);
                 if (dist < nearestDist)
                 {
                     nearestDist = dist;

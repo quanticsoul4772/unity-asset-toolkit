@@ -55,6 +55,7 @@ namespace NPCBrain.Archetypes
         
         private Vector3 _homePosition;
         private int _arrestCount;
+        private RobberNPC _cachedTargetRobber;
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => Blackboard.Get("currentState", "Patrol");
@@ -108,8 +109,11 @@ namespace NPCBrain.Archetypes
         private void HandleTargetAcquired(GameObject target)
         {
             // Only react to RobberNPC targets (filter since we can't use tags)
-            if (target.GetComponent<RobberNPC>() == null) return;
+            var robber = target.GetComponent<RobberNPC>();
+            if (robber == null) return;
             
+            // Cache the component reference
+            _cachedTargetRobber = robber;
             Blackboard.Set("target", target);
             Blackboard.Set("investigatePosition", target.transform.position);
             IncreaseAlert(0.6f);
@@ -123,6 +127,7 @@ namespace NPCBrain.Archetypes
                 if (currentTarget == target)
                 {
                     Blackboard.Remove("target");
+                    _cachedTargetRobber = null;
                 }
             }
         }
@@ -198,7 +203,15 @@ namespace NPCBrain.Archetypes
                 return;
             }
             
-            var robber = target.GetComponent<RobberNPC>();
+            // Use cached reference instead of GetComponent
+            var robber = _cachedTargetRobber;
+            if (robber == null)
+            {
+                // Fallback if cache is stale
+                robber = target.GetComponent<RobberNPC>();
+                _cachedTargetRobber = robber;
+            }
+            
             if (robber != null && !robber.HasEscaped)
             {
                 float distance = Vector3.Distance(transform.position, target.transform.position);
@@ -208,6 +221,7 @@ namespace NPCBrain.Archetypes
                     _arrestCount++;
                     Blackboard.Remove("target");
                     Blackboard.Set("canArrest", false);
+                    _cachedTargetRobber = null;
                     
                     OnArrest?.Invoke(this, robber);
                     

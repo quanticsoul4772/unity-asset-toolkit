@@ -38,7 +38,18 @@ namespace NPCBrain
         }
         
         private readonly Dictionary<string, Entry> _data = new Dictionary<string, Entry>();
-        private readonly List<string> _keysToRemove = new List<string>();
+        private readonly List<string> _keysToRemove = new List<string>(8);
+        private readonly List<string> _cachedKeys = new List<string>(16);
+        
+        // Type-specific storage to avoid boxing for common value types
+        private readonly Dictionary<string, float> _floatData = new Dictionary<string, float>();
+        private readonly Dictionary<string, int> _intData = new Dictionary<string, int>();
+        private readonly Dictionary<string, bool> _boolData = new Dictionary<string, bool>();
+        private readonly Dictionary<string, Vector3> _vectorData = new Dictionary<string, Vector3>();
+        
+        // Track which keys have TTL for efficient cleanup
+        private readonly List<(float expirationTime, string key)> _expiringKeys = new List<(float, string)>(8);
+        private bool _expiringKeysDirty = false;
         
         /// <summary>
         /// When true, logs warnings when type mismatches occur in Get/TryGet.
@@ -74,6 +85,74 @@ namespace NPCBrain
         }
         
         /// <summary>
+        /// Sets a float value without boxing.
+        /// </summary>
+        public void SetFloat(string key, float value)
+        {
+            _floatData[key] = value;
+            OnValueChanged?.Invoke(key, value);
+        }
+        
+        /// <summary>
+        /// Gets a float value without unboxing.
+        /// </summary>
+        public float GetFloat(string key, float defaultValue = 0f)
+        {
+            return _floatData.TryGetValue(key, out float value) ? value : defaultValue;
+        }
+        
+        /// <summary>
+        /// Sets an int value without boxing.
+        /// </summary>
+        public void SetInt(string key, int value)
+        {
+            _intData[key] = value;
+            OnValueChanged?.Invoke(key, value);
+        }
+        
+        /// <summary>
+        /// Gets an int value without unboxing.
+        /// </summary>
+        public int GetInt(string key, int defaultValue = 0)
+        {
+            return _intData.TryGetValue(key, out int value) ? value : defaultValue;
+        }
+        
+        /// <summary>
+        /// Sets a bool value without boxing.
+        /// </summary>
+        public void SetBool(string key, bool value)
+        {
+            _boolData[key] = value;
+            OnValueChanged?.Invoke(key, value);
+        }
+        
+        /// <summary>
+        /// Gets a bool value without unboxing.
+        /// </summary>
+        public bool GetBool(string key, bool defaultValue = false)
+        {
+            return _boolData.TryGetValue(key, out bool value) ? value : defaultValue;
+        }
+        
+        /// <summary>
+        /// Sets a Vector3 value without boxing.
+        /// </summary>
+        public void SetVector3(string key, Vector3 value)
+        {
+            _vectorData[key] = value;
+            OnValueChanged?.Invoke(key, value);
+        }
+        
+        /// <summary>
+        /// Gets a Vector3 value without unboxing.
+        /// </summary>
+        public Vector3 GetVector3(string key, Vector3 defaultValue = default)
+        {
+            return _vectorData.TryGetValue(key, out Vector3 value) ? value : defaultValue;
+        }
+        
+        /// <summary>
         /// Sets a value that automatically expires after the specified time.
         /// </summary>
         /// <typeparam name="T">The type of value to store.</typeparam>
@@ -82,12 +161,15 @@ namespace NPCBrain
         /// <param name="ttlSeconds">Time-to-live in seconds before the value expires.</param>
         public void SetWithTTL<T>(string key, T value, float ttlSeconds)
         {
+            float expirationTime = UnityEngine.Time.time + ttlSeconds;
             _data[key] = new Entry
             {
                 Value = value,
-                ExpirationTime = UnityEngine.Time.time + ttlSeconds,
+                ExpirationTime = expirationTime,
                 HasExpiration = true
             };
+            _expiringKeys.Add((expirationTime, key));
+            _expiringKeysDirty = true;
             OnValueChanged?.Invoke(key, value);
         }
         
@@ -194,19 +276,45 @@ namespace NPCBrain
         /// </summary>
         public void CleanupExpired()
         {
-            _keysToRemove.Clear();
-            float currentTime = UnityEngine.Time.time;
+            if (_expiringKeys.Count == 0) return;
             
-            foreach (var kvp in _data)
+            float currentTime = UnityEngine.Time.time;
+            _keysToRemove.Clear();
+            
+            // Sort expiring keys by time if dirty
+            if (_expiringKeysDirty)
             {
-                if (kvp.Value.HasExpiration && currentTime >= kvp.Value.ExpirationTime)
-                {
-                    _keysToRemove.Add(kvp.Key);
-                }
+                _expiringKeys.Sort((a, b) => a.expirationTime.CompareTo(b.expirationTime));
+                _expiringKeysDirty = false;
             }
             
-            foreach (var key in _keysToRemove)
+            // Process only keys that have expired (sorted, so we can stop early)
+            int removeCount = 0;
+            for (int i = 0; i < _expiringKeys.Count; i++)
             {
+                var (expirationTime, key) = _expiringKeys[i];
+                if (expirationTime > currentTime) break;
+                
+                // Verify the key still exists and is still expired
+                if (_data.TryGetValue(key, out Entry entry) && 
+                    entry.HasExpiration && 
+                    currentTime >= entry.ExpirationTime)
+                {
+                    _keysToRemove.Add(key);
+                }
+                removeCount++;
+            }
+            
+            // Remove expired entries from tracking list
+            if (removeCount > 0)
+            {
+                _expiringKeys.RemoveRange(0, removeCount);
+            }
+            
+            // Remove expired entries from data
+            for (int i = 0; i < _keysToRemove.Count; i++)
+            {
+                var key = _keysToRemove[i];
                 _data.Remove(key);
                 OnValueExpired?.Invoke(key);
             }
@@ -219,25 +327,22 @@ namespace NPCBrain
         {
             get
             {
-                _keysToRemove.Clear();
-                float currentTime = UnityEngine.Time.time;
-                
-                foreach (var kvp in _data)
-                {
-                    if (kvp.Value.HasExpiration && currentTime >= kvp.Value.ExpirationTime)
-                    {
-                        _keysToRemove.Add(kvp.Key);
-                    }
-                }
-                
-                foreach (var key in _keysToRemove)
-                {
-                    _data.Remove(key);
-                    OnValueExpired?.Invoke(key);
-                }
-                
+                CleanupExpired();
                 return _data.Keys;
             }
+        }
+        
+        /// <summary>
+        /// Removes all entries from the type-specific stores.
+        /// </summary>
+        public void ClearAll()
+        {
+            _data.Clear();
+            _floatData.Clear();
+            _intData.Clear();
+            _boolData.Clear();
+            _vectorData.Clear();
+            _expiringKeys.Clear();
         }
     }
 }

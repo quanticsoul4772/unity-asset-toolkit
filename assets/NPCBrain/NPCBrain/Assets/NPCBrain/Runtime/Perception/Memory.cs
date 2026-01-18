@@ -71,7 +71,8 @@ namespace NPCBrain.Perception
         }
         
         private readonly Dictionary<GameObject, TargetMemory> _memories = new Dictionary<GameObject, TargetMemory>();
-        private readonly List<GameObject> _toRemove = new List<GameObject>();
+        private readonly List<GameObject> _toRemove = new List<GameObject>(8);
+        private readonly List<GameObject> _cachedKeys = new List<GameObject>(16);
         
         /// <summary>How long memories persist after losing sight (seconds).</summary>
         public float MemoryDuration { get; set; } = DefaultMemoryDuration;
@@ -138,33 +139,42 @@ namespace NPCBrain.Perception
         {
             _toRemove.Clear();
             
-            foreach (var kvp in _memories)
+            // Cache keys to avoid dictionary enumeration allocation
+            _cachedKeys.Clear();
+            foreach (var key in _memories.Keys)
             {
-                var memory = kvp.Value;
+                _cachedKeys.Add(key);
+            }
+            
+            float deltaTime = Time.deltaTime;
+            for (int i = 0; i < _cachedKeys.Count; i++)
+            {
+                var key = _cachedKeys[i];
+                var memory = _memories[key];
                 
                 // Skip if target was destroyed
                 if (memory.Target == null)
                 {
-                    _toRemove.Add(kvp.Key);
+                    _toRemove.Add(key);
                     continue;
                 }
                 
                 // Apply decay to non-visible targets
                 if (!memory.IsCurrentlyVisible)
                 {
-                    memory.Confidence -= DecayRate * Time.deltaTime;
+                    memory.Confidence -= DecayRate * deltaTime;
                     
                     // Remove if expired
                     if (memory.TimeSinceLastSeen > MemoryDuration || memory.Confidence <= 0)
                     {
-                        _toRemove.Add(kvp.Key);
+                        _toRemove.Add(key);
                     }
                 }
             }
             
-            foreach (var key in _toRemove)
+            for (int i = 0; i < _toRemove.Count; i++)
             {
-                _memories.Remove(key);
+                _memories.Remove(_toRemove[i]);
             }
         }
         
@@ -257,12 +267,21 @@ namespace NPCBrain.Perception
             GameObject mostRecent = null;
             float mostRecentTime = float.MinValue;
             
-            foreach (var kvp in _memories)
+            // Use cached keys for iteration
+            _cachedKeys.Clear();
+            foreach (var key in _memories.Keys)
             {
-                if (kvp.Value.LastSeenTime > mostRecentTime)
+                _cachedKeys.Add(key);
+            }
+            
+            for (int i = 0; i < _cachedKeys.Count; i++)
+            {
+                var key = _cachedKeys[i];
+                var memory = _memories[key];
+                if (memory.LastSeenTime > mostRecentTime)
                 {
-                    mostRecentTime = kvp.Value.LastSeenTime;
-                    mostRecent = kvp.Key;
+                    mostRecentTime = memory.LastSeenTime;
+                    mostRecent = key;
                 }
             }
             
@@ -331,12 +350,21 @@ namespace NPCBrain.Perception
             GameObject mostRecent = null;
             float mostRecentTime = float.MinValue;
             
-            foreach (var kvp in _memories)
+            // Use cached keys for iteration
+            _cachedKeys.Clear();
+            foreach (var key in _memories.Keys)
             {
-                if (kvp.Value.WasHeard && kvp.Value.LastHeardTime > mostRecentTime)
+                _cachedKeys.Add(key);
+            }
+            
+            for (int i = 0; i < _cachedKeys.Count; i++)
+            {
+                var key = _cachedKeys[i];
+                var memory = _memories[key];
+                if (memory.WasHeard && memory.LastHeardTime > mostRecentTime)
                 {
-                    mostRecentTime = kvp.Value.LastHeardTime;
-                    mostRecent = kvp.Key;
+                    mostRecentTime = memory.LastHeardTime;
+                    mostRecent = key;
                 }
             }
             

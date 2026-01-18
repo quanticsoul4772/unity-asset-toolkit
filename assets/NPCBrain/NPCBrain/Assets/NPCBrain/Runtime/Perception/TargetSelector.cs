@@ -64,8 +64,14 @@ namespace NPCBrain.Perception
             public bool WasHeard { get; set; }
         }
         
-        private readonly List<ScoredTarget> _scoredTargets = new List<ScoredTarget>();
+        private readonly List<ScoredTarget> _scoredTargets = new List<ScoredTarget>(16);
+        private readonly HashSet<GameObject> _addedTargets = new HashSet<GameObject>();
+        private readonly Stack<ScoredTarget> _scoredTargetPool = new Stack<ScoredTarget>(16);
         private readonly ScoringWeights _weights;
+        
+        // Cached comparator to avoid allocation during sort
+        private static readonly System.Comparison<ScoredTarget> _scoreComparer = 
+            (a, b) => b.Score.CompareTo(a.Score);
         
         /// <summary>Maximum distance to consider targets.</summary>
         public float MaxDistance { get; set; } = 50f;
@@ -108,13 +114,21 @@ namespace NPCBrain.Perception
             Vector3 selectorForward,
             Blackboard blackboard = null)
         {
+            // Return pooled objects from previous evaluation
+            for (int i = 0; i < _scoredTargets.Count; i++)
+            {
+                _scoredTargetPool.Push(_scoredTargets[i]);
+            }
             _scoredTargets.Clear();
+            _addedTargets.Clear();
             
             // Score visible targets
             if (sightSensor != null)
             {
-                foreach (var target in sightSensor.VisibleTargets)
+                var visibleTargets = sightSensor.VisibleTargets;
+                for (int i = 0; i < visibleTargets.Count; i++)
                 {
+                    var target = visibleTargets[i];
                     if (target == null) continue;
                     
                     var scored = ScoreTarget(
@@ -128,28 +142,22 @@ namespace NPCBrain.Perception
                         false);
                     
                     _scoredTargets.Add(scored);
+                    _addedTargets.Add(target);
                 }
             }
             
             // Score remembered but not visible targets
             if (memory != null)
             {
-                foreach (var kvp in memory.Memories)
+                // Use enumerator directly to avoid allocation
+                var enumerator = memory.Memories.GetEnumerator();
+                while (enumerator.MoveNext())
                 {
-                    var mem = kvp.Value;
+                    var mem = enumerator.Current.Value;
                     if (mem.Target == null || mem.IsCurrentlyVisible) continue;
                     
-                    // Skip if already added from visible targets
-                    bool alreadyAdded = false;
-                    foreach (var scored in _scoredTargets)
-                    {
-                        if (scored.Target == mem.Target)
-                        {
-                            alreadyAdded = true;
-                            break;
-                        }
-                    }
-                    if (alreadyAdded) continue;
+                    // O(1) lookup instead of O(n)
+                    if (_addedTargets.Contains(mem.Target)) continue;
                     
                     var scoredMem = ScoreTarget(
                         mem.Target,
@@ -162,11 +170,13 @@ namespace NPCBrain.Perception
                         mem.WasHeard && mem.TimeSinceLastHeard < _weights.HearingBonusWindow);
                     
                     _scoredTargets.Add(scoredMem);
+                    _addedTargets.Add(mem.Target);
                 }
+                enumerator.Dispose();
             }
             
-            // Sort by score (highest first)
-            _scoredTargets.Sort((a, b) => b.Score.CompareTo(a.Score));
+            // Sort by score (highest first) using cached comparator
+            _scoredTargets.Sort(_scoreComparer);
             
             return _scoredTargets;
         }
@@ -216,16 +226,20 @@ namespace NPCBrain.Perception
                 score += _weights.HearingBonus;
             }
             
-            return new ScoredTarget
-            {
-                Target = target,
-                Score = score,
-                Distance = distance,
-                Angle = angle,
-                IsVisible = isVisible,
-                Confidence = confidence,
-                WasHeard = wasRecentlyHeard
-            };
+            // Get from pool or create new
+            ScoredTarget result = _scoredTargetPool.Count > 0 
+                ? _scoredTargetPool.Pop() 
+                : new ScoredTarget();
+            
+            result.Target = target;
+            result.Score = score;
+            result.Distance = distance;
+            result.Angle = angle;
+            result.IsVisible = isVisible;
+            result.Confidence = confidence;
+            result.WasHeard = wasRecentlyHeard;
+            
+            return result;
         }
         
         /// <summary>
@@ -265,10 +279,10 @@ namespace NPCBrain.Perception
             
             var scored = Evaluate(sightSensor, null, selectorPosition, selectorForward, null);
             
-            foreach (var s in scored)
+            for (int i = 0; i < scored.Count; i++)
             {
-                if (s.IsVisible)
-                    return s.Target;
+                if (scored[i].IsVisible)
+                    return scored[i].Target;
             }
             
             return null;

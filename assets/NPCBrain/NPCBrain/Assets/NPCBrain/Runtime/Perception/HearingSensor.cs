@@ -62,10 +62,15 @@ namespace NPCBrain.Perception
         [SerializeField] private Color _gizmoColor = new Color(0.5f, 0.8f, 1f, 0.2f);
         [SerializeField] private Color _gizmoColorHeard = new Color(1f, 0.5f, 0.2f, 0.3f);
         
-        private readonly List<SoundEvent> _heardSounds = new List<SoundEvent>();
-        private readonly List<SoundEvent> _previousSounds = new List<SoundEvent>();
-        private readonly List<SoundEvent> _soundsInRange = new List<SoundEvent>();
+        private List<SoundEvent> _heardSounds = new List<SoundEvent>(16);
+        private List<SoundEvent> _previousSounds = new List<SoundEvent>(16);
+        private readonly HashSet<SoundEvent> _previousSoundsSet = new HashSet<SoundEvent>();
+        private readonly List<SoundEvent> _soundsInRange = new List<SoundEvent>(16);
         private readonly HashSet<string> _ignoreTagSet = new HashSet<string>();
+        
+        // Cached comparator to avoid allocation during sort
+        private static readonly System.Comparison<SoundEvent> _priorityComparer = 
+            (a, b) => b.Priority.CompareTo(a.Priority);
         
         /// <summary>Maximum hearing range in units.</summary>
         public float HearingRange => _hearingRange;
@@ -114,10 +119,19 @@ namespace NPCBrain.Perception
         /// <param name="brain">The brain controller this sensor belongs to.</param>
         public void Tick(NPCBrainController brain)
         {
-            // Store previous sounds for comparison
-            _previousSounds.Clear();
-            _previousSounds.AddRange(_heardSounds);
+            // Swap lists instead of copying (avoids allocation)
+            var temp = _previousSounds;
+            _previousSounds = _heardSounds;
+            _heardSounds = temp;
             _heardSounds.Clear();
+            
+            // Build HashSet for O(1) lookup
+            _previousSoundsSet.Clear();
+            for (int i = 0; i < _previousSounds.Count; i++)
+            {
+                _previousSoundsSet.Add(_previousSounds[i]);
+            }
+            
             HighestPrioritySound = null;
             
             Vector3 earPosition = transform.position + Vector3.up * _earHeight;
@@ -214,25 +228,17 @@ namespace NPCBrain.Perception
                 }
             }
             
-            // Sort by priority (highest first)
-            _heardSounds.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+            // Sort by priority (highest first) using cached comparator
+            _heardSounds.Sort(_priorityComparer);
             
-            // Fire events for newly heard sounds
+            // Fire events for newly heard sounds (O(n) with HashSet lookup)
             if (brain != null)
             {
-                foreach (var sound in _heardSounds)
+                for (int i = 0; i < _heardSounds.Count; i++)
                 {
-                    bool isNew = true;
-                    foreach (var prev in _previousSounds)
-                    {
-                        if (prev == sound)
-                        {
-                            isNew = false;
-                            break;
-                        }
-                    }
-                    
-                    if (isNew)
+                    var sound = _heardSounds[i];
+                    // O(1) lookup instead of O(n)
+                    if (!_previousSoundsSet.Contains(sound))
                     {
                         brain.RaiseSoundHeard(sound);
                     }
@@ -247,9 +253,9 @@ namespace NPCBrain.Perception
         /// <returns>True if a sound of that type was heard.</returns>
         public bool HeardSoundType(SoundType type)
         {
-            foreach (var sound in _heardSounds)
+            for (int i = 0; i < _heardSounds.Count; i++)
             {
-                if (sound.Type == type)
+                if (_heardSounds[i].Type == type)
                 {
                     return true;
                 }
@@ -264,9 +270,9 @@ namespace NPCBrain.Perception
         /// <returns>True if a sound with that tag was heard.</returns>
         public bool HeardSoundWithTag(string tag)
         {
-            foreach (var sound in _heardSounds)
+            for (int i = 0; i < _heardSounds.Count; i++)
             {
-                if (sound.CustomTag == tag)
+                if (_heardSounds[i].CustomTag == tag)
                 {
                     return true;
                 }
@@ -283,9 +289,9 @@ namespace NPCBrain.Perception
         {
             if (source == null) return false;
             
-            foreach (var sound in _heardSounds)
+            for (int i = 0; i < _heardSounds.Count; i++)
             {
-                if (sound.Source == source)
+                if (_heardSounds[i].Source == source)
                 {
                     return true;
                 }
@@ -313,8 +319,9 @@ namespace NPCBrain.Perception
         public void GetSoundsOfType(SoundType minimumType, List<SoundEvent> results)
         {
             results.Clear();
-            foreach (var sound in _heardSounds)
+            for (int i = 0; i < _heardSounds.Count; i++)
             {
+                var sound = _heardSounds[i];
                 if (sound.Type >= minimumType)
                 {
                     results.Add(sound);
@@ -330,8 +337,9 @@ namespace NPCBrain.Perception
         {
             results.Clear();
             float cutoffTime = Time.time - _soundMemoryDuration;
-            foreach (var sound in _heardSounds)
+            for (int i = 0; i < _heardSounds.Count; i++)
             {
+                var sound = _heardSounds[i];
                 if (sound.Timestamp >= cutoffTime)
                 {
                     results.Add(sound);
@@ -348,9 +356,9 @@ namespace NPCBrain.Perception
             if (_heardSounds.Count == 0) return false;
             
             float cutoffTime = Time.time - _soundMemoryDuration;
-            foreach (var sound in _heardSounds)
+            for (int i = 0; i < _heardSounds.Count; i++)
             {
-                if (sound.Timestamp >= cutoffTime)
+                if (_heardSounds[i].Timestamp >= cutoffTime)
                 {
                     return true;
                 }

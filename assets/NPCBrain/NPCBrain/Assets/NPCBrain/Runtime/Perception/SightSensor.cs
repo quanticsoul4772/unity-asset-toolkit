@@ -48,8 +48,10 @@ namespace NPCBrain.Perception
         [SerializeField] private Color _gizmoColorClear = new Color(0.3f, 1f, 0.3f, 0.3f);
         [SerializeField] private Color _gizmoColorAlert = new Color(1f, 0.3f, 0.3f, 0.3f);
         
-        private readonly List<GameObject> _visibleTargets = new List<GameObject>();
-        private readonly List<GameObject> _previousTargets = new List<GameObject>();
+        private List<GameObject> _visibleTargets = new List<GameObject>(10);
+        private List<GameObject> _previousTargets = new List<GameObject>(10);
+        private readonly HashSet<GameObject> _visibleTargetsSet = new HashSet<GameObject>();
+        private readonly HashSet<GameObject> _previousTargetsSet = new HashSet<GameObject>();
         private readonly Collider[] _overlapResults = new Collider[20];
         private bool _tagValidityChecked;
         private bool _targetTagIsValid;
@@ -76,10 +78,20 @@ namespace NPCBrain.Perception
         /// <param name="brain">The brain controller this sensor belongs to.</param>
         public void Tick(NPCBrainController brain)
         {
-            // Store previous targets for comparison
-            _previousTargets.Clear();
-            _previousTargets.AddRange(_visibleTargets);
+            // Swap lists instead of copying (avoids allocation)
+            var temp = _previousTargets;
+            _previousTargets = _visibleTargets;
+            _visibleTargets = temp;
             _visibleTargets.Clear();
+            
+            // Build HashSets for O(1) lookup
+            _previousTargetsSet.Clear();
+            for (int i = 0; i < _previousTargets.Count; i++)
+            {
+                _previousTargetsSet.Add(_previousTargets[i]);
+            }
+            _visibleTargetsSet.Clear();
+            
             ClosestTarget = null;
             
             // Find potential targets in range
@@ -178,6 +190,7 @@ namespace NPCBrain.Perception
                     
                     // Target is visible!
                     _visibleTargets.Add(collider.gameObject);
+                    _visibleTargetsSet.Add(collider.gameObject);
                     
                     if (distanceToTarget < closestDistance)
                     {
@@ -187,20 +200,24 @@ namespace NPCBrain.Perception
                 }
             }
             
-            // Fire events for newly acquired/lost targets
+            // Fire events for newly acquired/lost targets (O(n) with HashSet lookup)
             if (brain != null)
             {
-                foreach (var target in _visibleTargets)
+                for (int i = 0; i < _visibleTargets.Count; i++)
                 {
-                    if (!_previousTargets.Contains(target))
+                    var target = _visibleTargets[i];
+                    // O(1) lookup instead of O(n)
+                    if (!_previousTargetsSet.Contains(target))
                     {
                         brain.RaiseTargetAcquired(target);
                     }
                 }
                 
-                foreach (var target in _previousTargets)
+                for (int i = 0; i < _previousTargets.Count; i++)
                 {
-                    if (!_visibleTargets.Contains(target))
+                    var target = _previousTargets[i];
+                    // O(1) lookup instead of O(n)
+                    if (!_visibleTargetsSet.Contains(target))
                     {
                         brain.RaiseTargetLost(target);
                     }

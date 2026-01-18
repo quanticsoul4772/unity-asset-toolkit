@@ -9,8 +9,10 @@ namespace NPCBrain.Perception
     /// </summary>
     public static class SoundManager
     {
-        private static readonly List<SoundEvent> _activeSounds = new List<SoundEvent>();
-        private static readonly List<SoundEvent> _soundsToRemove = new List<SoundEvent>();
+        private static readonly List<SoundEvent> _activeSounds = new List<SoundEvent>(32);
+        private static readonly List<SoundEvent> _soundsToRemove = new List<SoundEvent>(16);
+        private static readonly Stack<SoundEvent> _soundEventPool = new Stack<SoundEvent>(32);
+        private static int _lastCleanupFrame = -1;
         
         /// <summary>How long sounds remain active before being cleaned up (seconds).</summary>
         public static float MaxSoundAge { get; set; } = 1f;
@@ -41,7 +43,24 @@ namespace NPCBrain.Perception
         /// <returns>The created SoundEvent.</returns>
         public static SoundEvent EmitSound(Vector3 position, SoundType type, float volume, float radius, GameObject source = null, string customTag = null)
         {
-            var sound = new SoundEvent(position, type, volume, radius, source, customTag);
+            // Get from pool or create new
+            SoundEvent sound = _soundEventPool.Count > 0 
+                ? _soundEventPool.Pop() 
+                : new SoundEvent(position, type, volume, radius, source, customTag);
+            
+            // Reset pooled sound with new values
+            if (_soundEventPool.Count >= 0) // Always reset since we might have gotten from pool
+            {
+                sound.Position = position;
+                sound.Type = type;
+                sound.Volume = Mathf.Clamp01(volume);
+                sound.Radius = Mathf.Max(0f, radius);
+                sound.Source = source;
+                sound.CustomTag = customTag;
+                sound.EffectiveVolume = volume;
+                sound.Priority = 0f;
+            }
+            
             RegisterSound(sound);
             return sound;
         }
@@ -56,8 +75,9 @@ namespace NPCBrain.Perception
         {
             CleanupOldSounds();
             
-            foreach (var sound in _activeSounds)
+            for (int i = 0; i < _activeSounds.Count; i++)
             {
+                var sound = _activeSounds[i];
                 float distance = Vector3.Distance(position, sound.Position);
                 float effectiveRange = Mathf.Min(range, sound.Radius);
                 
@@ -79,8 +99,9 @@ namespace NPCBrain.Perception
             results.Clear();
             CleanupOldSounds();
             
-            foreach (var sound in _activeSounds)
+            for (int i = 0; i < _activeSounds.Count; i++)
             {
+                var sound = _activeSounds[i];
                 float distance = Vector3.Distance(position, sound.Position);
                 float effectiveRange = Mathf.Min(range, sound.Radius);
                 
@@ -96,19 +117,27 @@ namespace NPCBrain.Perception
         /// </summary>
         public static void CleanupOldSounds()
         {
+            // Only cleanup once per frame (called by every HearingSensor)
+            int currentFrame = Time.frameCount;
+            if (currentFrame == _lastCleanupFrame) return;
+            _lastCleanupFrame = currentFrame;
+            
             _soundsToRemove.Clear();
             
-            foreach (var sound in _activeSounds)
+            for (int i = 0; i < _activeSounds.Count; i++)
             {
-                if (sound.Age > MaxSoundAge)
+                if (_activeSounds[i].Age > MaxSoundAge)
                 {
-                    _soundsToRemove.Add(sound);
+                    _soundsToRemove.Add(_activeSounds[i]);
                 }
             }
             
-            foreach (var sound in _soundsToRemove)
+            for (int i = 0; i < _soundsToRemove.Count; i++)
             {
+                var sound = _soundsToRemove[i];
                 _activeSounds.Remove(sound);
+                // Return to pool for reuse
+                _soundEventPool.Push(sound);
             }
         }
         
@@ -166,6 +195,8 @@ namespace NPCBrain.Perception
         {
             _activeSounds.Clear();
             _soundsToRemove.Clear();
+            _soundEventPool.Clear();
+            _lastCleanupFrame = -1;
             MaxSoundAge = 1f;
         }
     }
