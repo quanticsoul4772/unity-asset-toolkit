@@ -148,17 +148,21 @@ namespace NPCBrain.Tests.Runtime
             
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
             
+            // Add targets to memory and mark them as lost (not currently visible)
+            // This simulates remembered targets that are no longer in view
             memory.UpdateVisible(_targetObject, _targetObject.transform.position);
             memory.UpdateVisible(target2, target2.transform.position);
+            memory.MarkLost(_targetObject);
+            memory.MarkLost(target2);
             
             yield return null;
             
-            // Evaluate with memory only (no sensor needed for this test)
+            // Evaluate with memory only (no sensor) - tests remembered target ranking
             var result = selector.Evaluate(null, memory, Vector3.zero, Vector3.forward, null);
             
             // Memory should have 2 targets
             Assert.AreEqual(2, memory.Count, "Memory should have 2 targets");
-            Assert.GreaterOrEqual(result.Count, 2, $"Selector should return 2 scored targets, got {result.Count}");
+            Assert.AreEqual(2, result.Count, $"Selector should return 2 scored targets, got {result.Count}");
             Assert.AreEqual(_targetObject, result[0].Target, "Closer target should be ranked first");
             
             Object.Destroy(target2);
