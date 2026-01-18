@@ -106,8 +106,9 @@ namespace NPCBrain.Archetypes
                 _wanderWeight,
                 // More likely when we haven't wandered recently
                 new TimeConsideration("WanderCooldown", "lastWanderTime", 5f),
-                // More likely when we have energy
-                new BlackboardConsideration<float>("EnergyCheck", "energy", 0.7f, 1f)
+                // More likely when we have energy (0.7-1.0 range maps to 0-1 score)
+                new BlackboardConsideration<float>("EnergyCheck", "energy", 
+                    e => Mathf.Clamp01((e - 0.7f) / 0.3f), 1f)
             );
         }
         
@@ -124,7 +125,9 @@ namespace NPCBrain.Archetypes
                 restBehavior,
                 _restWeight,
                 // More likely when energy is low (inverted - low energy = high score)
-                new BlackboardConsideration<float>("TiredCheck", "energy", 0f, 0.5f, new ExponentialCurve(2f, true)),
+                // Energy 0-0.5 maps to score 1-0, with exponential curve making low energy more urgent
+                new BlackboardConsideration<float>("TiredCheck", "energy", 
+                    e => Mathf.Pow(1f - Mathf.Clamp01(e / 0.5f), 2f), 1f),
                 // Cooldown
                 new TimeConsideration("RestCooldown", "lastRestTime", 8f)
             );
@@ -151,8 +154,9 @@ namespace NPCBrain.Archetypes
                 // More likely when we have waypoints and haven't patrolled recently
                 new ConstantConsideration(0.8f),
                 new TimeConsideration("PatrolCooldown", "lastPatrolTime", 3f),
-                // Moderate energy needed
-                new BlackboardConsideration<float>("EnergyForPatrol", "energy", 0.3f, 1f)
+                // Moderate energy needed (0.3-1.0 range maps to 0-1 score)
+                new BlackboardConsideration<float>("EnergyForPatrol", "energy", 
+                    e => Mathf.Clamp01((e - 0.3f) / 0.7f), 1f)
             );
         }
         
@@ -174,8 +178,9 @@ namespace NPCBrain.Archetypes
                 "SeekInterest",
                 seekBehavior,
                 _seekInterestWeight,
-                // Has an interest point
-                new BlackboardConsideration("HasInterest", "interestPoint"),
+                // Has an interest point - returns 1 if key exists, 0 if not
+                new BlackboardConsideration<Vector3>("HasInterest", "interestPoint",
+                    pos => pos != Vector3.zero ? 1f : 0f, Vector3.zero),
                 // Distance consideration - closer interest points are more attractive
                 new DistanceConsideration(
                     "InterestDistance",

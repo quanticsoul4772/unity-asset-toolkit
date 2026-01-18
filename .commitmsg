@@ -1,1 +1,1 @@
-Delete invalid meta files - Unity will regenerate valid ones  
+Fix UtilityNPC to use correct BlackboardConsideration and ExponentialCurve APIs  
