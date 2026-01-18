@@ -292,9 +292,25 @@ namespace NPCBrain.Editor
             EditorGUILayout.BeginVertical(_boxStyle);
             
             var criticality = _selectedNPC.Criticality;
+            var bt = _selectedNPC.BehaviorTree;
+            bool usesUtilitySelector = bt is UtilitySelector;
+            
             if (criticality == null)
             {
                 EditorGUILayout.LabelField("No CriticalityController");
+            }
+            else if (!usesUtilitySelector)
+            {
+                // NPC doesn't use UtilitySelector, so Criticality is not actively used
+                EditorGUILayout.HelpBox(
+                    "Criticality is only active with UtilitySelector.\n" +
+                    "This NPC uses a standard Selector (priority-based).", 
+                    MessageType.Info);
+                
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("BT Type:", GUILayout.Width(100));
+                EditorGUILayout.LabelField(bt?.GetType().Name ?? "None");
+                EditorGUILayout.EndHorizontal();
             }
             else
             {
