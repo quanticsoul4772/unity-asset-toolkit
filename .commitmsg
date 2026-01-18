@@ -1,1 +1,1 @@
-Enable SightSensor debug logging by default to diagnose detection issues  
+Add unconditional debug logging to SightSensor.Tick to verify it is being called  

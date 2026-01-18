@@ -71,6 +71,12 @@ namespace NPCBrain.Perception
         /// <param name="brain">The brain controller this sensor belongs to.</param>
         public void Tick(NPCBrainController brain)
         {
+            // ALWAYS log once per second to verify Tick is being called
+            if (Time.frameCount % 60 == 0)
+            {
+                Debug.Log($"[SightSensor] {name} Tick called (frame {Time.frameCount})");
+            }
+            
             // Store previous targets for comparison
             _previousTargets.Clear();
             _previousTargets.AddRange(_visibleTargets);
@@ -80,6 +86,9 @@ namespace NPCBrain.Perception
             // Find potential targets in range
             Vector3 eyePosition = transform.position + Vector3.up * _eyeHeight;
             int count = Physics.OverlapSphereNonAlloc(eyePosition, _viewDistance, _overlapResults, _targetMask);
+            
+            // ALWAYS log overlap results (not conditional)
+            Debug.Log($"[SightSensor] {name} found {count} colliders in range");
             
             if (_debugLogging)
             {
