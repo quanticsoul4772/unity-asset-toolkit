@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
@@ -57,6 +58,9 @@ namespace NPCBrain.Archetypes
         private const float EnergyDecayRate = 0.03f;
         private const float EnergyRecoveryRate = 0.3f;
         
+        /// <summary>Raised when the energy level changes.</summary>
+        public event Action<float> OnEnergyChanged;
+        
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => Blackboard.Get("currentState", "Patrol");
         
@@ -87,6 +91,8 @@ namespace NPCBrain.Archetypes
         
         private void LateUpdate()
         {
+            float previousEnergy = _energy;
+            
             // Update energy based on current state
             string state = CurrentState;
             if (state == "Rest")
@@ -100,6 +106,12 @@ namespace NPCBrain.Archetypes
                 _energy = Mathf.Max(0f, _energy - EnergyDecayRate * Time.deltaTime);
             }
             Blackboard.Set("energy", _energy);
+            
+            // Fire event if energy changed significantly
+            if (Mathf.Abs(_energy - previousEnergy) > 0.001f)
+            {
+                OnEnergyChanged?.Invoke(_energy);
+            }
         }
         
         /// <inheritdoc/>

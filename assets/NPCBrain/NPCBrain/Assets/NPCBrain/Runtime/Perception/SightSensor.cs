@@ -51,6 +51,9 @@ namespace NPCBrain.Perception
         private readonly List<GameObject> _visibleTargets = new List<GameObject>();
         private readonly List<GameObject> _previousTargets = new List<GameObject>();
         private readonly Collider[] _overlapResults = new Collider[20];
+        private readonly HashSet<string> _invalidTags = new HashSet<string>();
+        private bool _tagValidityChecked;
+        private bool _targetTagIsValid;
         
         /// <summary>Maximum view distance in units.</summary>
         public float ViewDistance => _viewDistance;
@@ -110,23 +113,25 @@ namespace NPCBrain.Perception
                 // Filter by tag if specified
                 if (!string.IsNullOrEmpty(_targetTag))
                 {
-                    // Check if tag exists - CompareTag throws if tag doesn't exist
-                    try
+                    // Use cached tag validity to avoid repeated exception handling
+                    if (!_tagValidityChecked)
                     {
-                        if (!collider.CompareTag(_targetTag))
-                        {
-                            if (ShouldLog())
-                            {
-                                NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
-                                    $"{collider.name} failed tag filter (has '{collider.tag}', need '{_targetTag}')", this);
-                            }
-                            continue;
-                        }
+                        _tagValidityChecked = true;
+                        _targetTagIsValid = IsTagValid(_targetTag);
                     }
-                    catch (UnityException)
+                    
+                    if (!_targetTagIsValid)
                     {
-                        NPCBrainDebug.LogError(NPCBrainDebug.Category.Perception, 
-                            $"Tag '{_targetTag}' does not exist in Tag Manager! Add it via Edit > Project Settings > Tags and Layers", this);
+                        continue; // Tag is invalid, skip all targets
+                    }
+                    
+                    if (!collider.CompareTag(_targetTag))
+                    {
+                        if (ShouldLog())
+                        {
+                            NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                                $"{collider.name} failed tag filter (has '{collider.tag}', need '{_targetTag}')", this);
+                        }
                         continue;
                     }
                 }
@@ -297,6 +302,44 @@ namespace NPCBrain.Perception
         private bool ShouldLog()
         {
             return _forceDebugLogging || (_debugLogging && NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Perception));
+        }
+        
+        /// <summary>
+        /// Checks if a tag exists in the Tag Manager without throwing exceptions repeatedly.
+        /// </summary>
+        private bool IsTagValid(string tag)
+        {
+            // Already know this tag is invalid
+            if (_invalidTags.Contains(tag))
+            {
+                return false;
+            }
+            
+            // Try to validate the tag using a dummy comparison
+            try
+            {
+                // Use the gameObject's CompareTag - if tag doesn't exist, this throws
+                gameObject.CompareTag(tag);
+                return true;
+            }
+            catch (UnityException)
+            {
+                // Cache that this tag is invalid
+                _invalidTags.Add(tag);
+                NPCBrainDebug.LogError(NPCBrainDebug.Category.Perception, 
+                    $"Tag '{tag}' does not exist in Tag Manager! Add it via Edit > Project Settings > Tags and Layers. " +
+                    $"This error will only be logged once.", this);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Clears the tag validity cache. Call this if you change the _targetTag at runtime.
+        /// </summary>
+        public void ClearTagCache()
+        {
+            _tagValidityChecked = false;
+            _invalidTags.Clear();
         }
     }
 }

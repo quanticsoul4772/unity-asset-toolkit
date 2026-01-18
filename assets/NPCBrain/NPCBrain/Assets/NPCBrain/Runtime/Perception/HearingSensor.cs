@@ -88,6 +88,9 @@ namespace NPCBrain.Perception
         /// <summary>Number of sounds currently heard.</summary>
         public int HeardSoundCount => _heardSounds.Count;
         
+        /// <summary>How long sounds are remembered for filtering purposes.</summary>
+        public float SoundMemoryDuration => _soundMemoryDuration;
+        
         private void Awake()
         {
             // Build ignore tag set for fast lookup
@@ -317,6 +320,42 @@ namespace NPCBrain.Perception
                     results.Add(sound);
                 }
             }
+        }
+        
+        /// <summary>
+        /// Gets sounds heard within the configured memory duration.
+        /// </summary>
+        /// <param name="results">List to populate with results.</param>
+        public void GetRecentSounds(List<SoundEvent> results)
+        {
+            results.Clear();
+            float cutoffTime = Time.time - _soundMemoryDuration;
+            foreach (var sound in _heardSounds)
+            {
+                if (sound.EmitTime >= cutoffTime)
+                {
+                    results.Add(sound);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Checks if any sound was heard within the memory duration window.
+        /// </summary>
+        /// <returns>True if a sound was heard recently.</returns>
+        public bool HasRecentSound()
+        {
+            if (_heardSounds.Count == 0) return false;
+            
+            float cutoffTime = Time.time - _soundMemoryDuration;
+            foreach (var sound in _heardSounds)
+            {
+                if (sound.EmitTime >= cutoffTime)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         
         private void OnDrawGizmosSelected()

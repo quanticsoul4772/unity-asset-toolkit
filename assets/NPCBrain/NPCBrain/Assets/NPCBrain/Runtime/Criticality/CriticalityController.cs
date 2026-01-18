@@ -212,5 +212,25 @@ namespace NPCBrain.Criticality
         /// Gets the configured maximum temperature.
         /// </summary>
         public float MaxTemperature => _maxTemperature;
+        
+        /// <summary>
+        /// Gets the configured target entropy level (0-1).
+        /// </summary>
+        public float TargetEntropy => _targetEntropy;
+        
+        /// <summary>
+        /// Gets the configured temperature adjustment rate.
+        /// </summary>
+        public float TemperatureAdjustRate => _temperatureAdjustRate;
+        
+        /// <summary>
+        /// Gets the number of unique actions in the current history.
+        /// </summary>
+        public int UniqueActionCount => _actionCounts.Count;
+        
+        /// <summary>
+        /// Gets the total number of recorded actions in history.
+        /// </summary>
+        public int ActionHistoryCount => _actionHistory.Count;
     }
 }
