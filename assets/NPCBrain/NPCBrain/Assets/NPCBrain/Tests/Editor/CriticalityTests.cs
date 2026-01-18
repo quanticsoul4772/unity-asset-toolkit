@@ -362,7 +362,7 @@ namespace NPCBrain.Tests.Editor
             float repetitiveEntropy = controller.Entropy;
             
             // Verify correlation: high entropy = low inertia, low entropy = high inertia
-            Assert.Less(variedEntropy, 0.1f, "Repetitive behavior should have near-zero entropy");
+            Assert.Less(repetitiveEntropy, 0.1f, "Repetitive behavior should have near-zero entropy");
             Assert.Greater(repetitiveInertia, variedInertia, 
                 "Inertia should be higher during repetitive behavior");
             Assert.Less(repetitiveEntropy, variedEntropy,

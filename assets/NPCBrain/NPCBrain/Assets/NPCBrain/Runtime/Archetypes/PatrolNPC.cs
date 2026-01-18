@@ -89,6 +89,12 @@ namespace NPCBrain.Archetypes
             Blackboard.Set("lastWanderTime", -10f);
         }
         
+        protected override void OnDestroy()
+        {
+            OnEnergyChanged = null;
+            base.OnDestroy();
+        }
+        
         private void LateUpdate()
         {
             float previousEnergy = _energy;
