@@ -30,7 +30,6 @@ namespace NPCBrain.Demo
         
         private void Start()
         {
-            Debug.Log("[NPCBrain] PatrolDemoSetup.Start() called");
             if (_autoGenerate)
             {
                 GenerateScene();
@@ -48,8 +47,7 @@ namespace NPCBrain.Demo
             CreateDecorations();
             CreatePatrollers();
             
-            Debug.Log("[NPCBrain] Patrol Demo generated! Watch the NPCs patrol their routes with varied timing.");
-            Debug.Log($"[NPCBrain] Created {_patrollers.Count} patrollers");
+            Debug.Log("Patrol Demo generated! Watch the NPCs patrol their routes with varied timing.");
         }
         
         private void ClearScene()
@@ -210,8 +208,6 @@ namespace NPCBrain.Demo
             // Add patroller component AFTER waypoint path exists
             var patroller = patrollerObj.AddComponent<PatrolNPC>();
             patroller.SetWaypointPath(waypointPath);
-            
-            Debug.Log($"[NPCBrain] Created {name} with {waypointPath.Count} waypoints, pattern: {pattern}");
             
             // Position at first waypoint
             if (waypointPath.Count > 0)
