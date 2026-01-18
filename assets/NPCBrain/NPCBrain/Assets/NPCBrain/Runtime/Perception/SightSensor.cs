@@ -40,7 +40,7 @@ namespace NPCBrain.Perception
         [SerializeField] private int _maxRaycastsPerTick = 3;
         
         [Header("Debug")]
-        [SerializeField] private bool _debugLogging = false;
+        [SerializeField] private bool _debugLogging = true; // TEMPORARY: enabled for debugging
         [SerializeField] private bool _drawGizmos = true;
         [SerializeField] private Color _gizmoColorClear = new Color(0.3f, 1f, 0.3f, 0.3f);
         [SerializeField] private Color _gizmoColorAlert = new Color(1f, 0.3f, 0.3f, 0.3f);
