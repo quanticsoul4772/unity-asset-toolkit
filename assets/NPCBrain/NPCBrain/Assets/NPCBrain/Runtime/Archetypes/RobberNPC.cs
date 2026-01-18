@@ -240,6 +240,10 @@ namespace NPCBrain.Archetypes
                 Blackboard.Set("hasLoot", true);
                 Blackboard.Set("lootValue", _carriedLootValue);
                 
+                // Show loot bag visual
+                var bag = transform.Find("LootBag");
+                if (bag != null) bag.gameObject.SetActive(true);
+                
                 Debug.Log($"<color=yellow>[CopsAndRobbers] {name} stole loot worth ${loot.Value}!</color>");
             }
         }
