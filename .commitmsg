@@ -1,1 +1,1 @@
-Fix guard detection - add SightSensor BEFORE GuardNPC so Perception is set in Awake  
+Create comprehensive README documentation and remove debug logging  

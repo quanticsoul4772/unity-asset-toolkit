@@ -66,16 +66,13 @@ namespace NPCBrain.Archetypes
         
         private void HandleTargetAcquired(GameObject target)
         {
-            Debug.Log($"[GuardNPC] {name} HandleTargetAcquired called! Target: {target?.name}");
             Blackboard.Set("target", target);
             Blackboard.Set("lastKnownPosition", target.transform.position);
             IncreaseAlert(0.5f);
-            Debug.Log($"[GuardNPC] {name} Blackboard 'target' set to {target?.name}, alertLevel={Blackboard.Get("alertLevel", 0f)}");
         }
         
         private void HandleTargetLost(GameObject target)
         {
-            Debug.Log($"[GuardNPC] {name} HandleTargetLost called! Target: {target?.name}");
             // Keep last known position for investigation
             if (Blackboard.Has("target"))
             {
@@ -83,7 +80,6 @@ namespace NPCBrain.Archetypes
                 if (currentTarget == target)
                 {
                     Blackboard.Remove("target");
-                    Debug.Log($"[GuardNPC] {name} Removed 'target' from blackboard");
                 }
             }
         }
