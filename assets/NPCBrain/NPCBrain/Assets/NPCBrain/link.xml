@@ -1,0 +1,4 @@
+<linker>
+    <!-- Exclude System.Windows.Forms from stripping to prevent warnings -->
+    <assembly fullname="System.Windows.Forms" preserve="nothing" ignoreIfMissing="true"/>
+</linker>
