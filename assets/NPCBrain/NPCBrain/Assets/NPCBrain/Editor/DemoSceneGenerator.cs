@@ -116,11 +116,37 @@ namespace NPCBrain.Editor
             Debug.Log("Press Play to watch NPCs make utility-based decisions. Temperature and Inertia will change!");
         }
         
-        [MenuItem("NPCBrain/Create All Demo Scenes", false, 204)]
+        [MenuItem("NPCBrain/Create Cops and Robbers Demo", false, 204)]
+        public static void CreateCopsAndRobbersDemoScene()
+        {
+            if (!ConfirmSceneCreation("CopsAndRobbersDemo")) return;
+            
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            
+            SetupCamera(new Vector3(0f, 35f, -25f), 55f);
+            SetupLighting();
+            
+            // Create demo controller
+            var controller = new GameObject("CopsAndRobbersDemoSetup");
+            controller.AddComponent<Demo.CopsAndRobbersDemoSetup>();
+            
+            // Create info display
+            CreateSceneInfo("Cops and Robbers Demo", "Full game: Cops chase robbers, robbers steal loot and escape");
+            
+            // Save scene
+            string scenePath = $"{DemoScenesPath}/CopsAndRobbersDemo.unity";
+            EnsureDirectoryExists(scenePath);
+            EditorSceneManager.SaveScene(scene, scenePath);
+            
+            Debug.Log($"<color=green>Cops and Robbers Demo Scene created at: {scenePath}</color>");
+            Debug.Log("Press Play to watch cops chase robbers! Robbers will try to steal loot and escape.");
+        }
+        
+        [MenuItem("NPCBrain/Create All Demo Scenes", false, 205)]
         public static void CreateAllDemoScenes()
         {
             if (!EditorUtility.DisplayDialog("Create All Demo Scenes",
-                "This will create GuardDemo.unity, PatrolDemo.unity, HearingDemo.unity, and UtilityDemo.unity in the Demo/Scenes folder.\n\nContinue?",
+                "This will create GuardDemo.unity, PatrolDemo.unity, HearingDemo.unity, UtilityDemo.unity, and CopsAndRobbersDemo.unity in the Demo/Scenes folder.\n\nContinue?",
                 "Create All", "Cancel"))
             {
                 return;
@@ -130,6 +156,7 @@ namespace NPCBrain.Editor
             CreatePatrolDemoSceneInternal();
             CreateHearingDemoSceneInternal();
             CreateUtilityDemoSceneInternal();
+            CreateCopsAndRobbersDemoSceneInternal();
             
             Debug.Log("<color=green>All demo scenes created successfully!</color>");
         }
@@ -156,6 +183,12 @@ namespace NPCBrain.Editor
         public static void OpenUtilityDemo()
         {
             OpenDemoScene("UtilityDemo");
+        }
+        
+        [MenuItem("NPCBrain/Open Cops and Robbers Demo", false, 214)]
+        public static void OpenCopsAndRobbersDemo()
+        {
+            OpenDemoScene("CopsAndRobbersDemo");
         }
         
         private static void CreateGuardDemoSceneInternal()
@@ -226,6 +259,23 @@ namespace NPCBrain.Editor
             EditorSceneManager.SaveScene(scene, scenePath);
         }
         
+        private static void CreateCopsAndRobbersDemoSceneInternal()
+        {
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            
+            SetupCamera(new Vector3(0f, 35f, -25f), 55f);
+            SetupLighting();
+            
+            var controller = new GameObject("CopsAndRobbersDemoSetup");
+            controller.AddComponent<Demo.CopsAndRobbersDemoSetup>();
+            
+            CreateSceneInfo("Cops and Robbers Demo", "Full game: Cops chase robbers, robbers steal loot and escape");
+            
+            string scenePath = $"{DemoScenesPath}/CopsAndRobbersDemo.unity";
+            EnsureDirectoryExists(scenePath);
+            EditorSceneManager.SaveScene(scene, scenePath);
+        }
+        
         private static bool ConfirmSceneCreation(string sceneName)
         {
             string scenePath = $"{DemoScenesPath}/{sceneName}.unity";
@@ -258,6 +308,8 @@ namespace NPCBrain.Editor
                         CreateHearingDemoScene();
                     else if (sceneName == "UtilityDemo")
                         CreateUtilityDemoScene();
+                    else if (sceneName == "CopsAndRobbersDemo")
+                        CreateCopsAndRobbersDemoScene();
                 }
                 return;
             }
