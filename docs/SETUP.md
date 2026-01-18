@@ -105,3 +105,36 @@ See: https://game.ci/docs/github/activation
 | Scripts not compiling | Validate asmdef references: `validate-asmdef.ps1` |
 | Menu items missing | Assets → Reimport All or restart Unity |
 | CI/CD fails | Check GitHub Actions logs, verify secrets |
+
+---
+
+## Setup Checklist
+
+Use this checklist to verify your environment is correctly configured.
+
+### Software Installation
+- [ ] Unity Hub installed
+- [ ] Unity Editor installed (6000.3.4f1+)
+- [ ] Visual Studio 2022 or VS Code installed
+- [ ] Git installed (v2.45+)
+- [ ] Git LFS installed (v3.5+)
+
+### Unity Setup
+- [ ] Visual Studio 2022 set as external editor
+- [ ] Unity ID/account created
+- [ ] Publisher account created (for Asset Store submissions)
+
+### IDE Setup
+- [ ] Unity workload installed (VS 2022) or extensions installed (VS Code)
+- [ ] Unity integration enabled
+
+### Repository Setup
+- [ ] Repository cloned
+- [ ] Git hooks installed: `.\scripts\setup-hooks.ps1`
+- [ ] Preflight validation passes: `.\scripts\preflight.ps1`
+- [ ] CLI can find Unity: `.\scripts\unity-cli.ps1 -Action info`
+- [ ] CLI can compile: `.\scripts\unity-cli.ps1 -Action compile`
+
+### CI/CD Setup
+- [ ] GitHub secrets configured (UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD)
+- [ ] GitHub Actions workflow enabled

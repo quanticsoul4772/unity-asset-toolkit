@@ -93,7 +93,7 @@ unity-asset-toolkit/
 │           ├── Editor/        # NPCBrain.Editor.asmdef
 │           ├── Demo/          # NPCBrain.Demo.asmdef
 │           ├── Tests/         # Runtime and Editor tests
-│           └── Documentation/ # API.md, GETTING_STARTED.md
+│           └── Documentation/ # API.md, getting-started.md
 │
 ├── scripts/                   # PowerShell automation
 ├── docs/                      # Setup guides
@@ -327,7 +327,7 @@ Settings configured in `.vscode/settings.json` and `.editorconfig`.
 - **UNITY-PROJECT-STRUCTURE.md** - Folder organization, assembly definitions
 
 **NPCBrain Documentation** (`assets/NPCBrain/NPCBrain/Assets/NPCBrain/Documentation/`):
-- **GETTING_STARTED.md** - Quick start guide for NPCBrain (371 lines)
+- **getting-started.md** - Quick start guide for NPCBrain (371 lines)
 - **API.md** - Complete API reference for all components (691 lines)
 - **README.md** - NPCBrain overview and feature list
 
