@@ -35,7 +35,7 @@ namespace NPCBrain.BehaviorTree.Composites
         private int _currentActionIndex = -1;
         private float[] _scores;
         private float[] _probabilities;
-        private readonly Random _random;
+        private readonly System.Random _random;
         
         /// <summary>
         /// When true, logs warnings when no action can be selected.
