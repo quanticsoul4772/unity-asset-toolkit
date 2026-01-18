@@ -9,7 +9,8 @@ This guide walks you through creating your first AI-powered NPC using NPCBrain.
 3. [Adding Perception](#adding-perception)
 4. [Using Utility AI](#using-utility-ai)
 5. [Understanding Criticality](#understanding-criticality)
-6. [Common Patterns](#common-patterns)
+6. [Adding Hearing](#adding-hearing)
+7. [Common Patterns](#common-patterns)
 
 ---
 
@@ -276,6 +277,102 @@ The `UtilitySelector` automatically uses Criticality when selecting actions.
 
 ---
 
+## Adding Hearing
+
+### Step 1: Add HearingSensor
+
+1. Add `HearingSensor` component to your NPC
+2. Configure hearing settings:
+   - **Hearing Range**: How far the NPC can hear (default: 30)
+   - **Hearing Threshold**: Minimum volume to register (default: 0.1)
+   - **Minimum Priority**: Filter out low-priority sounds
+
+### Step 2: Emit Sounds
+
+Sounds can be emitted from SoundEmitter components or directly via SoundManager:
+
+```csharp
+// From a SoundEmitter component
+var emitter = GetComponent<SoundEmitter>();
+emitter.EmitSound();
+
+// Static emission without component
+SoundEmitter.EmitGunshotAt(transform.position, 1f, gameObject);
+SoundEmitter.EmitFootstepAt(transform.position, 0.3f, gameObject);
+
+// Via SoundManager directly
+SoundManager.EmitSound(position, SoundType.Voice, 0.5f, 20f, gameObject);
+```
+
+### Step 3: React to Sounds
+
+```csharp
+using NPCBrain;
+using NPCBrain.BehaviorTree;
+using NPCBrain.BehaviorTree.Composites;
+using NPCBrain.BehaviorTree.Actions;
+using NPCBrain.BehaviorTree.Conditions;
+using NPCBrain.Perception;
+
+public class HearingGuardNPC : NPCBrainController
+{
+    protected override BTNode CreateBehaviorTree()
+    {
+        return new Selector(
+            // Priority 1: Chase visible target
+            new Sequence(
+                new CheckTargetVisible(),
+                new MoveTo(
+                    () => Perception.ClosestTarget?.transform.position ?? transform.position,
+                    stoppingDistance: 1.5f,
+                    speed: 5f
+                )
+            ),
+            // Priority 2: Investigate heard sound
+            new Sequence(
+                new CheckSoundHeard(SoundType.Footstep), // At least footstep priority
+                new Log(brain => $"Heard {brain.Hearing.HighestPrioritySound.Type} at {brain.Hearing.HighestPrioritySound.Position}"),
+                new SetBlackboard("investigatePos", brain => brain.Hearing.HighestPrioritySound.Position),
+                new MoveTo(() => Blackboard.Get<Vector3>("investigatePos"), 2f, 3f),
+                new LookAt(() => Blackboard.Get<Vector3>("investigatePos")),
+                new Wait(2f) // Look around
+            ),
+            // Priority 3: Patrol
+            new Sequence(
+                new MoveTo(() => GetCurrentWaypoint(), 0.5f, 2f),
+                new Wait(1f),
+                new AdvanceWaypoint()
+            )
+        );
+    }
+}
+```
+
+### Step 4: Use Events
+
+```csharp
+protected override void Awake()
+{
+    base.Awake();
+    
+    OnSoundHeard += HandleSoundHeard;
+}
+
+private void HandleSoundHeard(SoundEvent sound)
+{
+    Debug.Log($"Heard {sound.Type} from {sound.Source?.name ?? "unknown"}");
+    
+    // Track in memory if source exists
+    if (sound.Source != null)
+    {
+        var memory = new Memory();
+        memory.UpdateHeard(sound.Source, sound.Position, sound.Type);
+    }
+}
+```
+
+---
+
 ## Common Patterns
 
 ### Pattern 1: State Machine Style
@@ -297,7 +394,7 @@ return new Selector(
 );
 ```
 
-### Pattern 2: Priority-Based
+### Pattern 2: Priority-Based with Hearing
 
 ```csharp
 return new Selector(
@@ -307,11 +404,22 @@ return new Selector(
         new Log("Health low, fleeing!", Log.LogLevel.Warning),
         CreateFleeBehavior()
     ),
-    // Medium priority: Attack if enemy nearby
+    // High priority: React to gunshots
+    new Sequence(
+        new CheckSoundHeard(SoundType.Gunshot),
+        new Log("Gunshot heard! Investigating..."),
+        CreateInvestigateBehavior()
+    ),
+    // Medium priority: Attack if enemy visible
     new Sequence(
         new CheckTargetVisible(),
         new LookAt(brain => brain.Perception.ClosestTarget),
         CreateAttackBehavior()
+    ),
+    // Lower priority: Investigate footsteps
+    new Sequence(
+        new CheckSoundHeard(SoundType.Footstep),
+        CreateSuspiciousBehavior()
     ),
     // Lowest priority: Patrol
     CreatePatrolBehavior()

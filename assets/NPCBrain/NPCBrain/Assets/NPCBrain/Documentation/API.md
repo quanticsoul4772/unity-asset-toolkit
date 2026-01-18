@@ -21,6 +21,9 @@ Complete API documentation for all public classes and methods.
   - [Curves](#curves)
 - [Perception](#perception)
   - [SightSensor](#sightsensor)
+  - [HearingSensor](#hearingsensor)
+  - [SoundEmitter](#soundemitter)
+  - [SoundManager](#soundmanager)
   - [Memory](#memory)
   - [TargetSelector](#targetselector)
 - [Criticality](#criticality)
@@ -42,6 +45,7 @@ Main component for NPC AI control.
 |----------|------|-------------|
 | `Blackboard` | `Blackboard` | Shared data storage for behavior tree nodes |
 | `Perception` | `SightSensor` | Sight sensor component (may be null) |
+| `Hearing` | `HearingSensor` | Hearing sensor component (may be null) |
 | `Criticality` | `CriticalityController` | Controls exploration vs exploitation |
 | `WaypointPath` | `WaypointPath` | Waypoint path for patrol behaviors |
 | `BehaviorTree` | `BTNode` | Root node of the behavior tree |
@@ -69,6 +73,7 @@ Main component for NPC AI control.
 | `OnStateChanged` | `Action<string>` | Raised on state change |
 | `OnBrainPaused` | `Action` | Raised when paused |
 | `OnBrainResumed` | `Action` | Raised when resumed |
+| `OnSoundHeard` | `Action<SoundEvent>` | Raised when a sound is heard |
 
 #### Virtual Methods
 
@@ -431,6 +436,34 @@ new CheckTargetVisible(brain => brain.Blackboard.Get<GameObject>("player"))
 - `Success` if target(s) visible
 - `Failure` if no targets visible or no SightSensor attached
 
+#### CheckSoundHeard
+
+Checks if a sound was heard by the NPC's HearingSensor.
+
+```csharp
+// Check if ANY sound was heard
+new CheckSoundHeard()
+
+// Check for minimum sound type priority
+new CheckSoundHeard(SoundType.Gunshot)  // Gunshot or higher
+
+// Custom predicate
+new CheckSoundHeard(sound => sound.EffectiveVolume > 0.7f)
+
+// Check for specific source
+new CheckSoundHeard(brain => brain.Blackboard.Get<GameObject>("player"))
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `minimumType` | `SoundType` | Minimum sound type to match |
+| `predicate` | `Func<SoundEvent, bool>` | Custom filter function |
+| `getSource` | `Func<NPCBrainController, GameObject>` | Check for specific source |
+
+**Returns:**
+- `Success` if matching sound(s) heard
+- `Failure` if no matching sounds or no HearingSensor attached
+
 ---
 
 ## Utility AI
@@ -628,6 +661,167 @@ Vision cone sensor for detecting targets.
 
 ---
 
+### HearingSensor
+
+Sound detection sensor for hearing sounds emitted by SoundEmitter or SoundManager.
+
+**Namespace**: `NPCBrain.Perception`
+
+#### Inspector Properties
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `Hearing Range` | 30 | Maximum hearing distance |
+| `Hearing Threshold` | 0.1 | Minimum volume to hear (0-1) |
+| `Ear Height` | 1.5 | Height offset for hearing position |
+| `Minimum Priority` | Ambient | Minimum sound type to detect |
+| `Ignore Tags` | [] | Custom tags to ignore |
+| `Ignore Own Sounds` | true | Ignore sounds from self |
+| `Check Occlusion` | false | Raycast to check for obstacles |
+| `Occlusion Mask` | Everything | Layers that block sound |
+| `Occlusion Damping` | 0.3 | Volume multiplier through walls |
+| `Sound Memory Duration` | 3 | How long to remember sounds |
+| `Max Remembered Sounds` | 10 | Maximum sounds to track |
+
+#### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `HearingRange` | `float` | Maximum hearing distance |
+| `HearingThreshold` | `float` | Minimum volume threshold |
+| `HeardSounds` | `IReadOnlyList<SoundEvent>` | Sounds heard this tick |
+| `HasHeardSounds` | `bool` | True if any sounds heard |
+| `HighestPrioritySound` | `SoundEvent` | Highest priority sound |
+| `MostRecentSound` | `SoundEvent` | Most recent sound heard |
+
+#### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Tick(NPCBrainController)` | `void` | Updates sensor detection |
+| `HeardSoundType(SoundType)` | `bool` | Checks if type was heard |
+| `HeardSoundWithTag(string)` | `bool` | Checks if tag was heard |
+| `HeardSoundFromSource(GameObject)` | `bool` | Checks if source was heard |
+| `GetDirectionToHighestPrioritySound()` | `Vector3` | Direction to loudest sound |
+
+---
+
+### SoundEmitter
+
+Component that emits sounds detectable by HearingSensor.
+
+**Namespace**: `NPCBrain.Perception`
+
+#### Inspector Properties
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `Sound Type` | Footstep | Category of sound |
+| `Volume` | 0.5 | Base volume (0-1) |
+| `Radius` | 20 | Maximum audible distance |
+| `Custom Tag` | "" | Optional tag for filtering |
+| `Mode` | Manual | Emission mode (Manual/Continuous/OnEnable) |
+| `Continuous Interval` | 0.5 | Interval for continuous mode |
+
+#### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `EmitSound()` | `SoundEvent` | Emit with default settings |
+| `EmitSound(float)` | `SoundEvent` | Emit with volume multiplier |
+| `EmitSound(SoundType, float, float)` | `SoundEvent` | Emit with custom settings |
+
+#### Static Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `EmitAt(Vector3, SoundType, float, float, GameObject)` | `SoundEvent` | Emit at position |
+| `EmitFootstepAt(Vector3, float, GameObject)` | `SoundEvent` | Emit footstep |
+| `EmitGunshotAt(Vector3, float, GameObject)` | `SoundEvent` | Emit gunshot |
+| `EmitExplosionAt(Vector3, float, GameObject)` | `SoundEvent` | Emit explosion |
+
+---
+
+### SoundManager
+
+Static manager for registering and querying sounds.
+
+**Namespace**: `NPCBrain.Perception`
+
+#### Static Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `MaxSoundAge` | `float` | How long sounds remain active (default: 1s) |
+| `ActiveSoundCount` | `int` | Number of active sounds |
+
+#### Static Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `RegisterSound(SoundEvent)` | `void` | Register a sound event |
+| `EmitSound(Vector3, SoundType, float, float, GameObject, string)` | `SoundEvent` | Create and register sound |
+| `GetSoundsInRange(Vector3, float)` | `IEnumerable<SoundEvent>` | Get sounds in range |
+| `GetSoundsInRangeNonAlloc(Vector3, float, List<SoundEvent>)` | `void` | Get sounds (no allocation) |
+| `CleanupOldSounds()` | `void` | Remove expired sounds |
+| `ClearAll()` | `void` | Clear all sounds |
+| `EmitFootstep(Vector3, float, GameObject)` | `SoundEvent` | Convenience method |
+| `EmitVoice(Vector3, float, GameObject)` | `SoundEvent` | Convenience method |
+| `EmitGunshot(Vector3, float, GameObject)` | `SoundEvent` | Convenience method |
+| `EmitExplosion(Vector3, float, GameObject)` | `SoundEvent` | Convenience method |
+| `EmitImpact(Vector3, float, GameObject)` | `SoundEvent` | Convenience method |
+| `EmitAlarm(Vector3, float, GameObject)` | `SoundEvent` | Convenience method |
+
+---
+
+### SoundEvent
+
+Data class representing a sound event.
+
+**Namespace**: `NPCBrain.Perception`
+
+#### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Position` | `Vector3` | Sound origin position |
+| `Volume` | `float` | Base volume (0-1) |
+| `Radius` | `float` | Maximum audible distance |
+| `Type` | `SoundType` | Sound category |
+| `CustomTag` | `string` | Optional custom identifier |
+| `Source` | `GameObject` | Source object (may be null) |
+| `Timestamp` | `float` | Time when emitted |
+| `EffectiveVolume` | `float` | Volume after attenuation |
+| `Priority` | `float` | Calculated priority score |
+| `Age` | `float` | Seconds since emitted |
+
+#### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `GetVolumeAtPosition(Vector3)` | `float` | Get attenuated volume |
+| `CalculatePriority(Vector3, float)` | `float` | Calculate priority score |
+
+---
+
+### SoundType
+
+Enum for sound categories, ordered by priority.
+
+**Namespace**: `NPCBrain.Perception`
+
+| Value | Priority | Description |
+|-------|----------|-------------|
+| `Ambient` | 0 | Background noise |
+| `Footstep` | 1 | Movement sounds |
+| `Voice` | 2 | Speech, grunts |
+| `Impact` | 3 | Doors, objects |
+| `Alarm` | 4 | Alert sounds |
+| `Gunshot` | 5 | Weapons fire |
+| `Explosion` | 6 | Explosions (highest) |
+
+---
+
 ### Memory
 
 Stores memory of targets with decay.
@@ -709,6 +903,8 @@ new TargetSelector(ScoringWeights)      // Custom weights
 | `Confidence` | 0.3 | Weight for memory confidence |
 | `ThreatLevel` | 1.0 | Weight for threat from blackboard |
 | `VisibilityBonus` | 0.5 | Bonus for visible targets |
+| `HearingBonus` | 0.3 | Bonus for recently heard targets |
+| `HearingBonusWindow` | 5.0 | Time window for hearing bonus (seconds) |
 
 ---
 

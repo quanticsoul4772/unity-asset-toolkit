@@ -29,6 +29,12 @@ namespace NPCBrain.Perception
             
             /// <summary>Bonus for currently visible targets.</summary>
             public float VisibilityBonus = 0.5f;
+            
+            /// <summary>Bonus for recently heard targets.</summary>
+            public float HearingBonus = 0.3f;
+            
+            /// <summary>Time window for hearing bonus (seconds).</summary>
+            public float HearingBonusWindow = 5f;
         }
         
         /// <summary>
@@ -53,6 +59,9 @@ namespace NPCBrain.Perception
             
             /// <summary>Memory confidence level.</summary>
             public float Confidence { get; set; }
+            
+            /// <summary>True if recently heard.</summary>
+            public bool WasHeard { get; set; }
         }
         
         private readonly List<ScoredTarget> _scoredTargets = new List<ScoredTarget>();
@@ -115,7 +124,8 @@ namespace NPCBrain.Perception
                         selectorForward,
                         true,
                         1f,
-                        blackboard);
+                        blackboard,
+                        false);
                     
                     _scoredTargets.Add(scored);
                 }
@@ -148,7 +158,8 @@ namespace NPCBrain.Perception
                         selectorForward,
                         false,
                         mem.Confidence,
-                        blackboard);
+                        blackboard,
+                        mem.WasHeard && mem.TimeSinceLastHeard < _weights.HearingBonusWindow);
                     
                     _scoredTargets.Add(scoredMem);
                 }
@@ -167,7 +178,8 @@ namespace NPCBrain.Perception
             Vector3 selectorForward,
             bool isVisible,
             float confidence,
-            Blackboard blackboard)
+            Blackboard blackboard,
+            bool wasRecentlyHeard)
         {
             float distance = Vector3.Distance(selectorPosition, targetPosition);
             Vector3 dirToTarget = (targetPosition - selectorPosition).normalized;
@@ -199,6 +211,11 @@ namespace NPCBrain.Perception
                 score += _weights.VisibilityBonus;
             }
             
+            if (wasRecentlyHeard)
+            {
+                score += _weights.HearingBonus;
+            }
+            
             return new ScoredTarget
             {
                 Target = target,
@@ -206,7 +223,8 @@ namespace NPCBrain.Perception
                 Distance = distance,
                 Angle = angle,
                 IsVisible = isVisible,
-                Confidence = confidence
+                Confidence = confidence,
+                WasHeard = wasRecentlyHeard
             };
         }
         

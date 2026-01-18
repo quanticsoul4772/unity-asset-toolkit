@@ -35,6 +35,21 @@ namespace NPCBrain.Perception
             
             /// <summary>Direction the target was last moving.</summary>
             public Vector3 LastKnownVelocity { get; set; }
+            
+            /// <summary>True if the target was detected via hearing.</summary>
+            public bool WasHeard { get; set; }
+            
+            /// <summary>Position where the target was last heard.</summary>
+            public Vector3 LastHeardPosition { get; set; }
+            
+            /// <summary>Time when the target was last heard.</summary>
+            public float LastHeardTime { get; set; }
+            
+            /// <summary>Time in seconds since the target was last heard.</summary>
+            public float TimeSinceLastHeard => Time.time - LastHeardTime;
+            
+            /// <summary>Type of sound that was last heard from this target.</summary>
+            public SoundType LastHeardSoundType { get; set; }
         }
         
         private readonly Dictionary<GameObject, TargetMemory> _memories = new Dictionary<GameObject, TargetMemory>();
@@ -214,6 +229,60 @@ namespace NPCBrain.Perception
             {
                 _memories.Remove(target);
             }
+        }
+        
+        /// <summary>
+        /// Updates memory for a target that was heard.
+        /// </summary>
+        /// <param name="target">The target that made a sound.</param>
+        /// <param name="position">Position where the sound originated.</param>
+        /// <param name="soundType">Type of sound that was heard.</param>
+        public void UpdateHeard(GameObject target, Vector3 position, SoundType soundType)
+        {
+            if (target == null) return;
+            
+            if (!_memories.TryGetValue(target, out var memory))
+            {
+                memory = new TargetMemory { Target = target };
+                _memories[target] = memory;
+            }
+            
+            memory.WasHeard = true;
+            memory.LastHeardPosition = position;
+            memory.LastHeardTime = Time.time;
+            memory.LastHeardSoundType = soundType;
+            
+            // Boost confidence if not currently visible
+            if (!memory.IsCurrentlyVisible)
+            {
+                memory.Confidence = Mathf.Max(memory.Confidence, 0.5f);
+                // Use heard position as fallback for last known position
+                if (memory.LastSeenTime < memory.LastHeardTime)
+                {
+                    memory.LastKnownPosition = position;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Gets the most recently heard target.
+        /// </summary>
+        /// <returns>The most recently heard target, or null if none.</returns>
+        public GameObject GetMostRecentlyHeardTarget()
+        {
+            GameObject mostRecent = null;
+            float mostRecentTime = float.MinValue;
+            
+            foreach (var kvp in _memories)
+            {
+                if (kvp.Value.WasHeard && kvp.Value.LastHeardTime > mostRecentTime)
+                {
+                    mostRecentTime = kvp.Value.LastHeardTime;
+                    mostRecent = kvp.Key;
+                }
+            }
+            
+            return mostRecent;
         }
     }
 }

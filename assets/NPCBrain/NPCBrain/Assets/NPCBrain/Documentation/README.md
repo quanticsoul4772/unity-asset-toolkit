@@ -8,7 +8,7 @@ A comprehensive AI toolkit for Unity combining **Behavior Trees**, **Utility AI*
 - **Composites**: Selector, Sequence, Parallel, UtilitySelector
 - **Decorators**: Inverter, Repeater, Cooldown, Succeeder
 - **Actions**: MoveTo, Wait, SetBlackboard, AdvanceWaypoint, ClearBlackboardKey, Log, LookAt
-- **Conditions**: CheckBlackboard, CheckDistance, CheckTargetVisible
+- **Conditions**: CheckBlackboard, CheckDistance, CheckTargetVisible, CheckSoundHeard
 
 ### Utility AI
 - Score-based action selection
@@ -18,6 +18,8 @@ A comprehensive AI toolkit for Unity combining **Behavior Trees**, **Utility AI*
 
 ### Perception System
 - **SightSensor**: FOV-based vision with raycasting
+- **HearingSensor**: Sound detection with priority scoring
+- **SoundEmitter**: Emit sounds for NPCs to hear
 - **Memory**: Target tracking with decay over time
 - **TargetSelector**: Priority-based target scoring
 

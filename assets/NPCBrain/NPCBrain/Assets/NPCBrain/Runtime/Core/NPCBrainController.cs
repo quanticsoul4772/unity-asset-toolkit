@@ -46,6 +46,11 @@ namespace NPCBrain
         public SightSensor Perception { get; private set; }
         
         /// <summary>
+        /// Hearing sensor for detecting sounds. May be null if not attached.
+        /// </summary>
+        public HearingSensor Hearing { get; private set; }
+        
+        /// <summary>
         /// Controls exploration vs exploitation through temperature-based selection.
         /// </summary>
         public CriticalityController Criticality { get; protected set; }
@@ -90,10 +95,14 @@ namespace NPCBrain
         /// <summary>Raised when the brain is resumed via <see cref="Resume"/>.</summary>
         public event Action OnBrainResumed;
         
+        /// <summary>Raised when the hearing sensor detects a sound.</summary>
+        public event Action<SoundEvent> OnSoundHeard;
+        
         protected virtual void Awake()
         {
             Blackboard = new Blackboard();
             Perception = GetComponent<SightSensor>();
+            Hearing = GetComponent<HearingSensor>();
             Criticality = new CriticalityController();
             _behaviorTree = CreateBehaviorTree();
         }
@@ -105,6 +114,7 @@ namespace NPCBrain
             OnStateChanged = null;
             OnBrainPaused = null;
             OnBrainResumed = null;
+            OnSoundHeard = null;
             
             Blackboard?.ClearEvents();
         }
@@ -146,6 +156,7 @@ namespace NPCBrain
             
             Blackboard?.CleanupExpired();
             Perception?.Tick(this);
+            Hearing?.Tick(this);
             Criticality?.Update();
             
             if (_behaviorTree != null)
@@ -239,6 +250,11 @@ namespace NPCBrain
         internal void RaiseStateChanged(string state)
         {
             OnStateChanged?.Invoke(state);
+        }
+        
+        internal void RaiseSoundHeard(SoundEvent sound)
+        {
+            OnSoundHeard?.Invoke(sound);
         }
     }
 }
