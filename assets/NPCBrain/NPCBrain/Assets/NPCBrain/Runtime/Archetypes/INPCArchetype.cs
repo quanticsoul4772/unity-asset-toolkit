@@ -1,4 +1,5 @@
-// NPC archetype interfaces for type-safe NPC handling
+using UnityEngine;
+
 namespace NPCBrain.Archetypes
 {
     /// <summary>
