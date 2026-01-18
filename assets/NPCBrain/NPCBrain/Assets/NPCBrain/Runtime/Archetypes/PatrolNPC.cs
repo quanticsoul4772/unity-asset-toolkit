@@ -53,7 +53,6 @@ namespace NPCBrain.Archetypes
             // because base.Awake() calls CreateBehaviorTree() which captures _currentSpeed
             RandomizeParameters();
             base.Awake();
-            Debug.Log($"[NPCBrain] {name} Awake - WaypointPath: {(WaypointPath != null ? WaypointPath.Count + " waypoints" : "null")}, Speed: {_currentSpeed}");
         }
         
         private void RandomizeParameters()

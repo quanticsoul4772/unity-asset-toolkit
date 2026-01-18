@@ -71,21 +71,13 @@ namespace NPCBrain.BehaviorTree.Actions
             Vector3 currentPos = brain.transform.position;
             float distanceSqr = (currentPos - target).sqrMagnitude;
             
-            // Debug logging - remove after fixing
-            if (Time.frameCount % 120 == 0)
-            {
-                Debug.Log($"[MoveTo] {brain.name}: pos={currentPos}, target={target}, dist={Mathf.Sqrt(distanceSqr):F2}, arrivalDist={Mathf.Sqrt(_arrivalDistanceSqr):F2}");
-            }
-            
             if (distanceSqr <= _arrivalDistanceSqr)
             {
-                Debug.Log($"[MoveTo] {brain.name}: ARRIVED at target");
                 return NodeStatus.Success;
             }
             
             if (Time.time - _startTime > _timeout)
             {
-                Debug.Log($"[MoveTo] {brain.name}: TIMEOUT");
                 return NodeStatus.Failure;
             }
             
@@ -123,12 +115,6 @@ namespace NPCBrain.BehaviorTree.Actions
         {
             Vector3 direction = (target - transform.position).normalized;
             Vector3 movement = direction * _moveSpeed * Time.deltaTime;
-            
-            // Debug: log movement details
-            if (Time.frameCount % 120 == 0)
-            {
-                Debug.Log($"[MoveTo] {debugName} MoveDirectly: speed={_moveSpeed}, deltaTime={Time.deltaTime:F4}, movement={movement.magnitude:F4}");
-            }
             
             transform.position += movement;
             

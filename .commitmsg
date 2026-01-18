@@ -1,1 +1,1 @@
-Fix PatrolNPC - call RandomizeParameters BEFORE base.Awake so speed is set when behavior tree is created  
+Remove debug logging from MoveTo and PatrolNPC now that patrol issue is fixed  
