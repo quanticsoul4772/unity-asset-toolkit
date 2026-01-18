@@ -1,1 +1,1 @@
-Add debug logging to MoveDirectly to diagnose patrol movement issue  
+Fix PatrolNPC - call RandomizeParameters BEFORE base.Awake so speed is set when behavior tree is created  

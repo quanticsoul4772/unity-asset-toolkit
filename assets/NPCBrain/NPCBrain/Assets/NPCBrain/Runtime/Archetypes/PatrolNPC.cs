@@ -49,9 +49,11 @@ namespace NPCBrain.Archetypes
         
         protected override void Awake()
         {
-            base.Awake();
+            // IMPORTANT: RandomizeParameters() must be called BEFORE base.Awake()
+            // because base.Awake() calls CreateBehaviorTree() which captures _currentSpeed
             RandomizeParameters();
-            Debug.Log($"[NPCBrain] {name} Awake - WaypointPath: {(WaypointPath != null ? WaypointPath.Count + " waypoints" : "null")}");
+            base.Awake();
+            Debug.Log($"[NPCBrain] {name} Awake - WaypointPath: {(WaypointPath != null ? WaypointPath.Count + " waypoints" : "null")}, Speed: {_currentSpeed}");
         }
         
         private void RandomizeParameters()
