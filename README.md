@@ -7,9 +7,9 @@ A collection of AI and pathfinding tools for the Unity Asset Store.
 ## Project Status 
 **All Assets Complete!** (January 2026)
 
-- EasyPath: ✅ Complete - A* pathfinding working and tested
-- SwarmAI: ✅ Complete - Multi-agent coordination with Jobs/Burst
-- NPCBrain: ✅ Complete - All-in-one AI toolkit (Behavior Trees, Utility AI, Perception, Criticality)  
+- EasyPath: Complete - A* pathfinding working and tested
+- SwarmAI: Complete - Multi-agent coordination with Jobs/Burst
+- NPCBrain: Complete - All-in-one AI toolkit (Behavior Trees, Utility AI, Perception, Criticality)  
  
 ## Development Environment 
 - Unity 6 (6000.3.4f1) 
