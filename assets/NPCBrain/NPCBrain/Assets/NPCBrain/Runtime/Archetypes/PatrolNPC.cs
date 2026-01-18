@@ -66,6 +66,9 @@ namespace NPCBrain.Archetypes
         /// <summary>Gets the current patrol speed.</summary>
         public float PatrolSpeed => _patrolSpeed;
         
+        /// <summary>Gets the wait time at waypoints.</summary>
+        public float WaitTime => _waypointWaitTime;
+        
         protected override void Awake()
         {
             base.Awake();

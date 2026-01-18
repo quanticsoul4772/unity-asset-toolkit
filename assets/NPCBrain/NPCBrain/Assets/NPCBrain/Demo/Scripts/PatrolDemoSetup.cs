@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using NPCBrain.Archetypes;
+using NPCBrain.BehaviorTree.Composites;
 
 namespace NPCBrain.Demo
 {
@@ -331,30 +332,29 @@ namespace NPCBrain.Demo
         
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 350, 450));
+            GUILayout.BeginArea(new Rect(10, 10, 420, 550));
             
             // Title
             GUILayout.BeginVertical("box");
             GUILayout.Label("<size=16><b>NPCBrain Patrol Demo</b></size>");
-            GUILayout.Label("<i>Demonstrating PatrolNPC archetype</i>");
+            GUILayout.Label("<i>Demonstrating PatrolNPC + Utility AI + Criticality</i>");
             GUILayout.EndVertical();
             
             GUILayout.Space(5);
             
             // Explanation
             GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>Patrol Behavior:</b>");
-            GUILayout.Label("  1. Move to current waypoint");
-            GUILayout.Label("  2. Wait (with random variation)");
-            GUILayout.Label("  3. Advance to next waypoint");
-            GUILayout.Label("  4. Repeat endlessly");
+            GUILayout.Label("<b>Utility Actions (scored dynamically):</b>");
+            GUILayout.Label("  <color=green>Patrol</color> - Follow waypoints (main behavior)");
+            GUILayout.Label("  <color=yellow>Rest</color> - Stop and recover when tired");
+            GUILayout.Label("  <color=cyan>Wander</color> - Random exploration nearby");
             GUILayout.EndVertical();
             
             GUILayout.Space(5);
             
-            // Patroller info
+            // Patroller info with Criticality
             GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>Patrollers:</b>");
+            GUILayout.Label("<b>Patrollers (Utility AI):</b>");
             for (int i = 0; i < _patrollers.Count; i++)
             {
                 var patroller = _patrollers[i];
@@ -363,12 +363,41 @@ namespace NPCBrain.Demo
                 Color color = _patrollerColors[i % _patrollerColors.Length];
                 string colorHex = ColorUtility.ToHtmlStringRGB(color);
                 
-                string status = patroller.IsPaused ? "Paused" : "Active";
+                string state = patroller.CurrentState;
+                string stateColor = state == "Patrol" ? "green" : (state == "Rest" ? "yellow" : "cyan");
+                
+                // Get current action from UtilitySelector
+                string actionName = state;
+                if (patroller.BehaviorTree is UtilitySelector selector && selector.CurrentAction != null)
+                {
+                    actionName = selector.CurrentAction.Name;
+                }
+                
+                // Get Criticality info
+                string critInfo = "";
+                if (patroller.Criticality != null)
+                {
+                    float temp = patroller.Criticality.Temperature;
+                    float inertia = patroller.Criticality.Inertia;
+                    string tempColor = temp < 1f ? "green" : (temp < 1.5f ? "yellow" : "red");
+                    critInfo = $" T:<color={tempColor}>{temp:F1}</color> I:{inertia:F1}";
+                }
+                
                 int waypointIndex = patroller.WaypointPath?.CurrentIndex ?? 0;
                 
-                GUILayout.Label($"  <color=#{colorHex}>●</color> {patroller.name}: {status} (WP: {waypointIndex})");
-                GUILayout.Label($"      Speed: {patroller.PatrolSpeed:F1} | Wait: {patroller.WaitTime:F1}s");
+                GUILayout.Label($"  <color=#{colorHex}>●</color> {patroller.name}: <color={stateColor}>{actionName}</color>{critInfo}");
+                GUILayout.Label($"      Energy: {patroller.Energy:F2} | WP: {waypointIndex}");
             }
+            GUILayout.EndVertical();
+            
+            GUILayout.Space(5);
+            
+            // Criticality explanation
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("<b>Criticality System:</b>");
+            GUILayout.Label("  <b>T</b> = Temperature (exploration vs exploitation)");
+            GUILayout.Label("  <b>I</b> = Inertia (tendency to repeat actions)");
+            GUILayout.Label("  Energy depletes while moving, recovers while resting");
             GUILayout.EndVertical();
             
             GUILayout.Space(5);
@@ -377,9 +406,8 @@ namespace NPCBrain.Demo
             GUILayout.BeginVertical("box");
             GUILayout.Label("<b>Features:</b>");
             GUILayout.Label("  • Each patroller has unique route pattern");
-            GUILayout.Label("  • Random wait time variation at waypoints");
+            GUILayout.Label("  • Utility AI creates natural behavior variation");
             GUILayout.Label("  • Color-coded routes for easy tracking");
-            GUILayout.Label("  • Waypoint gizmos visible in Scene view");
             GUILayout.EndVertical();
             
             GUILayout.EndArea();
