@@ -106,13 +106,18 @@ namespace NPCBrain.Demo
             try
             {
                 playerObj.tag = "Player";
+                Debug.Log($"[NPCBrain] Player created with tag '{playerObj.tag}' at {position}");
             }
             catch (UnityException)
             {
                 // Player tag not defined in Tag Manager - log warning but continue
-                Debug.LogWarning("Player tag not defined in Tag Manager. Guards may not detect the player. " +
+                Debug.LogWarning("[NPCBrain] Player tag not defined in Tag Manager. Guards may not detect the player. " +
                     "Add 'Player' tag in Edit > Project Settings > Tags and Layers.");
             }
+            
+            // Set player to a specific layer so guards can detect it properly
+            // Use "Default" layer (0) to ensure physics queries find it
+            playerObj.layer = 0;
             
             playerObj.transform.position = position;
             

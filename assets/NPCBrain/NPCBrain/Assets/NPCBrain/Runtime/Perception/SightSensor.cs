@@ -81,9 +81,17 @@ namespace NPCBrain.Perception
             Vector3 eyePosition = transform.position + Vector3.up * _eyeHeight;
             int count = Physics.OverlapSphereNonAlloc(eyePosition, _viewDistance, _overlapResults, _targetMask);
             
-            if (_debugLogging && count > 0)
+            if (_debugLogging)
             {
-                Debug.Log($"[SightSensor] OverlapSphere found {count} colliders within {_viewDistance}m");
+                Debug.Log($"[SightSensor] OverlapSphere at {eyePosition} found {count} colliders within {_viewDistance}m (targetMask: {_targetMask.value})");
+                for (int j = 0; j < count; j++)
+                {
+                    var c = _overlapResults[j];
+                    if (c != null && c.gameObject != gameObject)
+                    {
+                        Debug.Log($"[SightSensor]   - Found: {c.name} (tag: {c.tag}, layer: {c.gameObject.layer})");
+                    }
+                }
             }
             
             float closestDistance = float.MaxValue;
