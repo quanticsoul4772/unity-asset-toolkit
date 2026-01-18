@@ -243,7 +243,20 @@ namespace NPCBrain.Archetypes
         public Vector3 HomePosition => _homePosition;
         
         /// <summary>Current behavior state for UI display.</summary>
-        public string CurrentState => Blackboard?.Get("currentState", "Idle") ?? "Idle";
+        public string CurrentState => _currentState;
+        
+        /// <summary>Backing field for current state, accessible to derived classes.</summary>
+        protected string _currentState = "Idle";
+        
+        /// <summary>
+        /// Sets the current state. Call this from derived classes to update state display.
+        /// </summary>
+        /// <param name="state">The new state name.</param>
+        protected void SetCurrentState(string state)
+        {
+            _currentState = state;
+            Blackboard?.Set("currentState", state);
+        }
         
         /// <summary>Whether this NPC is still active.</summary>
         public bool IsActive => gameObject.activeSelf;

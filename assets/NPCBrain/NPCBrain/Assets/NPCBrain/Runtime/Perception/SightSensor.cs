@@ -331,5 +331,21 @@ namespace NPCBrain.Perception
         {
             _tagValidityChecked = false;
         }
+        
+        /// <summary>
+        /// Sets the target tag at runtime and resets the tag validity cache.
+        /// </summary>
+        /// <param name="tag">The new tag to filter targets by. Use empty string for no filtering.</param>
+        public void SetTargetTag(string tag)
+        {
+            _targetTag = tag;
+            _tagValidityChecked = false;
+            _targetTagIsValid = false;
+        }
+        
+        /// <summary>
+        /// Gets the current target tag.
+        /// </summary>
+        public string TargetTag => _targetTag;
     }
 }
