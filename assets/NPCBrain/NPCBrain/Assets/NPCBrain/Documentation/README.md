@@ -7,7 +7,7 @@ A comprehensive AI toolkit for Unity combining **Behavior Trees**, **Utility AI*
 ### Behavior Trees
 - **Composites**: Selector, Sequence, Parallel, UtilitySelector
 - **Decorators**: Inverter, Repeater, Cooldown, Succeeder
-- **Actions**: MoveTo, Wait, SetBlackboard, AdvanceWaypoint, Log, LookAt
+- **Actions**: MoveTo, Wait, SetBlackboard, AdvanceWaypoint, ClearBlackboardKey, Log, LookAt
 - **Conditions**: CheckBlackboard, CheckDistance, CheckTargetVisible
 
 ### Utility AI

@@ -154,7 +154,7 @@ protected override BTNode CreateBehaviorTree()
     return new Selector(
         // Chase visible target
         new Sequence(
-            new HasTarget(),
+            new CheckTargetVisible(),
             new MoveTo(() => Perception.ClosestTarget.transform.position, 1.5f, 5f)
         ),
         // Go to last known position

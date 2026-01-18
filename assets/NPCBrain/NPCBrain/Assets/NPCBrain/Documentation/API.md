@@ -203,13 +203,18 @@ new Sequence(child1, child2, child3)
 
 #### Parallel
 
-Runs all children simultaneously.
+Runs all children simultaneously each tick.
 
 ```csharp
 new Parallel(child1, child2, child3)
+new Parallel(Parallel.Policy.RequireOne, child1, child2, child3)
 ```
 
-Returns Success when all children succeed, Failure if any fail.
+**Policies:**
+- `RequireAll` (default): Returns Success when ALL children succeed, Failure if ANY fail
+- `RequireOne`: Returns Success when ANY child succeeds, Failure if ALL fail
+
+Running children are aborted when the Parallel completes.
 
 #### UtilitySelector
 
@@ -304,11 +309,29 @@ new SetBlackboard(string key, object value)
 
 #### AdvanceWaypoint
 
-Advances to next waypoint.
+Advances to the next waypoint in the NPC's WaypointPath and returns Success.
 
 ```csharp
 new AdvanceWaypoint()
 ```
+
+**Returns:** Always `Success` (advances waypoint index as side effect)
+
+**Note:** Requires a `WaypointPath` component assigned to the NPCBrainController.
+
+#### ClearBlackboardKey
+
+Removes a key from the blackboard and returns Success.
+
+```csharp
+new ClearBlackboardKey(string key)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `string` | The blackboard key to remove |
+
+**Returns:** Always `Success` (removes key if it exists, no-op if it doesn't)
 
 #### Log
 
