@@ -59,7 +59,7 @@ namespace NPCBrain.Archetypes
         private List<LootPoint> _knownLootPoints = new List<LootPoint>();
         private float _lastCopSightTime;
         private bool _hasEscaped;
-        private static readonly List<CopNPC> _copSearchResults = new List<CopNPC>();
+
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => Blackboard.Get("currentState", "Scout");

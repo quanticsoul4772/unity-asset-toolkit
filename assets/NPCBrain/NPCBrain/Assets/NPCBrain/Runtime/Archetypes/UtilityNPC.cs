@@ -241,5 +241,11 @@ namespace NPCBrain.Archetypes
         
         /// <summary>Home position for wander calculations.</summary>
         public Vector3 HomePosition => _homePosition;
+        
+        /// <summary>Current behavior state for UI display.</summary>
+        public string CurrentState => Blackboard?.Get("currentState", "Idle") ?? "Idle";
+        
+        /// <summary>Whether this NPC is still active.</summary>
+        public bool IsActive => gameObject.activeSelf;
     }
 }
