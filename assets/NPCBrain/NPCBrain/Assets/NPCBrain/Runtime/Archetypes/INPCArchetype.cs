@@ -1,3 +1,4 @@
+// NPC archetype interfaces for type-safe NPC handling
 namespace NPCBrain.Archetypes
 {
     /// <summary>

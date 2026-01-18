@@ -5,7 +5,6 @@
   <Project Path="NPCBrain.Runtime.csproj" />
   <Project Path="NPCBrain.Tests.Runtime.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
-  <Project Path="NPCBrain.Components.csproj" />
   <Project Path="NPCBrain.Tests.Shared.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
 </Solution>
