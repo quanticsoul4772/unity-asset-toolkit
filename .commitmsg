@@ -1,1 +1,1 @@
-Fix UtilityDemoSetup to use new Input System instead of legacy Input class  
+Fix code review issues: camera null check, interest point cleanup, unused import, separate file  

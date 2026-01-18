@@ -3,7 +3,6 @@ using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;
 using NPCBrain.UtilityAI;
-using NPCBrain.UtilityAI.Curves;
 
 namespace NPCBrain.Archetypes
 {

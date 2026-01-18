@@ -248,10 +248,14 @@ namespace NPCBrain.Demo
             // Left click to create interest point at mouse position
             if (mouse.leftButton.wasPressedThisFrame)
             {
-                Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
-                if (Physics.Raycast(ray, out RaycastHit hit))
+                var cam = Camera.main;
+                if (cam != null)
                 {
-                    SpawnInterestPoint(hit.point);
+                    Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+                    if (Physics.Raycast(ray, out RaycastHit hit))
+                    {
+                        SpawnInterestPoint(hit.point);
+                    }
                 }
             }
             
@@ -302,10 +306,9 @@ namespace NPCBrain.Demo
             // Add a script to track lifetime
             var lifetime = interest.AddComponent<InterestPointLifetime>();
             lifetime.Duration = 12f;
+            lifetime.Position = position;
             
-            _interestPoints.Add(interest);
-            
-            // Notify nearby NPCs
+            // Register NPCs that should be notified when this point expires
             foreach (var npc in _npcs)
             {
                 if (npc != null)
@@ -314,9 +317,12 @@ namespace NPCBrain.Demo
                     if (distance < 15f)
                     {
                         npc.SetInterestPoint(position);
+                        lifetime.RegisterNPC(npc);
                     }
                 }
             }
+            
+            _interestPoints.Add(interest);
         }
         
         private void CleanupInterestPoints()
@@ -402,39 +408,4 @@ namespace NPCBrain.Demo
         }
     }
     
-    /// <summary>
-    /// Simple component to track interest point lifetime.
-    /// </summary>
-    public class InterestPointLifetime : MonoBehaviour
-    {
-        public float Duration = 10f;
-        private float _spawnTime;
-        
-        private void Start()
-        {
-            _spawnTime = Time.time;
-        }
-        
-        private void Update()
-        {
-            if (Time.time - _spawnTime > Duration)
-            {
-                Destroy(gameObject);
-            }
-            
-            // Pulse effect
-            float pulse = 1f + Mathf.Sin(Time.time * 3f) * 0.1f;
-            transform.localScale = Vector3.one * 0.6f * pulse;
-            
-            // Fade as lifetime expires
-            float remaining = 1f - (Time.time - _spawnTime) / Duration;
-            var renderer = GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                Color c = renderer.material.color;
-                c.a = remaining;
-                renderer.material.color = c;
-            }
-        }
-    }
 }
