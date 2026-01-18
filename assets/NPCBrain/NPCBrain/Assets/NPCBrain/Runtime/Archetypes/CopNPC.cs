@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using NPCBrain;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;

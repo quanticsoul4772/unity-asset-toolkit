@@ -332,7 +332,7 @@ namespace NPCBrain.Perception
             float cutoffTime = Time.time - _soundMemoryDuration;
             foreach (var sound in _heardSounds)
             {
-                if (sound.EmitTime >= cutoffTime)
+                if (sound.Timestamp >= cutoffTime)
                 {
                     results.Add(sound);
                 }
@@ -350,7 +350,7 @@ namespace NPCBrain.Perception
             float cutoffTime = Time.time - _soundMemoryDuration;
             foreach (var sound in _heardSounds)
             {
-                if (sound.EmitTime >= cutoffTime)
+                if (sound.Timestamp >= cutoffTime)
                 {
                     return true;
                 }

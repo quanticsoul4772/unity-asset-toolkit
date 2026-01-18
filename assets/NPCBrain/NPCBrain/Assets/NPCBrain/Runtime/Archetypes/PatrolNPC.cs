@@ -217,7 +217,7 @@ namespace NPCBrain.Archetypes
         {
             // Get a random point near current waypoint or home position
             Vector3 center = WaypointPath != null ? GetCurrentWaypoint() : _homePosition;
-            Vector2 randomCircle = Random.insideUnitCircle * _wanderRadius;
+            Vector2 randomCircle = UnityEngine.Random.insideUnitCircle * _wanderRadius;
             return center + new Vector3(randomCircle.x, 0f, randomCircle.y);
         }
         
