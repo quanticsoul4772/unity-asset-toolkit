@@ -193,10 +193,15 @@ namespace NPCBrain.Tests.Runtime
             
             _brain.SetBehaviorTree(repeater);
             
-            // Run for several frames
+            // Run until repeater completes (returns Success)
             for (int i = 0; i < 10; i++)
             {
                 yield return null;
+                // Stop once the repeater has completed its 3 repetitions
+                if (_brain.LastStatus == NodeStatus.Success)
+                {
+                    break;
+                }
             }
             
             Assert.AreEqual(3, count, "Should repeat exactly 3 times");
