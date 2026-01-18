@@ -51,6 +51,7 @@ namespace NPCBrain.Archetypes
         {
             base.Awake();
             RandomizeParameters();
+            Debug.Log($"[NPCBrain] {name} Awake - WaypointPath: {(WaypointPath != null ? WaypointPath.Count + " waypoints" : "null")}");
         }
         
         private void RandomizeParameters()
