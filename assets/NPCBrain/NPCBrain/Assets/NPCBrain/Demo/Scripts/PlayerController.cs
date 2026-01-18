@@ -117,9 +117,9 @@ namespace NPCBrain.Demo
             playerObj.transform.position = position;
             
             // Keep the CapsuleCollider for SightSensor detection (Physics.OverlapSphere)
-            // but set it to trigger so it doesn't block movement
-            var capsuleCollider = playerObj.GetComponent<CapsuleCollider>();
-            capsuleCollider.isTrigger = true;
+            // CharacterController has its own internal capsule for movement collision,
+            // so this external collider is used for physics queries only
+            // Note: Do NOT set isTrigger=true or OverlapSphere won't detect it!
             
             // Add CharacterController for movement
             var controller = playerObj.AddComponent<CharacterController>();

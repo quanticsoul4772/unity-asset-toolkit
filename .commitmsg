@@ -1,1 +1,1 @@
-Fix player detection - keep CapsuleCollider for SightSensor, handle missing Player tag  
+Fix player detection - keep CapsuleCollider as non-trigger for OverlapSphere  
