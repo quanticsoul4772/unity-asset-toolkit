@@ -4,30 +4,30 @@ A comprehensive AI toolkit for Unity combining **Behavior Trees**, **Utility AI*
 
 ## Features
 
-### 🌳 Behavior Trees
-- **Composites**: Selector, Sequence, Parallel
-- **Decorators**: Inverter, Repeater, Cooldown, Succeeder, Failer
-- **Actions**: MoveTo, Wait, SetBlackboard, AdvanceWaypoint, Log
-- **Conditions**: CheckBlackboard, CheckDistance, HasTarget
+### Behavior Trees
+- **Composites**: Selector, Sequence, Parallel, UtilitySelector
+- **Decorators**: Inverter, Repeater, Cooldown, Succeeder
+- **Actions**: MoveTo, Wait, SetBlackboard, AdvanceWaypoint, Log, LookAt
+- **Conditions**: CheckBlackboard, CheckDistance, CheckTargetVisible
 
-### 🧠 Utility AI
+### Utility AI
 - Score-based action selection
 - Multiple response curves (Linear, Exponential, Step)
 - Considerations with normalization
 - Blackboard-driven considerations
 
-### 👁️ Perception System
+### Perception System
 - **SightSensor**: FOV-based vision with raycasting
 - **Memory**: Target tracking with decay over time
 - **TargetSelector**: Priority-based target scoring
 
-### ⚡ Criticality System
+### Criticality System
 - Entropy-based behavior adaptation
 - Temperature controls exploration vs exploitation
 - Inertia affects action persistence
 - Automatic variety enforcement
 
-### 🔧 Development Tools
+### Development Tools
 - Debug window with real-time NPC monitoring
 - Vision cone gizmos
 - Demo scenes for each feature

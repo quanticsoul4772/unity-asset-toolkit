@@ -254,19 +254,17 @@ new Cooldown(child, cooldownSeconds: 5f)
 
 #### Succeeder
 
-Always returns Success regardless of child result.
+Always returns Success regardless of child result. Running is passed through.
 
 ```csharp
 new Succeeder(child)
 ```
 
-#### Failer
-
-Always returns Failure regardless of child result.
-
-```csharp
-new Failer(child)
-```
+| Child Result | Succeeder Result |
+|--------------|------------------|
+| Success | Success |
+| Failure | Success |
+| Running | Running |
 
 ---
 
@@ -314,12 +312,54 @@ new AdvanceWaypoint()
 
 #### Log
 
-Logs a message (for debugging).
+Logs a debug message and returns Success. Useful for debugging behavior tree execution.
 
 ```csharp
-new Log(string message)
-new Log(Func<string> getMessage)
+// Static message
+new Log("Starting patrol")
+
+// Dynamic message
+new Log(brain => $"{brain.name} reached waypoint")
+
+// With log level
+new Log("Warning message", Log.LogLevel.Warning)
+new Log("Error message", Log.LogLevel.Error)
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `message` | `string` | Static message to log |
+| `getMessage` | `Func<NPCBrainController, string>` | Function returning dynamic message |
+| `level` | `Log.LogLevel` | Log level: Info, Warning, Error (default: Info) |
+
+#### LookAt
+
+Rotates the NPC to face a target position. Returns Running while rotating, Success when facing target.
+
+```csharp
+// Look at a position
+new LookAt(
+    brain => brain.Blackboard.Get<Vector3>("targetPosition"),
+    rotationSpeed: 360f,    // degrees per second (0 = instant)
+    angleTolerance: 5f      // degrees
+)
+
+// Look at a GameObject
+new LookAt(
+    brain => brain.Blackboard.Get<GameObject>("target"),
+    rotationSpeed: 180f
+)
+
+// Instant rotation
+new LookAt(brain => GetEnemyPosition(), rotationSpeed: 0f)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `getTargetPosition` | `Func<NPCBrainController, Vector3>` | required | Target position to face |
+| `getTarget` | `Func<NPCBrainController, GameObject>` | required | Target object to face |
+| `rotationSpeed` | `float` | 360 | Degrees per second (0 = instant) |
+| `angleTolerance` | `float` | 5 | Angle tolerance to consider "facing" |
 
 ---
 
@@ -348,13 +388,25 @@ new CheckDistance(
 )
 ```
 
-#### HasTarget
+#### CheckTargetVisible
 
-Checks if perception has visible targets.
+Checks if a target is visible to the NPC's SightSensor.
 
 ```csharp
-new HasTarget()
+// Check if ANY target is visible
+new CheckTargetVisible()
+
+// Check if a SPECIFIC target is visible
+new CheckTargetVisible(brain => brain.Blackboard.Get<GameObject>("player"))
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `getTarget` | `Func<NPCBrainController, GameObject>` | Optional. If provided, checks for specific target. If omitted, checks for any visible target. |
+
+**Returns:**
+- `Success` if target(s) visible
+- `Failure` if no targets visible or no SightSensor attached
 
 ---
 

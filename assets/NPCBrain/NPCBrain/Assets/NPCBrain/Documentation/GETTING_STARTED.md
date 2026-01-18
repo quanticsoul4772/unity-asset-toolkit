@@ -112,7 +112,8 @@ public class GuardNPC : NPCBrainController
         return new Selector(
             // Priority 1: Chase visible target
             new Sequence(
-                new HasTarget(), // Check if target visible
+                new CheckTargetVisible(), // Check if any target visible
+                new LookAt(brain => brain.Perception.ClosestTarget), // Face the target
                 new MoveTo(
                     () => Perception.ClosestTarget?.transform.position ?? transform.position,
                     stoppingDistance: 1.5f,
@@ -303,11 +304,13 @@ return new Selector(
     // Highest priority: Flee if health low
     new Sequence(
         new CheckBlackboard<float>("health", h => h < 20),
+        new Log("Health low, fleeing!", Log.LogLevel.Warning),
         CreateFleeBehavior()
     ),
     // Medium priority: Attack if enemy nearby
     new Sequence(
-        new HasTarget(),
+        new CheckTargetVisible(),
+        new LookAt(brain => brain.Perception.ClosestTarget),
         CreateAttackBehavior()
     ),
     // Lowest priority: Patrol
@@ -322,14 +325,16 @@ return new Selector(
     // Special attack with cooldown
     new Cooldown(
         new Sequence(
-            new HasTarget(),
+            new CheckTargetVisible(),
+            new Log("Executing special attack!"),
             CreateSpecialAttack()
         ),
         cooldownSeconds: 10f
     ),
     // Normal attack
     new Sequence(
-        new HasTarget(),
+        new CheckTargetVisible(),
+        new LookAt(brain => brain.Perception.ClosestTarget, rotationSpeed: 720f),
         CreateNormalAttack()
     )
 );
@@ -345,6 +350,41 @@ return new Parallel(
     CreateThreatMonitor(),
     // Main behavior
     CreateMainBehavior()
+);
+```
+
+### Pattern 5: Optional Behaviors with Succeeder
+
+```csharp
+return new Sequence(
+    // Optional: Try to look at target (don't fail if no target)
+    new Succeeder(
+        new Sequence(
+            new CheckTargetVisible(),
+            new LookAt(brain => brain.Perception.ClosestTarget)
+        )
+    ),
+    // Always: Continue with main behavior
+    new MoveTo(() => GetDestination(), 0.5f, 3f)
+);
+```
+
+### Pattern 6: Debug Logging
+
+```csharp
+return new Sequence(
+    new Log("Starting behavior tree tick"),
+    new Selector(
+        new Sequence(
+            new CheckTargetVisible(),
+            new Log(brain => $"Target spotted: {brain.Perception.ClosestTarget.name}"),
+            CreateChaseBehavior()
+        ),
+        new Sequence(
+            new Log("No targets, patrolling"),
+            CreatePatrolBehavior()
+        )
+    )
 );
 ```
 
