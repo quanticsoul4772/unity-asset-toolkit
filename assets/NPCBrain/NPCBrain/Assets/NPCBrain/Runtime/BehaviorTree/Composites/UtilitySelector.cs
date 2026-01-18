@@ -54,7 +54,7 @@ namespace NPCBrain.BehaviorTree.Composites
             _probabilitiesList = new List<float>(actions.Length);
             _scores = new float[actions.Length];
             _probabilities = new float[actions.Length];
-            _random = new Random();
+            _random = new System.Random();
             Name = "UtilitySelector";
         }
         
@@ -70,7 +70,7 @@ namespace NPCBrain.BehaviorTree.Composites
             _probabilitiesList = new List<float>(actions.Length);
             _scores = new float[actions.Length];
             _probabilities = new float[actions.Length];
-            _random = new Random(seed);
+            _random = new System.Random(seed);
             Name = "UtilitySelector";
         }
         
