@@ -14,7 +14,9 @@ namespace NPCBrain.Demo
         [SerializeField] private int _npcCount = 100;
         [SerializeField] private float _spawnRadius = 50f;
         [SerializeField] private bool _spawnOnStart = true;
-        [SerializeField] private bool _randomizeArchetypes = false;
+        #pragma warning disable CS0414 // Field is assigned but never used
+        [SerializeField] private bool _randomizeArchetypes = false; // Reserved for future use
+        #pragma warning restore CS0414
 
         [Header("Performance Monitoring")]
         [SerializeField] private bool _showStats = true;
@@ -24,7 +26,9 @@ namespace NPCBrain.Demo
         [SerializeField] private KeyCode _decreaseKey = KeyCode.Minus;
 
         [Header("Advanced Options")]
-        [SerializeField] private bool _createNavMesh = false;
+        #pragma warning disable CS0414 // Field is assigned but never used
+        [SerializeField] private bool _createNavMesh = false; // Reserved for future use
+        #pragma warning restore CS0414
         [SerializeField] private bool _addWaypoints = true;
         [SerializeField] private int _waypointsPerNPC = 4;
 

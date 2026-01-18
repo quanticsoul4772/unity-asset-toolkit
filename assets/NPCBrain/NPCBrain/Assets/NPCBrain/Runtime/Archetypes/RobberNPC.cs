@@ -40,7 +40,7 @@ namespace NPCBrain.Archetypes
         [Header("Detection Settings")]
         [SerializeField] private float _copDetectionRange = 15f;
         [SerializeField] private float _lootDetectionRange = 25f;
-        [SerializeField] private string _copTag = "Cop";
+        // Note: Cop detection now uses NPCRegistry<CopNPC> instead of tag-based detection
         
         [Header("Utility Weights")]
         [SerializeField] private float _fleeWeight = 1.0f;
@@ -109,7 +109,7 @@ namespace NPCBrain.Archetypes
             RefreshKnownPoints();
             
             // Find escape zone (only one in scene)
-            _escapeZone = Object.FindObjectOfType<EscapeZone>();
+            _escapeZone = Object.FindAnyObjectByType<EscapeZone>();
         }
         
         protected override void OnDestroy()
@@ -123,10 +123,10 @@ namespace NPCBrain.Archetypes
             // Use FindObjectsOfType only once during initialization
             // This is acceptable as it only happens on Awake
             _knownLootPoints.Clear();
-            _knownLootPoints.AddRange(Object.FindObjectsOfType<LootPoint>());
+            _knownLootPoints.AddRange(Object.FindObjectsByType<LootPoint>(FindObjectsSortMode.None));
             
             _knownCoverPoints.Clear();
-            _knownCoverPoints.AddRange(Object.FindObjectsOfType<CoverPoint>());
+            _knownCoverPoints.AddRange(Object.FindObjectsByType<CoverPoint>(FindObjectsSortMode.None));
         }
         
         private void LateUpdate()
