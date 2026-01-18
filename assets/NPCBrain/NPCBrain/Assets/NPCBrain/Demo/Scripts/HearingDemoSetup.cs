@@ -30,8 +30,6 @@ namespace NPCBrain.Demo
         
         private List<Vector3> _recentGunshotPositions = new List<Vector3>();
         private List<float> _gunshotTimes = new List<float>();
-        private SoundEvent _lastPlayerFootstep;
-        private float _lastFootstepTime;
         
         private void Start()
         {
