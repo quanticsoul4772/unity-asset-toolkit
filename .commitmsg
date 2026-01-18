@@ -1,1 +1,1 @@
-Add debug logging to MoveTo action to trace behavior tree execution  
+Add debug logging to MoveDirectly to diagnose patrol movement issue  

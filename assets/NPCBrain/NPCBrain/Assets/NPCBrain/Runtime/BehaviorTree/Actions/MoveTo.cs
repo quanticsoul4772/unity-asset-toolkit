@@ -94,7 +94,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 return MoveViaNavMesh(_cachedNavAgent, target);
             }
             
-            return MoveDirectly(brain.transform, target);
+            return MoveDirectly(brain.transform, target, brain.name);
         }
         
         private NodeStatus MoveViaNavMesh(NavMeshAgent agent, Vector3 target)
@@ -119,10 +119,18 @@ namespace NPCBrain.BehaviorTree.Actions
             return NodeStatus.Running;
         }
         
-        private NodeStatus MoveDirectly(Transform transform, Vector3 target)
+        private NodeStatus MoveDirectly(Transform transform, Vector3 target, string debugName = "")
         {
             Vector3 direction = (target - transform.position).normalized;
-            transform.position += direction * _moveSpeed * Time.deltaTime;
+            Vector3 movement = direction * _moveSpeed * Time.deltaTime;
+            
+            // Debug: log movement details
+            if (Time.frameCount % 120 == 0)
+            {
+                Debug.Log($"[MoveTo] {debugName} MoveDirectly: speed={_moveSpeed}, deltaTime={Time.deltaTime:F4}, movement={movement.magnitude:F4}");
+            }
+            
+            transform.position += movement;
             
             if (direction != Vector3.zero)
             {
