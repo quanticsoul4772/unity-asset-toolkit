@@ -15,12 +15,12 @@ namespace NPCBrain.Demo
     {
         [Header("Scene Settings")]
         [SerializeField] private bool _autoGenerate = true;
-        [SerializeField] private float _arenaSize = 40f;
+        [SerializeField] private float _arenaSize = 60f;
         
         [Header("NPC Counts")]
-        [SerializeField] private int _copCount = 3;
-        [SerializeField] private int _robberCount = 2;
-        [SerializeField] private int _lootCount = 4;
+        [SerializeField] private int _copCount = 4;
+        [SerializeField] private int _robberCount = 3;
+        [SerializeField] private int _lootCount = 6;
         
         [Header("Colors")]
         [SerializeField] private Color _groundColor = new Color(0.2f, 0.22f, 0.25f);
@@ -206,13 +206,30 @@ namespace NPCBrain.Demo
         private void CreateWalls()
         {
             float halfSize = _arenaSize / 2f;
-            float wallHeight = 3f;
-            float wallThickness = 0.5f;
+            float wallHeight = 6f;  // Taller walls to prevent escape
+            float wallThickness = 1.5f;  // Thicker walls for better collision
             
-            CreateWall("WallNorth", new Vector3(0f, wallHeight / 2f, halfSize), new Vector3(_arenaSize, wallHeight, wallThickness));
-            CreateWall("WallSouth", new Vector3(0f, wallHeight / 2f, -halfSize), new Vector3(_arenaSize, wallHeight, wallThickness));
-            CreateWall("WallEast", new Vector3(halfSize, wallHeight / 2f, 0f), new Vector3(wallThickness, wallHeight, _arenaSize));
-            CreateWall("WallWest", new Vector3(-halfSize, wallHeight / 2f, 0f), new Vector3(wallThickness, wallHeight, _arenaSize));
+            CreateWall("WallNorth", new Vector3(0f, wallHeight / 2f, halfSize), new Vector3(_arenaSize + wallThickness * 2, wallHeight, wallThickness));
+            CreateWall("WallSouth", new Vector3(0f, wallHeight / 2f, -halfSize), new Vector3(_arenaSize + wallThickness * 2, wallHeight, wallThickness));
+            CreateWall("WallEast", new Vector3(halfSize, wallHeight / 2f, 0f), new Vector3(wallThickness, wallHeight, _arenaSize + wallThickness * 2));
+            CreateWall("WallWest", new Vector3(-halfSize, wallHeight / 2f, 0f), new Vector3(wallThickness, wallHeight, _arenaSize + wallThickness * 2));
+            
+            // Add corner pillars for extra containment
+            CreateCornerPillar("CornerNE", new Vector3(halfSize, 0f, halfSize));
+            CreateCornerPillar("CornerNW", new Vector3(-halfSize, 0f, halfSize));
+            CreateCornerPillar("CornerSE", new Vector3(halfSize, 0f, -halfSize));
+            CreateCornerPillar("CornerSW", new Vector3(-halfSize, 0f, -halfSize));
+        }
+        
+        private void CreateCornerPillar(string name, Vector3 position)
+        {
+            var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pillar.name = name;
+            pillar.transform.SetParent(transform);
+            pillar.transform.position = position + Vector3.up * 3f;
+            pillar.transform.localScale = new Vector3(3f, 3f, 3f);
+            pillar.GetComponent<Renderer>().material.color = _wallColor * 0.8f;
+            pillar.isStatic = true;
         }
         
         private void CreateWall(string name, Vector3 position, Vector3 scale)
@@ -268,20 +285,169 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Street obstacles / buildings in other quadrants
+            // ============= SOUTHWEST QUADRANT - Shopping District =============
+            CreateBuilding("Shop1", new Vector3(-halfSize * 0.6f, 0f, -halfSize * 0.5f), new Vector3(6f, 3.5f, 6f));
+            CreateBuilding("Shop2", new Vector3(-halfSize * 0.35f, 0f, -halfSize * 0.65f), new Vector3(5f, 3f, 5f));
+            CreateBuilding("Shop3", new Vector3(-halfSize * 0.75f, 0f, -halfSize * 0.35f), new Vector3(4f, 2.5f, 4f));
             
-            // Southwest - Small shops
-            CreateBuilding("Shop1", new Vector3(-halfSize * 0.6f, 0f, -halfSize * 0.6f), new Vector3(5f, 3f, 5f));
-            CreateBuilding("Shop2", new Vector3(-halfSize * 0.3f, 0f, -halfSize * 0.7f), new Vector3(4f, 2.5f, 4f));
+            // Alley crates
+            CreateCrate("Crate_SW1", new Vector3(-halfSize * 0.5f, 0f, -halfSize * 0.4f), new Vector3(1.5f, 1.5f, 1.5f));
+            CreateCrate("Crate_SW2", new Vector3(-halfSize * 0.48f, 0f, -halfSize * 0.38f), new Vector3(1f, 2f, 1f));
             
-            // Northwest - Warehouse
-            CreateBuilding("Warehouse", new Vector3(-halfSize * 0.5f, 0f, halfSize * 0.5f), new Vector3(8f, 4f, 6f));
+            // ============= NORTHWEST QUADRANT - Industrial/Warehouse =============
+            CreateBuilding("Warehouse", new Vector3(-halfSize * 0.5f, 0f, halfSize * 0.5f), new Vector3(10f, 5f, 8f));
+            CreateBuilding("WarehouseSmall", new Vector3(-halfSize * 0.75f, 0f, halfSize * 0.65f), new Vector3(5f, 3f, 5f));
+            CreateBuilding("LoadingDock", new Vector3(-halfSize * 0.3f, 0f, halfSize * 0.7f), new Vector3(6f, 2f, 4f));
             
-            // Southeast - Parking lot pillars
-            for (int i = 0; i < 4; i++)
+            // Industrial crates and barrels
+            CreateCrate("Crate_NW1", new Vector3(-halfSize * 0.65f, 0f, halfSize * 0.35f), new Vector3(2f, 2f, 2f));
+            CreateCrate("Crate_NW2", new Vector3(-halfSize * 0.62f, 0f, halfSize * 0.32f), new Vector3(1.5f, 1f, 1.5f));
+            CreateCrate("Crate_NW3", new Vector3(-halfSize * 0.35f, 0f, halfSize * 0.4f), new Vector3(2f, 1.5f, 2f));
+            CreateBarrel("Barrel_NW1", new Vector3(-halfSize * 0.4f, 0f, halfSize * 0.55f));
+            CreateBarrel("Barrel_NW2", new Vector3(-halfSize * 0.38f, 0f, halfSize * 0.52f));
+            
+            // ============= SOUTHEAST QUADRANT - Parking/Plaza =============
+            // Parking lot pillars
+            for (int i = 0; i < 5; i++)
             {
-                CreatePillar($"Pillar_{i}", new Vector3(halfSize * 0.4f + i * 3f, 1.5f, -halfSize * 0.5f));
+                for (int j = 0; j < 2; j++)
+                {
+                    CreatePillar($"Pillar_{i}_{j}", new Vector3(halfSize * 0.3f + i * 4f, 1.5f, -halfSize * 0.4f - j * 5f));
+                }
             }
+            
+            // Parked "cars" (simple boxes)
+            CreateCar("Car1", new Vector3(halfSize * 0.4f, 0f, -halfSize * 0.55f));
+            CreateCar("Car2", new Vector3(halfSize * 0.55f, 0f, -halfSize * 0.55f));
+            CreateCar("Car3", new Vector3(halfSize * 0.7f, 0f, -halfSize * 0.55f));
+            
+            // Plaza benches/obstacles
+            CreateBench("Bench1", new Vector3(halfSize * 0.25f, 0f, -halfSize * 0.25f));
+            CreateBench("Bench2", new Vector3(halfSize * 0.35f, 0f, -halfSize * 0.2f));
+            
+            // ============= CENTER AREA - Street obstacles =============
+            // Central plaza/fountain
+            CreateFountain("CentralFountain", new Vector3(0f, 0f, 0f));
+            
+            // Street barriers
+            CreateBarrier("Barrier1", new Vector3(-8f, 0f, 5f));
+            CreateBarrier("Barrier2", new Vector3(8f, 0f, -5f));
+            CreateBarrier("Barrier3", new Vector3(-5f, 0f, -8f));
+            CreateBarrier("Barrier4", new Vector3(5f, 0f, 8f));
+            
+            // Dumpsters for cover
+            CreateDumpster("Dumpster1", new Vector3(-12f, 0f, 0f));
+            CreateDumpster("Dumpster2", new Vector3(12f, 0f, 3f));
+            CreateDumpster("Dumpster3", new Vector3(0f, 0f, -12f));
+            
+            // ============= NORTHEAST - Near bank additional cover =============
+            CreateCrate("Crate_NE1", new Vector3(halfSize * 0.3f, 0f, halfSize * 0.35f), new Vector3(2f, 2f, 2f));
+            CreateCrate("Crate_NE2", new Vector3(halfSize * 0.75f, 0f, halfSize * 0.3f), new Vector3(1.5f, 1.5f, 1.5f));
+            
+            // Small guard booth near bank
+            CreateBuilding("GuardBooth", new Vector3(halfSize * 0.25f, 0f, halfSize * 0.65f), new Vector3(3f, 2.5f, 3f));
+        }
+        
+        private void CreateCrate(string name, Vector3 position, Vector3 size)
+        {
+            var crate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            crate.name = name;
+            crate.transform.SetParent(transform);
+            crate.transform.position = position + Vector3.up * (size.y / 2f);
+            crate.transform.localScale = size;
+            crate.GetComponent<Renderer>().material.color = new Color(0.55f, 0.4f, 0.25f); // Brown wooden color
+            crate.isStatic = true;
+        }
+        
+        private void CreateBarrel(string name, Vector3 position)
+        {
+            var barrel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            barrel.name = name;
+            barrel.transform.SetParent(transform);
+            barrel.transform.position = position + Vector3.up * 0.75f;
+            barrel.transform.localScale = new Vector3(1f, 0.75f, 1f);
+            barrel.GetComponent<Renderer>().material.color = new Color(0.3f, 0.35f, 0.4f); // Metal gray
+            barrel.isStatic = true;
+        }
+        
+        private void CreateCar(string name, Vector3 position)
+        {
+            var car = new GameObject(name);
+            car.transform.SetParent(transform);
+            car.transform.position = position;
+            
+            // Car body
+            var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            body.name = "Body";
+            body.transform.SetParent(car.transform);
+            body.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+            body.transform.localScale = new Vector3(2f, 1f, 4f);
+            body.GetComponent<Renderer>().material.color = new Color(0.6f, 0.1f, 0.1f); // Red car
+            
+            // Car roof
+            var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            roof.name = "Roof";
+            roof.transform.SetParent(car.transform);
+            roof.transform.localPosition = new Vector3(0f, 1.3f, -0.3f);
+            roof.transform.localScale = new Vector3(1.8f, 0.6f, 2f);
+            roof.GetComponent<Renderer>().material.color = new Color(0.5f, 0.08f, 0.08f);
+            Object.Destroy(roof.GetComponent<Collider>());
+        }
+        
+        private void CreateBench(string name, Vector3 position)
+        {
+            var bench = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bench.name = name;
+            bench.transform.SetParent(transform);
+            bench.transform.position = position + Vector3.up * 0.4f;
+            bench.transform.localScale = new Vector3(3f, 0.8f, 1f);
+            bench.GetComponent<Renderer>().material.color = new Color(0.4f, 0.3f, 0.2f); // Wood color
+            bench.isStatic = true;
+        }
+        
+        private void CreateFountain(string name, Vector3 position)
+        {
+            var fountain = new GameObject(name);
+            fountain.transform.SetParent(transform);
+            fountain.transform.position = position;
+            
+            // Fountain base (circular)
+            var baseObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            baseObj.name = "Base";
+            baseObj.transform.SetParent(fountain.transform);
+            baseObj.transform.localPosition = new Vector3(0f, 0.3f, 0f);
+            baseObj.transform.localScale = new Vector3(6f, 0.3f, 6f);
+            baseObj.GetComponent<Renderer>().material.color = new Color(0.5f, 0.5f, 0.55f); // Stone gray
+            
+            // Fountain center pillar
+            var center = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            center.name = "Center";
+            center.transform.SetParent(fountain.transform);
+            center.transform.localPosition = new Vector3(0f, 1.5f, 0f);
+            center.transform.localScale = new Vector3(1.5f, 1.2f, 1.5f);
+            center.GetComponent<Renderer>().material.color = new Color(0.45f, 0.45f, 0.5f);
+        }
+        
+        private void CreateBarrier(string name, Vector3 position)
+        {
+            var barrier = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            barrier.name = name;
+            barrier.transform.SetParent(transform);
+            barrier.transform.position = position + Vector3.up * 0.5f;
+            barrier.transform.localScale = new Vector3(2f, 1f, 0.3f);
+            barrier.GetComponent<Renderer>().material.color = new Color(1f, 0.5f, 0f); // Orange construction barrier
+            barrier.isStatic = true;
+        }
+        
+        private void CreateDumpster(string name, Vector3 position)
+        {
+            var dumpster = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            dumpster.name = name;
+            dumpster.transform.SetParent(transform);
+            dumpster.transform.position = position + Vector3.up * 0.9f;
+            dumpster.transform.localScale = new Vector3(2.5f, 1.8f, 1.5f);
+            dumpster.GetComponent<Renderer>().material.color = new Color(0.15f, 0.35f, 0.15f); // Dark green
+            dumpster.isStatic = true;
         }
         
         private void CreateBuilding(string name, Vector3 position, Vector3 size)
@@ -333,13 +499,15 @@ namespace NPCBrain.Demo
             // Bank vault loot (high value)
             Vector3 bankCenter = new Vector3(halfSize * 0.5f, 0.5f, halfSize * 0.5f);
             
-            // Define loot positions and values
+            // Define loot positions and values - more loot spread around
             var lootDefinitions = new (Vector3 position, int value, string name)[]
             {
                 (bankCenter + new Vector3(0f, 0f, 0f), 500, "MainVaultLoot"),
-                (bankCenter + new Vector3(-2f, 0f, 1f), 200, "SideLoot1"),
-                (new Vector3(-halfSize * 0.6f, 0.5f, -halfSize * 0.6f), 100, "ShopLoot1"),
-                (new Vector3(-halfSize * 0.3f, 0.5f, -halfSize * 0.7f), 100, "ShopLoot2"),
+                (bankCenter + new Vector3(-3f, 0f, 1f), 250, "BankSideLoot"),
+                (new Vector3(-halfSize * 0.6f, 0.5f, -halfSize * 0.5f), 150, "ShopLoot1"),
+                (new Vector3(-halfSize * 0.35f, 0.5f, -halfSize * 0.65f), 100, "ShopLoot2"),
+                (new Vector3(-halfSize * 0.5f, 0.5f, halfSize * 0.5f), 200, "WarehouseLoot"),
+                (new Vector3(halfSize * 0.5f, 0.5f, -halfSize * 0.5f), 100, "ParkingLoot"),
             };
             
             // Create loot points up to the configured count
@@ -362,14 +530,36 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Create cover points around the map
+            // Create many cover points around the map near obstacles
             Vector3[] coverPositions = new Vector3[]
             {
-                new Vector3(-halfSize * 0.3f, 0f, halfSize * 0.3f),
-                new Vector3(halfSize * 0.3f, 0f, -halfSize * 0.3f),
-                new Vector3(-halfSize * 0.7f, 0f, 0f),
-                new Vector3(0f, 0f, halfSize * 0.7f),
-                new Vector3(halfSize * 0.7f, 0f, halfSize * 0.2f),
+                // Near buildings
+                new Vector3(-halfSize * 0.55f, 0f, -halfSize * 0.4f),   // Near Shop1
+                new Vector3(-halfSize * 0.45f, 0f, halfSize * 0.4f),    // Near Warehouse
+                new Vector3(-halfSize * 0.7f, 0f, halfSize * 0.55f),    // Behind WarehouseSmall
+                
+                // Near center
+                new Vector3(-6f, 0f, 3f),    // Near fountain west
+                new Vector3(6f, 0f, -3f),    // Near fountain east
+                new Vector3(0f, 0f, 8f),     // North of fountain
+                new Vector3(0f, 0f, -8f),    // South of fountain
+                
+                // Near cars/parking
+                new Vector3(halfSize * 0.5f, 0f, -halfSize * 0.45f),
+                new Vector3(halfSize * 0.65f, 0f, -halfSize * 0.5f),
+                
+                // Near bank area
+                new Vector3(halfSize * 0.35f, 0f, halfSize * 0.55f),
+                new Vector3(halfSize * 0.7f, 0f, halfSize * 0.35f),
+                
+                // Near dumpsters
+                new Vector3(-12f, 0f, 2f),
+                new Vector3(12f, 0f, 5f),
+                new Vector3(2f, 0f, -12f),
+                
+                // Strategic corners
+                new Vector3(-halfSize * 0.8f, 0f, -halfSize * 0.8f),
+                new Vector3(halfSize * 0.8f, 0f, -halfSize * 0.8f),
             };
             
             for (int i = 0; i < coverPositions.Length; i++)
@@ -383,12 +573,14 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
+            // Spread cops around the larger arena
             Vector3[] copPositions = new Vector3[]
             {
-                new Vector3(halfSize * 0.3f, 0.1f, halfSize * 0.8f),   // Near bank
-                new Vector3(-halfSize * 0.5f, 0.1f, halfSize * 0.3f),  // West patrol
-                new Vector3(halfSize * 0.7f, 0.1f, -halfSize * 0.3f),  // East patrol
-                new Vector3(-halfSize * 0.3f, 0.1f, -halfSize * 0.5f), // South patrol
+                new Vector3(halfSize * 0.35f, 0.1f, halfSize * 0.7f),   // Near bank
+                new Vector3(-halfSize * 0.4f, 0.1f, halfSize * 0.4f),   // Northwest patrol
+                new Vector3(halfSize * 0.6f, 0.1f, -halfSize * 0.4f),   // Southeast patrol
+                new Vector3(-halfSize * 0.4f, 0.1f, -halfSize * 0.4f),  // Southwest patrol
+                new Vector3(0f, 0.1f, 0f),                               // Center patrol
             };
             
             for (int i = 0; i < Mathf.Min(_copCount, copPositions.Length); i++)
@@ -427,9 +619,9 @@ namespace NPCBrain.Demo
             var waypointPath = container.AddComponent<WaypointPath>();
             var waypoints = new List<Transform>();
             
-            float patrolRadius = 8f;
-            int waypointCount = 4;
-            float angleOffset = patrolIndex * 30f;
+            float patrolRadius = 12f;  // Larger patrol radius for bigger arena
+            int waypointCount = 5;     // More waypoints for better coverage
+            float angleOffset = patrolIndex * 45f;
             
             for (int i = 0; i < waypointCount; i++)
             {
@@ -465,13 +657,14 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Robbers spawn in the NORTH side of the map (far from escape zone in the south)
-            // Escape zone is at z = -halfSize + 5 = -15, so robbers start at positive z values
+            // Robbers spawn scattered around the map, away from escape zone (south)
+            // They need to navigate through obstacles to reach loot and escape
             Vector3[] robberPositions = new Vector3[]
             {
-                new Vector3(-5f, 0.1f, halfSize * 0.3f),   // z = +6 (north-ish)
-                new Vector3(5f, 0.1f, halfSize * 0.4f),    // z = +8 (north)
-                new Vector3(0f, 0.1f, halfSize * 0.5f),    // z = +10 (near bank)
+                new Vector3(-halfSize * 0.3f, 0.1f, halfSize * 0.2f),   // Northwest area
+                new Vector3(halfSize * 0.2f, 0.1f, halfSize * 0.3f),    // Near bank
+                new Vector3(0f, 0.1f, 5f),                               // Center north
+                new Vector3(-halfSize * 0.5f, 0.1f, -halfSize * 0.2f),  // West side
             };
             
             for (int i = 0; i < Mathf.Min(_robberCount, robberPositions.Length); i++)
