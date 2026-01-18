@@ -30,7 +30,7 @@ namespace NPCBrain.Perception
         [SerializeField] private LayerMask _targetMask = ~0;
         
         [Tooltip("Tag to filter targets (empty = all)")]
-        [SerializeField] private string _targetTag = "Player";
+        [SerializeField] private string _targetTag = "";
         
         [Header("Performance")]
         [Tooltip("Maximum targets to track")]

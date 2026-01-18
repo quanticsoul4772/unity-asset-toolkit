@@ -612,15 +612,10 @@ namespace NPCBrain.Archetypes
                 robberObj.transform.SetParent(parent);
             }
             
-            // Add sight sensor for detecting cops
+            // Add sight sensor - clear target tag to avoid tag errors (tags require manual Unity setup)
+            // Robber uses NPCRegistry<CopNPC> for cop detection instead of sight sensor tags
             var sightSensor = robberObj.AddComponent<SightSensor>();
-            
-            // Set robber to detect cops
-            var targetTagField = typeof(SightSensor).GetField("_targetTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (targetTagField != null)
-            {
-                targetTagField.SetValue(sightSensor, "Cop");
-            }
+            sightSensor.SetTargetTag(""); // Clear tag filter to avoid "tag not defined" errors
             
             // Add robber component
             var robber = robberObj.AddComponent<RobberNPC>();

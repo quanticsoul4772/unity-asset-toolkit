@@ -77,15 +77,7 @@ namespace NPCBrain.Archetypes
             NPCRegistry<CopNPC>.Register(this);
             _homePosition = transform.position;
             
-            // Set cop tag for robber detection (handle missing tag)
-            try
-            {
-                gameObject.tag = "Cop";
-            }
-            catch (UnityException)
-            {
-                Debug.LogWarning($"[NPCBrain] Cop tag not defined. Add 'Cop' tag in Edit > Project Settings > Tags and Layers.");
-            }
+            // Note: Detection uses NPCRegistry<CopNPC> instead of tags to avoid Unity tag setup requirements
             
             Blackboard.Set("homePosition", _homePosition);
             Blackboard.Set("alertLevel", 0f);
@@ -115,6 +107,9 @@ namespace NPCBrain.Archetypes
         
         private void HandleTargetAcquired(GameObject target)
         {
+            // Only react to RobberNPC targets (filter since we can't use tags)
+            if (target.GetComponent<RobberNPC>() == null) return;
+            
             Blackboard.Set("target", target);
             Blackboard.Set("investigatePosition", target.transform.position);
             IncreaseAlert(0.6f);
@@ -461,23 +456,16 @@ namespace NPCBrain.Archetypes
             var copRenderer = copObj.GetComponent<Renderer>();
             copRenderer.material.color = new Color(0.2f, 0.4f, 0.8f); // Blue
             
-            // Set cop tag
-            try
-            {
-                copObj.tag = "Cop";
-            }
-            catch (UnityException)
-            {
-                Debug.LogWarning("[NPCBrain] Cop tag not defined. Add 'Cop' tag in Edit > Project Settings > Tags and Layers.");
-            }
+            // Note: Detection uses NPCRegistry and component checks instead of tags
             
             if (parent != null)
             {
                 copObj.transform.SetParent(parent);
             }
             
-            // Add sight sensor
+            // Add sight sensor - clear target tag to detect all (tags require manual Unity setup)
             var sightSensor = copObj.AddComponent<SightSensor>();
+            sightSensor.SetTargetTag(""); // Detect all targets, not just specific tags
             
             // Add hearing sensor
             var hearingSensor = copObj.AddComponent<HearingSensor>();

@@ -465,12 +465,13 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Robbers spawn near the escape zone (south)
+            // Robbers spawn in the NORTH side of the map (far from escape zone in the south)
+            // Escape zone is at z = -halfSize + 5 = -15, so robbers start at positive z values
             Vector3[] robberPositions = new Vector3[]
             {
-                new Vector3(-3f, 0.1f, -halfSize + 8f),
-                new Vector3(3f, 0.1f, -halfSize + 8f),
-                new Vector3(0f, 0.1f, -halfSize + 10f),
+                new Vector3(-5f, 0.1f, halfSize * 0.3f),   // z = +6 (north-ish)
+                new Vector3(5f, 0.1f, halfSize * 0.4f),    // z = +8 (north)
+                new Vector3(0f, 0.1f, halfSize * 0.5f),    // z = +10 (near bank)
             };
             
             for (int i = 0; i < Mathf.Min(_robberCount, robberPositions.Length); i++)
