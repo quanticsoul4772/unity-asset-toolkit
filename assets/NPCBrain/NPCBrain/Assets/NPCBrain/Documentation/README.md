@@ -114,7 +114,7 @@ NPCBrainController
 
 ## Documentation
 
-- [Getting Started Guide](GETTING_STARTED.md)
+- [Getting Started Guide](getting-started.md)
 - [API Reference](API.md)
 
 ## Support

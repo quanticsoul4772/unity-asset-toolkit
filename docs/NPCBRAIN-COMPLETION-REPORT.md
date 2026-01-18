@@ -86,7 +86,7 @@ The NPCBrain MVP is **99% complete** and ready for Asset Store submission. All c
 - **Effort**: 2-3 hours
 
 ### 2. Documentation Final Polish ⚠️ Medium Priority
-- **Status**: 95% complete (691-line API.md, comprehensive GETTING_STARTED.md)
+- **Status**: 95% complete (691-line API.md, comprehensive getting-started.md)
 - **Remaining**: Final review for completeness and clarity
 - **Impact**: User experience
 - **Effort**: 1-2 hours of review
@@ -158,7 +158,7 @@ The NPCBrain MVP is **99% complete** and ready for Asset Store submission. All c
 
 ### Critical (Must Complete)
 - [ ] **Performance Profiling** - Validate 100+ NPCs at 60 FPS target
-- [ ] **Documentation Review** - Final polish on API.md and GETTING_STARTED.md
+- [ ] **Documentation Review** - Final polish on API.md and getting-started.md
 - [ ] **Asset Store Submission Guidelines** - Review and ensure compliance
 
 ### Optional (Nice to Have)
@@ -261,7 +261,7 @@ NPCBrain is **production-ready** with 99% MVP completion. The system successfull
 
 ### Documentation Files
 - README.md (102 lines)
-- GETTING_STARTED.md (371 lines)
+- getting-started.md (371 lines)
 - API.md (691 lines)
 
 ### Demo Scenes
