@@ -39,7 +39,7 @@ namespace NPCBrain.UtilityAI
         {
             Vector3 target = _targetGetter(brain);
             float distanceSqr = (target - brain.transform.position).sqrMagnitude;
-            // Clamp before sqrt to avoid unnecessary computation when out of range
+            // Early out if beyond max distance to avoid sqrt
             if (distanceSqr >= _maxDistanceSqr)
             {
                 return _invertScore ? 0f : 1f;
