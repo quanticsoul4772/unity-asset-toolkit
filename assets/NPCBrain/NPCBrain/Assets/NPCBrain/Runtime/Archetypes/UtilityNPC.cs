@@ -24,7 +24,7 @@ namespace NPCBrain.Archetypes
     ///   <item><description>Varied behavior → Lower temperature → More exploitation</description></item>
     /// </list>
     /// </remarks>
-    public class UtilityNPC : NPCBrainController
+    public class UtilityNPC : NPCBrainController, INPCArchetype
     {
         [Header("Utility NPC Settings")]
         [SerializeField] private float _moveSpeed = 3f;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
@@ -22,8 +23,11 @@ namespace NPCBrain.Archetypes
     ///   <item><description>Patrol - Standard patrol behavior</description></item>
     /// </list>
     /// </remarks>
-    public class CopNPC : NPCBrainController
+    public class CopNPC : NPCBrainController, IAlertableNPC
     {
+        /// <summary>All active CopNPC instances.</summary>
+        public static IReadOnlyList<CopNPC> AllInstances => NPCRegistry<CopNPC>.Instances;
+
         [Header("Cop Settings")]
         [SerializeField] private float _chaseSpeed = 6.5f;
         [SerializeField] private float _patrolSpeed = 3f;
@@ -60,12 +64,16 @@ namespace NPCBrain.Archetypes
         /// <summary>Number of arrests made.</summary>
         public int ArrestCount => _arrestCount;
         
+        /// <summary>Whether this NPC is still active.</summary>
+        public bool IsActive => gameObject.activeSelf;
+        
         /// <summary>Event raised when this cop arrests a robber.</summary>
         public event System.Action<CopNPC, RobberNPC> OnArrest;
         
         protected override void Awake()
         {
             base.Awake();
+            NPCRegistry<CopNPC>.Register(this);
             _homePosition = transform.position;
             
             // Set cop tag for robber detection (handle missing tag)
@@ -97,6 +105,7 @@ namespace NPCBrain.Archetypes
         
         protected override void OnDestroy()
         {
+            NPCRegistry<CopNPC>.Unregister(this);
             OnTargetAcquired -= HandleTargetAcquired;
             OnTargetLost -= HandleTargetLost;
             OnSoundHeard -= HandleSoundHeard;
@@ -140,7 +149,8 @@ namespace NPCBrain.Archetypes
             }
         }
         
-        private void IncreaseAlert(float amount)
+        /// <summary>Increases the alert level by the specified amount.</summary>
+        public void IncreaseAlert(float amount)
         {
             float current = Blackboard.Get("alertLevel", 0f);
             Blackboard.Set("alertLevel", Mathf.Clamp01(current + amount));
@@ -205,7 +215,7 @@ namespace NPCBrain.Archetypes
                     
                     OnArrest?.Invoke(this, robber);
                     
-                    Debug.Log($"<color=blue>[CopsAndRobbers] {name} arrested {robber.name}!</color>");
+                    NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} arrested {robber.name}!", this);
                 }
             }
         }
@@ -447,7 +457,8 @@ namespace NPCBrain.Archetypes
             var copObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             copObj.name = "Cop";
             copObj.transform.position = position;
-            copObj.GetComponent<Renderer>().material.color = new Color(0.2f, 0.4f, 0.8f); // Blue
+            var copRenderer = copObj.GetComponent<Renderer>();
+            copRenderer.material.color = new Color(0.2f, 0.4f, 0.8f); // Blue
             
             // Set cop tag
             try
@@ -479,7 +490,8 @@ namespace NPCBrain.Archetypes
             hat.transform.SetParent(copObj.transform);
             hat.transform.localPosition = new Vector3(0f, 1.1f, 0f);
             hat.transform.localScale = new Vector3(0.6f, 0.15f, 0.6f);
-            hat.GetComponent<Renderer>().material.color = new Color(0.1f, 0.2f, 0.5f);
+            var hatRenderer = hat.GetComponent<Renderer>();
+            hatRenderer.material.color = new Color(0.1f, 0.2f, 0.5f);
             Object.Destroy(hat.GetComponent<Collider>());
             
             // Add badge
@@ -488,7 +500,8 @@ namespace NPCBrain.Archetypes
             badge.transform.SetParent(copObj.transform);
             badge.transform.localPosition = new Vector3(0.25f, 0.8f, 0.25f);
             badge.transform.localScale = new Vector3(0.15f, 0.15f, 0.05f);
-            badge.GetComponent<Renderer>().material.color = Color.yellow;
+            var badgeRenderer = badge.GetComponent<Renderer>();
+            badgeRenderer.material.color = Color.yellow;
             Object.Destroy(badge.GetComponent<Collider>());
             
             return cop;

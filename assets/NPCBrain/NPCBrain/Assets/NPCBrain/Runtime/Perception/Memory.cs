@@ -10,6 +10,18 @@ namespace NPCBrain.Perception
     /// </summary>
     public class Memory
     {
+        /// <summary>Default memory duration in seconds.</summary>
+        public const float DefaultMemoryDuration = 10f;
+        
+        /// <summary>Default confidence decay rate per second.</summary>
+        public const float DefaultDecayRate = 0.1f;
+        
+        /// <summary>Minimum confidence boost when hearing a target.</summary>
+        public const float HearingConfidenceBoost = 0.5f;
+        
+        /// <summary>Minimum time delta for velocity calculation.</summary>
+        public const float MinVelocityTimeDelta = 0.01f;
+
         /// <summary>
         /// When true, logs warnings when operations fail (e.g., target not in memory).
         /// Also enabled when NPCBrainDebug.LogMemory is true.
@@ -62,10 +74,10 @@ namespace NPCBrain.Perception
         private readonly List<GameObject> _toRemove = new List<GameObject>();
         
         /// <summary>How long memories persist after losing sight (seconds).</summary>
-        public float MemoryDuration { get; set; } = 10f;
+        public float MemoryDuration { get; set; } = DefaultMemoryDuration;
         
         /// <summary>Rate at which confidence decays per second.</summary>
-        public float DecayRate { get; set; } = 0.1f;
+        public float DecayRate { get; set; } = DefaultDecayRate;
         
         /// <summary>All current memories.</summary>
         public IReadOnlyDictionary<GameObject, TargetMemory> Memories => _memories;
@@ -92,7 +104,7 @@ namespace NPCBrain.Perception
             if (memory.LastSeenTime > 0)
             {
                 float dt = Time.time - memory.LastSeenTime;
-                if (dt > 0.01f)
+                if (dt > MinVelocityTimeDelta)
                 {
                     memory.LastKnownVelocity = (position - memory.LastKnownPosition) / dt;
                 }
@@ -301,7 +313,7 @@ namespace NPCBrain.Perception
             // Boost confidence if not currently visible
             if (!memory.IsCurrentlyVisible)
             {
-                memory.Confidence = Mathf.Max(memory.Confidence, 0.5f);
+                memory.Confidence = Mathf.Max(memory.Confidence, HearingConfidenceBoost);
                 // Use heard position as fallback for last known position
                 if (memory.LastSeenTime < memory.LastHeardTime)
                 {

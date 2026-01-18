@@ -23,7 +23,7 @@ namespace NPCBrain.Archetypes
     ///   <item><description>Varied behavior → Lower temperature → More exploitation</description></item>
     /// </list>
     /// </remarks>
-    public class PatrolNPC : NPCBrainController
+    public class PatrolNPC : NPCBrainController, IEnergyNPC
     {
         [Header("Patrol Settings")]
         [Tooltip("Movement speed while patrolling")]
@@ -66,6 +66,9 @@ namespace NPCBrain.Archetypes
         
         /// <summary>Current energy level (0-1).</summary>
         public float Energy => _energy;
+        
+        /// <summary>Whether this NPC is still active.</summary>
+        public bool IsActive => gameObject.activeSelf;
         
         /// <summary>Gets the current patrol speed.</summary>
         public float PatrolSpeed => _patrolSpeed;

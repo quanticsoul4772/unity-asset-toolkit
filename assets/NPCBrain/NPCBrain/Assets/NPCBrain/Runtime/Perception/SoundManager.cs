@@ -157,5 +157,16 @@ namespace NPCBrain.Perception
         {
             return EmitSound(position, SoundType.Alarm, volume, 40f, source);
         }
+        
+        /// <summary>
+        /// Clears static state on domain reload (for Enter Play Mode Settings).
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _activeSounds.Clear();
+            _soundsToRemove.Clear();
+            MaxSoundAge = 1f;
+        }
     }
 }

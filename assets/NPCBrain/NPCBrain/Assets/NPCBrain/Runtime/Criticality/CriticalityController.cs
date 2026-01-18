@@ -32,6 +32,15 @@ namespace NPCBrain.Criticality
         /// <summary>Default target entropy level (0.5 = balanced).</summary>
         public const float DefaultTargetEntropy = 0.5f;
         
+        /// <summary>Entropy delta threshold below which temperature increases.</summary>
+        public const float EntropyLowThreshold = -0.1f;
+        
+        /// <summary>Entropy delta threshold above which temperature decreases.</summary>
+        public const float EntropyHighThreshold = 0.1f;
+        
+        /// <summary>Default inertia value (0.5 = balanced).</summary>
+        public const float DefaultInertia = 0.5f;
+        
         private readonly int _historySize;
         private readonly float _minTemperature;
         private readonly float _maxTemperature;
@@ -41,7 +50,7 @@ namespace NPCBrain.Criticality
         private readonly Queue<int> _actionHistory;
         private readonly Dictionary<int, int> _actionCounts;
         private float _temperature = 1f;
-        private float _inertia = 0.5f;
+        private float _inertia = DefaultInertia;
         private float _entropy;
         
         /// <summary>
@@ -140,11 +149,11 @@ namespace NPCBrain.Criticality
             
             float entropyDelta = normalizedEntropy - _targetEntropy;
             
-            if (entropyDelta < -0.1f)
+            if (entropyDelta < EntropyLowThreshold)
             {
                 _temperature += _temperatureAdjustRate;
             }
-            else if (entropyDelta > 0.1f)
+            else if (entropyDelta > EntropyHighThreshold)
             {
                 _temperature -= _temperatureAdjustRate;
             }
@@ -185,7 +194,7 @@ namespace NPCBrain.Criticality
             _actionHistory.Clear();
             _actionCounts.Clear();
             _temperature = 1f;
-            _inertia = 0.5f;
+            _inertia = DefaultInertia;
             _entropy = 0f;
         }
         

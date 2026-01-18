@@ -25,7 +25,7 @@ namespace NPCBrain.Archetypes
     ///   <item><description>Varied behavior → Lower temperature → More exploitation</description></item>
     /// </list>
     /// </remarks>
-    public class GuardNPC : NPCBrainController
+    public class GuardNPC : NPCBrainController, IAlertableNPC
     {
         [Header("Guard Settings")]
         [SerializeField] private float _chaseSpeed = 6f;
@@ -54,6 +54,16 @@ namespace NPCBrain.Archetypes
         
         /// <summary>Current alert level (0-1).</summary>
         public float AlertLevel => Blackboard.Get("alertLevel", 0f);
+        
+        /// <summary>Whether this NPC is still active.</summary>
+        public bool IsActive => gameObject.activeSelf;
+        
+        /// <summary>Increases the alert level by the specified amount.</summary>
+        public void IncreaseAlert(float amount)
+        {
+            float current = Blackboard.Get("alertLevel", 0f);
+            Blackboard.Set("alertLevel", Mathf.Clamp01(current + amount));
+        }
         
         protected override void Awake()
         {

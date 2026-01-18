@@ -24,8 +24,11 @@ namespace NPCBrain.Archetypes
     ///   <item><description>Scout - Look for loot opportunities</description></item>
     /// </list>
     /// </remarks>
-    public class RobberNPC : NPCBrainController
+    public class RobberNPC : NPCBrainController, INPCArchetype
     {
+        /// <summary>All active RobberNPC instances.</summary>
+        public static IReadOnlyList<RobberNPC> AllInstances => NPCRegistry<RobberNPC>.Instances;
+
         [Header("Robber Settings")]
         [SerializeField] private float _normalSpeed = 4f;
         [SerializeField] private float _fleeSpeed = 7f;
@@ -56,8 +59,7 @@ namespace NPCBrain.Archetypes
         private List<LootPoint> _knownLootPoints = new List<LootPoint>();
         private float _lastCopSightTime;
         private bool _hasEscaped;
-        private CopNPC[] _cachedCops;
-        private float _lastCopCacheTime;
+        private static readonly List<CopNPC> _copSearchResults = new List<CopNPC>();
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => Blackboard.Get("currentState", "Scout");
@@ -71,6 +73,9 @@ namespace NPCBrain.Archetypes
         /// <summary>Whether this robber has escaped.</summary>
         public bool HasEscaped => _hasEscaped;
         
+        /// <summary>Whether this NPC is still active.</summary>
+        public bool IsActive => !_hasEscaped && gameObject.activeSelf;
+        
         /// <summary>Time since last saw a cop.</summary>
         public float TimeSinceLastCopSight => Time.time - _lastCopSightTime;
         
@@ -83,6 +88,7 @@ namespace NPCBrain.Archetypes
         protected override void Awake()
         {
             base.Awake();
+            NPCRegistry<RobberNPC>.Register(this);
             _homePosition = transform.position;
             
             Blackboard.Set("currentState", "Scout");
@@ -101,17 +107,25 @@ namespace NPCBrain.Archetypes
             // Find all loot points and cover points in scene
             RefreshKnownPoints();
             
-            // Find escape zone
-            _escapeZone = FindObjectOfType<EscapeZone>();
+            // Find escape zone (only one in scene)
+            _escapeZone = Object.FindObjectOfType<EscapeZone>();
+        }
+        
+        protected override void OnDestroy()
+        {
+            NPCRegistry<RobberNPC>.Unregister(this);
+            base.OnDestroy();
         }
         
         private void RefreshKnownPoints()
         {
+            // Use FindObjectsOfType only once during initialization
+            // This is acceptable as it only happens on Awake
             _knownLootPoints.Clear();
-            _knownLootPoints.AddRange(FindObjectsOfType<LootPoint>());
+            _knownLootPoints.AddRange(Object.FindObjectsOfType<LootPoint>());
             
             _knownCoverPoints.Clear();
-            _knownCoverPoints.AddRange(FindObjectsOfType<CoverPoint>());
+            _knownCoverPoints.AddRange(Object.FindObjectsOfType<CoverPoint>());
         }
         
         private void LateUpdate()
@@ -129,15 +143,10 @@ namespace NPCBrain.Archetypes
             float closestCopDistance = float.MaxValue;
             Vector3 closestCopPosition = Vector3.zero;
             
-            // Cache cop references to avoid expensive FindObjectsOfType every frame
-            // Refresh cache every 2 seconds or on first call
-            if (_cachedCops == null || Time.time - _lastCopCacheTime > 2f)
-            {
-                _cachedCops = FindObjectsOfType<CopNPC>();
-                _lastCopCacheTime = Time.time;
-            }
+            // Use registry instead of expensive FindObjectsOfType
+            var cops = NPCRegistry<CopNPC>.GetAll();
             
-            foreach (var copNPC in _cachedCops)
+            foreach (var copNPC in cops)
             {
                 if (copNPC == null || !copNPC.gameObject.activeSelf) continue;
                 
@@ -213,7 +222,7 @@ namespace NPCBrain.Archetypes
             Blackboard.Set("lootValue", 0);
             Blackboard.Set("currentState", "Arrested!");
             
-            Debug.Log($"<color=blue>[CopsAndRobbers] {name} was arrested!</color>");
+            NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} was arrested!", this);
             
             // Disable the robber
             gameObject.SetActive(false);
@@ -238,7 +247,7 @@ namespace NPCBrain.Archetypes
                 var bag = transform.Find("LootBag");
                 if (bag != null) bag.gameObject.SetActive(true);
                 
-                Debug.Log($"<color=yellow>[CopsAndRobbers] {name} stole loot worth ${loot.Value}!</color>");
+                NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} stole loot worth ${loot.Value}!", this);
             }
         }
         
@@ -594,7 +603,8 @@ namespace NPCBrain.Archetypes
             var robberObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             robberObj.name = "Robber";
             robberObj.transform.position = position;
-            robberObj.GetComponent<Renderer>().material.color = new Color(0.2f, 0.2f, 0.2f); // Dark color
+            var robberRenderer = robberObj.GetComponent<Renderer>();
+            robberRenderer.material.color = new Color(0.2f, 0.2f, 0.2f); // Dark color
             
             if (parent != null)
             {
@@ -620,7 +630,8 @@ namespace NPCBrain.Archetypes
             mask.transform.SetParent(robberObj.transform);
             mask.transform.localPosition = new Vector3(0f, 0.9f, 0.25f);
             mask.transform.localScale = new Vector3(0.5f, 0.2f, 0.1f);
-            mask.GetComponent<Renderer>().material.color = Color.black;
+            var maskRenderer = mask.GetComponent<Renderer>();
+            maskRenderer.material.color = Color.black;
             Object.Destroy(mask.GetComponent<Collider>());
             
             // Add loot bag indicator (shows when carrying)
@@ -629,7 +640,8 @@ namespace NPCBrain.Archetypes
             bag.transform.SetParent(robberObj.transform);
             bag.transform.localPosition = new Vector3(0.4f, 0.3f, 0f);
             bag.transform.localScale = new Vector3(0.3f, 0.4f, 0.2f);
-            bag.GetComponent<Renderer>().material.color = new Color(0.4f, 0.3f, 0.1f);
+            var bagRenderer = bag.GetComponent<Renderer>();
+            bagRenderer.material.color = new Color(0.4f, 0.3f, 0.1f);
             bag.SetActive(false); // Hidden until carrying loot
             Object.Destroy(bag.GetComponent<Collider>());
             

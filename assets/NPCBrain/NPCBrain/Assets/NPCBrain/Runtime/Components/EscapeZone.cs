@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace NPCBrain.Components
 {
+    using NPCBrain; // For NPCBrainDebug
+
     /// <summary>
     /// A zone where robbers can escape with stolen loot.
     /// Triggers victory when a robber with loot enters.
@@ -46,7 +48,7 @@ namespace NPCBrain.Components
             _escapedRobbers.Add(robber);
             OnRobberEscaped?.Invoke(robber, lootValue);
             
-            Debug.Log($"<color=green>[CopsAndRobbers] Robber escaped with ${lootValue}!</color>");
+            NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] Robber escaped with ${lootValue}!");
             
             return true;
         }
@@ -86,7 +88,8 @@ namespace NPCBrain.Components
             visual.transform.SetParent(zoneObj.transform);
             visual.transform.localPosition = Vector3.zero;
             visual.transform.localScale = new Vector3(radius * 2f, 0.05f, radius * 2f);
-            visual.GetComponent<Renderer>().material.color = new Color(0f, 1f, 0f, 0.3f);
+            var visualRenderer = visual.GetComponent<Renderer>();
+            visualRenderer.material.color = new Color(0f, 1f, 0f, 0.3f);
             UnityEngine.Object.Destroy(visual.GetComponent<Collider>());
             
             // Arrow indicator pointing up
@@ -95,7 +98,8 @@ namespace NPCBrain.Components
             arrow.transform.SetParent(zoneObj.transform);
             arrow.transform.localPosition = new Vector3(0f, 2f, 0f);
             arrow.transform.localScale = new Vector3(0.5f, 3f, 0.5f);
-            arrow.GetComponent<Renderer>().material.color = Color.green;
+            var arrowRenderer = arrow.GetComponent<Renderer>();
+            arrowRenderer.material.color = Color.green;
             UnityEngine.Object.Destroy(arrow.GetComponent<Collider>());
             
             var escapeZone = zoneObj.AddComponent<EscapeZone>();

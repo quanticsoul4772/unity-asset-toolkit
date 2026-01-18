@@ -3,6 +3,8 @@ using UnityEngine;
 
 namespace NPCBrain.Components
 {
+    using NPCBrain; // For NPCBrainDebug
+
     /// <summary>
     /// A point of interest that can be stolen by RobberNPCs.
     /// Emits an alarm sound when stolen to alert nearby cops.
@@ -58,17 +60,17 @@ namespace NPCBrain.Components
             if (_triggersAlarm)
             {
                 Perception.SoundManager.EmitAlarm(transform.position, 1f, gameObject);
-                Debug.Log($"<color=red>[CopsAndRobbers] ALARM! Loot stolen at {transform.position}</color>");
+                NPCBrainDebug.Log(NPCBrainDebug.Category.Hearing, $"[CopsAndRobbers] ALARM! Loot stolen at {transform.position}", this);
             }
             
             // Raise event
             OnStolen?.Invoke(this, thief);
             
             // Hide the loot visual
-            var renderer = GetComponent<Renderer>();
-            if (renderer != null)
+            var cachedRenderer = GetComponent<Renderer>();
+            if (cachedRenderer != null)
             {
-                renderer.enabled = false;
+                cachedRenderer.enabled = false;
             }
             
             return true;
@@ -82,10 +84,10 @@ namespace NPCBrain.Components
             _isStolen = false;
             _stolenBy = null;
             
-            var renderer = GetComponent<Renderer>();
-            if (renderer != null)
+            var cachedRenderer = GetComponent<Renderer>();
+            if (cachedRenderer != null)
             {
-                renderer.enabled = true;
+                cachedRenderer.enabled = true;
             }
         }
         
@@ -105,7 +107,8 @@ namespace NPCBrain.Components
             }
             
             // Gold color for loot
-            lootObj.GetComponent<Renderer>().material.color = new Color(1f, 0.84f, 0f);
+            var lootRenderer = lootObj.GetComponent<Renderer>();
+            lootRenderer.material.color = new Color(1f, 0.84f, 0f);
             
             // Add sparkle indicator
             var sparkle = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -113,7 +116,8 @@ namespace NPCBrain.Components
             sparkle.transform.SetParent(lootObj.transform);
             sparkle.transform.localPosition = new Vector3(0f, 0.5f, 0f);
             sparkle.transform.localScale = Vector3.one * 0.3f;
-            sparkle.GetComponent<Renderer>().material.color = Color.yellow;
+            var sparkleRenderer = sparkle.GetComponent<Renderer>();
+            sparkleRenderer.material.color = Color.yellow;
             UnityEngine.Object.Destroy(sparkle.GetComponent<Collider>());
             
             var lootPoint = lootObj.AddComponent<LootPoint>();

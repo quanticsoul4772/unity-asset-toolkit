@@ -72,7 +72,8 @@ namespace NPCBrain.Components
             coverObj.name = "CoverPoint";
             coverObj.transform.position = position;
             coverObj.transform.localScale = new Vector3(2f, 2f, 2f);
-            coverObj.GetComponent<Renderer>().material.color = new Color(0.3f, 0.3f, 0.35f);
+            var coverRenderer = coverObj.GetComponent<Renderer>();
+            coverRenderer.material.color = new Color(0.3f, 0.3f, 0.35f);
             coverObj.isStatic = true;
             
             if (parent != null)
