@@ -1,31 +1,84 @@
 # Getting Started with NPCBrain
 
-This guide will walk you through creating your first AI-controlled NPC using NPCBrain.
+This guide will walk you through setting up NPCBrain and creating your first intelligent NPC.
+
+---
+
+## Table of Contents
+
+1. [Installation](#installation)
+2. [Project Setup](#project-setup)
+3. [Your First NPC](#your-first-npc)
+4. [Using Built-in Archetypes](#using-built-in-archetypes)
+5. [Adding Perception](#adding-perception)
+6. [Next Steps](#next-steps)
+
+---
 
 ## Installation
 
-1. Import the NPCBrain package into your Unity project
-2. The package will be available under `Assets/NPCBrain`
+### From Unity Asset Store
 
-## Creating Your First NPC
+1. Open the Asset Store window (Window → Asset Store)
+2. Search for "NPCBrain"
+3. Click Download, then Import
+4. Import all files when prompted
 
-### Step 1: Create the NPC GameObject
+### Package Contents
 
-1. Create a new 3D Object (e.g., Capsule) in your scene
-2. Position it where you want your NPC to start
+```
+Assets/
+└── NPCBrain/
+    ├── Runtime/           # Core scripts
+    │   ├── Core/          # NPCBrainController, Blackboard
+    │   ├── BehaviorTree/  # BT nodes and composites
+    │   ├── UtilityAI/     # Utility scoring system
+    │   ├── Perception/    # Sensors and memory
+    │   ├── Criticality/   # Adaptive temperature
+    │   ├── Archetypes/    # Ready-to-use NPCs
+    │   └── Components/    # Game components
+    ├── Editor/            # Debug tools and inspectors
+    ├── Demo/              # Example scenes and scripts
+    ├── Tests/             # Unit and integration tests
+    └── Documentation/     # This documentation
+```
 
-### Step 2: Add the NPC Component
+---
 
-You can use a built-in archetype or create your own:
+## Project Setup
 
-**Using a Built-in Archetype:**
+### Required Settings
 
-1. Add Component > NPCBrain > Archetypes > PatrolNPC (or GuardNPC)
-2. The NPC is ready to use!
+#### 1. Create the "Player" Tag
 
-**Creating a Custom NPC:**
+NPCBrain's perception system uses Unity tags for target detection:
 
-1. Create a new C# script:
+1. Go to **Edit → Project Settings → Tags and Layers**
+2. Under "Tags", click the **+** button
+3. Add a tag named `Player`
+4. Apply this tag to any GameObjects you want NPCs to detect
+
+> **Note:** You can use any tag name, but "Player" is the default for all built-in archetypes.
+
+#### 2. NavMesh Setup (Optional but Recommended)
+
+For NPCs that navigate around obstacles:
+
+1. Open **Window → AI → Navigation**
+2. Select your walkable surfaces
+3. Mark them as "Navigation Static"
+4. Click **Bake**
+5. Add `NavMeshAgent` component to your NPCs
+
+> **Tip:** MoveTo automatically uses NavMeshAgent when present. Without it, NPCs move in straight lines.
+
+---
+
+## Your First NPC
+
+### Step 1: Create the Script
+
+Create a new C# script called `MyFirstNPC.cs`:
 
 ```csharp
 using UnityEngine;
@@ -34,215 +87,342 @@ using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;
 
-public class MyNPC : NPCBrainController
+public class MyFirstNPC : NPCBrainController
 {
-    [SerializeField] private float _moveSpeed = 5f;
+    [Header("Movement")]
+    [SerializeField] private float _moveSpeed = 3f;
+    [SerializeField] private float _waitTime = 2f;
     
     protected override BTNode CreateBehaviorTree()
     {
-        // Define your behavior tree here
+        // Create a simple patrol behavior:
+        // 1. Move to current waypoint
+        // 2. Wait for a bit
+        // 3. Advance to next waypoint
+        // 4. Repeat forever
+        
         return new Sequence(
-            new MoveTo(() => GetCurrentWaypoint(), 0.5f, _moveSpeed),
-            new Wait(1f),
+            new MoveTo(
+                () => GetCurrentWaypoint(),  // Target position
+                0.5f,                         // Arrival distance
+                _moveSpeed,                   // Movement speed
+                30f                           // Timeout (seconds)
+            ),
+            new Wait(_waitTime),
             new AdvanceWaypoint()
         );
     }
 }
 ```
 
-2. Add your script to the NPC GameObject
+### Step 2: Setup in Unity
 
-### Step 3: Set Up Waypoints
+1. **Create the NPC GameObject**
+   - Right-click in Hierarchy → 3D Object → Capsule
+   - Name it "PatrolNPC"
+   - Position it above your ground
 
-1. Create empty GameObjects for each waypoint
-2. Position them where you want the NPC to patrol
-3. Create a parent GameObject with a `WaypointPath` component
-4. Add the waypoint transforms to the path
-5. Assign the `WaypointPath` to your NPC's Waypoint Path field
+2. **Add Components**
+   - Add your `MyFirstNPC` component
+   - Add `WaypointPath` component
 
-### Step 4: Add Perception (Optional)
+3. **Create Waypoints**
+   - Create 4 empty GameObjects as children of the NPC
+   - Name them "Waypoint1", "Waypoint2", etc.
+   - Position them around your scene
+   - The `WaypointPath` will auto-detect child waypoints
 
-To let your NPC detect the player:
+4. **Press Play!**
+   - Your NPC should patrol between the waypoints
 
-1. Add a `SightSensor` component to your NPC
-2. Configure the view distance and angle
-3. Set the Target Tag to "Player"
-4. Ensure your player has the "Player" tag
+### Visual Structure
 
-### Step 5: Press Play!
-
-Your NPC should now:
-- Follow the waypoint path
-- Detect the player (if SightSensor is attached)
-- React based on your behavior tree
-
-## Understanding Behavior Trees
-
-Behavior Trees are built from nodes. Here's how they work:
-
-### Composites: Control Flow
-
-```csharp
-// Sequence: Do things in order
-// Fails if any child fails
-new Sequence(
-    new MoveTo(() => position, 0.5f, 5f),  // Step 1
-    new Wait(2f),                            // Step 2
-    new Log("Done!")                         // Step 3
-)
-
-// Selector: Try options until one works
-// Succeeds if any child succeeds
-new Selector(
-    new ChasePlayer(),      // Try this first
-    new SearchForPlayer(),  // If chase fails, search
-    new Patrol()            // If search fails, patrol
-)
+```
+PatrolNPC (Capsule)
+├── MyFirstNPC (Script)
+├── WaypointPath (Script)
+├── Waypoint1 (Empty GameObject)
+├── Waypoint2 (Empty GameObject)
+├── Waypoint3 (Empty GameObject)
+└── Waypoint4 (Empty GameObject)
 ```
 
-### Decorators: Modify Behavior
+---
+
+## Using Built-in Archetypes
+
+NPCBrain includes several ready-to-use NPC types that require no coding.
+
+### PatrolNPC - Simple Patrol
+
+Best for: Background NPCs, civilian patrols, ambient movement
 
 ```csharp
-// Repeat an action 3 times
-new Repeater(new Patrol(), 3)
-
-// Invert the result
-new Inverter(new CheckDanger())  // "is safe" = NOT "is danger"
-
-// Rate limit
-new Cooldown(new Attack(), 2f)  // Can only attack every 2 seconds
+// Just add the PatrolNPC component - that's it!
+// Inspector settings:
+// - Patrol Speed: 3
+// - Waypoint Wait Time: 2
+// - Arrival Distance: 0.5
 ```
 
-### Conditions: Check State
+**Setup:**
+1. Add `PatrolNPC` component
+2. Add `WaypointPath` component
+3. Create waypoint children
+4. Play!
+
+### GuardNPC - Sight-Based Guard
+
+Best for: Guards, enemies, lookouts
+
+**Behaviors:**
+- Patrols waypoints when idle
+- Chases visible targets
+- Investigates last known position
+- Returns to patrol when target lost
 
 ```csharp
-// Check if target is visible
-new CheckTargetVisible()
-
-// Check blackboard value
-new CheckBlackboard<float>("health", h => h > 0.5f)
-
-// Check distance
-new CheckDistance(() => targetPosition, 5f, Comparison.Less)
+// Inspector settings:
+// - Chase Speed: 6
+// - Patrol Speed: 3
+// - Max Chase Distance: 20
+// - Investigate Time: 3
 ```
 
-### Actions: Do Things
+**Setup:**
+1. Add `SightSensor` component **first**
+2. Add `GuardNPC` component
+3. Add `WaypointPath` component
+4. Ensure targets have the "Player" tag
+
+### HearingGuardNPC - Sound-Responsive Guard
+
+Best for: Stealth games, alert systems
+
+**Additional Behaviors:**
+- Investigates gunshots (high priority)
+- Investigates footsteps (lower priority)
+- Uses both sight AND hearing
+
+**Setup:**
+1. Add `SightSensor` component
+2. Add `HearingSensor` component
+3. Add `HearingGuardNPC` component
+4. Add `WaypointPath` component
+
+---
+
+## Adding Perception
+
+### SightSensor - Vision Detection
+
+The SightSensor creates a vision cone that detects tagged targets:
 
 ```csharp
-// Move to position
-new MoveTo(() => targetPosition, 0.5f, 5f, 10f)
-
-// Wait
-new Wait(2f)
-
-// Set data
-new SetBlackboard("lastPatrolTime", () => Time.time)
+// SightSensor properties (Inspector):
+// - View Distance: 20 (how far NPC can see)
+// - View Angle: 120 (field of view degrees)
+// - Eye Height: 1.5 (raycast origin offset)
+// - Target Tag: "Player" (what to look for)
+// - Obstacle Mask: Everything (what blocks view)
+// - Target Mask: Default (layers with targets)
 ```
 
-## Using Utility AI
-
-For more organic behavior, use `UtilitySelector`:
+**Using SightSensor in Code:**
 
 ```csharp
-protected override BTNode CreateBehaviorTree()
+public class AlertNPC : NPCBrainController
 {
-    return new UtilitySelector(
-        // Wander when bored
-        new UtilityAction(
-            "Wander",
-            WanderBehavior(),
-            0.3f,  // base score
-            new TimeConsideration("WanderCooldown", "lastWander", 5f)
-        ),
+    protected override void Awake()
+    {
+        base.Awake();
         
-        // Rest when tired
-        new UtilityAction(
-            "Rest",
-            RestBehavior(),
-            0.2f,
-            new BlackboardConsideration<float>("Energy", "energy", 
-                e => 1f - e, 1f)  // Lower energy = higher score
-        ),
-        
-        // Chase when enemy spotted
-        new UtilityAction(
-            "Chase",
-            ChaseBehavior(),
-            0.5f,
-            new ConstantConsideration(1f),
-            new BlackboardConsideration<GameObject>("HasTarget", "target",
-                t => t != null ? 1f : 0f, null)
-        )
-    );
+        // Subscribe to perception events
+        OnTargetAcquired += HandleTargetSpotted;
+        OnTargetLost += HandleTargetLost;
+    }
+    
+    private void HandleTargetSpotted(GameObject target)
+    {
+        Debug.Log($"I see {target.name}!");
+        Blackboard.Set("target", target);
+    }
+    
+    private void HandleTargetLost(GameObject target)
+    {
+        Debug.Log($"Lost sight of {target.name}");
+        // Store last known position
+        Blackboard.SetWithTTL("lastKnownPos", target.transform.position, 10f);
+        Blackboard.Remove("target");
+    }
 }
 ```
 
-## Using Memory and Target Selection
+### HearingSensor - Sound Detection
 
-For advanced perception:
+Detects sounds emitted via `SoundEmitter` or `SoundManager`:
 
 ```csharp
-public class SmartNPC : NPCBrainController
+// HearingSensor properties (Inspector):
+// - Hearing Range: 30 (max detection distance)
+// - Hearing Threshold: 0.1 (minimum volume)
+// - Sound Mask: Everything (which sounds to hear)
+```
+
+**Emitting Sounds:**
+
+```csharp
+// Emit a sound that NPCs can hear
+SoundManager.EmitSound(
+    transform.position,  // Where
+    SoundType.Gunshot,   // What type
+    1.0f,                // Volume (affects range)
+    gameObject           // Who made it
+);
+```
+
+---
+
+## Next Steps
+
+Now that you have a basic NPC working, explore these topics:
+
+### Learn More
+- **[Behavior Trees Tutorial](tutorials/behavior-trees.md)** - Deep dive into BT nodes
+- **[Utility AI Tutorial](tutorials/utility-ai.md)** - Score-based decisions
+- **[Perception Tutorial](tutorials/perception.md)** - Advanced sensor usage
+- **[Criticality Tutorial](tutorials/criticality.md)** - Adaptive behavior
+
+### Try the Demos
+- **Window → NPCBrain → Create Guard Demo** - See GuardNPC in action
+- **Window → NPCBrain → Create Patrol Demo** - Multiple patrol patterns
+
+### Debug Your NPCs
+- **Window → NPCBrain → Debug Window** - Inspect NPC state in real-time
+- Enable gizmos to see vision cones in Scene view
+
+### Common Issues
+
+| Problem | Solution |
+|---------|----------|
+| NPC doesn't move | Check for NavMeshAgent or ensure ground is flat |
+| NPC doesn't see targets | Verify "Player" tag exists and is applied |
+| Errors about missing tag | Create tag in Project Settings → Tags and Layers |
+| NPC gets stuck | Add NavMesh and NavMeshAgent, or reduce obstacles |
+| Behavior tree not running | Ensure `CreateBehaviorTree()` returns a non-null node |
+
+---
+
+## Example: Complete Guard NPC
+
+Here's a complete example combining everything:
+
+```csharp
+using UnityEngine;
+using NPCBrain;
+using NPCBrain.BehaviorTree;
+using NPCBrain.BehaviorTree.Composites;
+using NPCBrain.BehaviorTree.Actions;
+using NPCBrain.BehaviorTree.Conditions;
+using NPCBrain.BehaviorTree.Decorators;
+
+public class MyGuard : NPCBrainController
 {
-    private Memory _memory;
-    private TargetSelector _targetSelector;
+    [SerializeField] private float _chaseSpeed = 6f;
+    [SerializeField] private float _patrolSpeed = 3f;
+    [SerializeField] private float _maxChaseDistance = 25f;
     
     protected override void Awake()
     {
         base.Awake();
-        _memory = new Memory();
-        _targetSelector = new TargetSelector();
+        Blackboard.Set("homePosition", transform.position);
+        
+        OnTargetAcquired += target => {
+            Blackboard.Set("target", target);
+            Debug.Log($"Spotted: {target.name}");
+        };
+        
+        OnTargetLost += target => {
+            Blackboard.SetWithTTL("lastKnownPosition", 
+                target.transform.position, 15f);
+            Blackboard.Remove("target");
+        };
     }
     
-    private void LateUpdate()
+    protected override BTNode CreateBehaviorTree()
     {
-        // Update memory with visible targets
-        if (Perception != null)
-        {
-            foreach (var target in Perception.VisibleTargets)
-            {
-                _memory.UpdateVisible(target, target.transform.position);
-            }
-        }
-        
-        // Apply memory decay
-        _memory.Tick();
-        
-        // Select best target
-        var best = _targetSelector.SelectBest(
-            Perception, _memory, 
-            transform.position, transform.forward,
-            Blackboard
+        return new Selector(
+            // Priority 1: Chase visible target
+            CreateChaseBehavior(),
+            // Priority 2: Investigate last known position
+            CreateInvestigateBehavior(),
+            // Priority 3: Return if far from home
+            CreateReturnBehavior(),
+            // Priority 4: Normal patrol
+            CreatePatrolBehavior()
         );
-        
-        if (best != null)
-        {
-            Blackboard.Set("target", best);
-        }
+    }
+    
+    private BTNode CreateChaseBehavior()
+    {
+        return new Sequence(
+            new CheckBlackboard("target"),
+            new CheckDistance(
+                brain => brain.transform.position,
+                brain => brain.Blackboard.Get<GameObject>("target")?.transform.position ?? brain.transform.position,
+                _maxChaseDistance,
+                CheckDistance.ComparisonType.LessThan
+            ),
+            new MoveTo(
+                () => Blackboard.Get<GameObject>("target")?.transform.position ?? transform.position,
+                1.5f,
+                _chaseSpeed
+            )
+        );
+    }
+    
+    private BTNode CreateInvestigateBehavior()
+    {
+        return new Sequence(
+            new CheckBlackboard("lastKnownPosition"),
+            new MoveTo(
+                () => Blackboard.Get<Vector3>("lastKnownPosition"),
+                1f,
+                _patrolSpeed
+            ),
+            new Wait(3f),
+            new ClearBlackboardKey("lastKnownPosition")
+        );
+    }
+    
+    private BTNode CreateReturnBehavior()
+    {
+        return new Sequence(
+            new CheckDistance(
+                brain => brain.transform.position,
+                brain => brain.Blackboard.Get<Vector3>("homePosition"),
+                15f,
+                CheckDistance.ComparisonType.GreaterThan
+            ),
+            new MoveTo(
+                () => Blackboard.Get<Vector3>("homePosition"),
+                2f,
+                _patrolSpeed
+            )
+        );
+    }
+    
+    private BTNode CreatePatrolBehavior()
+    {
+        return new Sequence(
+            new MoveTo(() => GetCurrentWaypoint(), 0.5f, _patrolSpeed, 30f),
+            new Wait(2f),
+            new AdvanceWaypoint()
+        );
     }
 }
 ```
 
-## Debugging
+---
 
-### Debug Window
-
-1. Open `Window > NPCBrain > Debug Window`
-2. Select an NPC from the dropdown
-3. View real-time behavior tree state
-4. Inspect blackboard values
-5. Monitor criticality metrics
-
-### Scene Gizmos
-
-- Select an NPC to see its vision cone
-- Green cone = no targets
-- Red cone = target visible
-- Yellow markers = remembered positions
-
-## Next Steps
-
-- Check out the demo scenes for examples
-- Read the API Reference for detailed documentation
-- Experiment with different behavior tree structures
-- Try the Utility AI for more organic behavior
+[← Back to Index](index.md) | [Behavior Trees →](tutorials/behavior-trees.md)
