@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace NPCBrain.BehaviorTree.Decorators
 {
     /// <summary>
@@ -17,7 +15,8 @@ namespace NPCBrain.BehaviorTree.Decorators
         {
             if (Child == null)
             {
-                Debug.LogWarning($"[Inverter] Child node is null. Inverter decorator requires a child node to invert.");
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.BehaviorTree, 
+                    "Inverter: Child node is null. Inverter decorator requires a child node to invert.");
                 return NodeStatus.Failure;
             }
             

@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace NPCBrain.BehaviorTree.Decorators
 {
     /// <summary>
@@ -17,7 +15,8 @@ namespace NPCBrain.BehaviorTree.Decorators
         {
             if (Child == null)
             {
-                Debug.LogWarning($"[Succeeder] Child node is null. Succeeder returning Success but no child was executed.");
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.BehaviorTree, 
+                    "Succeeder: Child node is null. Succeeder returning Success but no child was executed.");
                 return NodeStatus.Success;
             }
             

@@ -97,7 +97,8 @@ namespace NPCBrain.BehaviorTree.Conditions
             
             if (sensor == null)
             {
-                Debug.LogWarning($"[CheckSoundHeard] No HearingSensor found on {brain.name}");
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.BehaviorTree, 
+                    $"CheckSoundHeard: No HearingSensor found on {brain.name}");
                 return NodeStatus.Failure;
             }
             

@@ -61,7 +61,8 @@ namespace NPCBrain.BehaviorTree.Conditions
             
             if (sensor == null)
             {
-                Debug.LogWarning($"[CheckTargetVisible] No SightSensor found on {brain.name}");
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.BehaviorTree, 
+                    $"CheckTargetVisible: No SightSensor found on {brain.name}");
                 return NodeStatus.Failure;
             }
             

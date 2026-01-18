@@ -22,8 +22,8 @@ namespace NPCBrain
         [Tooltip("Should waypoints be collected from child objects on Awake?")]
         [SerializeField] private bool _autoPopulateFromChildren = true;
         
-        [Tooltip("Log warnings when waypoint access fails (no waypoints, invalid index, etc.).")]
-        [SerializeField] private bool _logWarnings = true;
+        [Tooltip("Log warnings when waypoint access fails (also enabled when NPCBrainDebug.LogWaypoints is true).")]
+        [SerializeField] private bool _logWarnings = false;
         
         private int _currentIndex = 0;
         private bool _hasWarnedNoWaypoints = false;
@@ -115,9 +115,10 @@ namespace NPCBrain
             }
             if (_waypoints[_currentIndex] == null)
             {
-                if (_logWarnings)
+                if (ShouldLogWarning())
                 {
-                    Debug.LogWarning($"[WaypointPath] Waypoint at index {_currentIndex} is null on '{gameObject.name}'. " +
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Waypoints, 
+                        $"Waypoint at index {_currentIndex} is null on '{gameObject.name}'. " +
                         $"Returning transform position as fallback.", this);
                 }
                 return transform.position;
@@ -139,9 +140,10 @@ namespace NPCBrain
             }
             if (index < 0 || index >= _waypoints.Count)
             {
-                if (_logWarnings)
+                if (ShouldLogWarning())
                 {
-                    Debug.LogWarning($"[WaypointPath] Invalid waypoint index {index} on '{gameObject.name}'. " +
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Waypoints, 
+                        $"Invalid waypoint index {index} on '{gameObject.name}'. " +
                         $"Valid range is 0-{_waypoints.Count - 1}. Returning transform position.", this);
                 }
                 return transform.position;
@@ -234,12 +236,18 @@ namespace NPCBrain
         
         private void WarnNoWaypoints(string methodName)
         {
-            if (_logWarnings && !_hasWarnedNoWaypoints)
+            if (ShouldLogWarning() && !_hasWarnedNoWaypoints)
             {
-                Debug.LogWarning($"[WaypointPath] {methodName}() called but no waypoints configured on '{gameObject.name}'. " +
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Waypoints, 
+                    $"{methodName}() called but no waypoints configured on '{gameObject.name}'. " +
                     $"Add waypoints as children or assign them manually. Returning transform position as fallback.", this);
                 _hasWarnedNoWaypoints = true; // Only warn once per path to avoid spam
             }
+        }
+        
+        private bool ShouldLogWarning()
+        {
+            return _logWarnings || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Waypoints);
         }
         
         /// <summary>

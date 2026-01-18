@@ -26,7 +26,8 @@ namespace NPCBrain.BehaviorTree.Decorators
         {
             if (Child == null)
             {
-                Debug.LogWarning($"[Cooldown] Child node is null. Cooldown decorator requires a child node to gate.");
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.BehaviorTree, 
+                    "Cooldown: Child node is null. Cooldown decorator requires a child node to gate.");
                 return NodeStatus.Failure;
             }
             

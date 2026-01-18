@@ -55,6 +55,28 @@ public class MyNPC : NPCBrainController
 }
 ```
 
+## Debug Logging
+
+NPCBrain includes a centralized debug logging system that can be enabled globally:
+
+```csharp
+// Enable all debug logging
+NPCBrainDebug.EnableAll();
+
+// Enable only specific categories
+NPCBrainDebug.EnableOnly(NPCBrainDebug.Category.Perception, NPCBrainDebug.Category.Hearing);
+
+// Disable all logging
+NPCBrainDebug.DisableAll();
+
+// Configure individual categories
+NPCBrainDebug.Enabled = true;
+NPCBrainDebug.LogPerception = true;
+NPCBrainDebug.LogBehaviorTree = false;
+```
+
+Available categories: `General`, `BehaviorTree`, `Utility`, `Perception`, `Hearing`, `Memory`, `Blackboard`, `Waypoints`, `Criticality`
+
 ## Installation
 
 1. Import the NPCBrain package into your Unity project

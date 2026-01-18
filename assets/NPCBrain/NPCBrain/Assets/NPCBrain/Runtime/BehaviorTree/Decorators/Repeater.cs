@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace NPCBrain.BehaviorTree.Decorators
 {
     /// <summary>
@@ -37,7 +35,8 @@ namespace NPCBrain.BehaviorTree.Decorators
         {
             if (Child == null)
             {
-                Debug.LogWarning($"[Repeater] Child node is null. Repeater decorator requires a child node to repeat.");
+                NPCBrainDebug.LogWarning(NPCBrainDebug.Category.BehaviorTree, 
+                    "Repeater: Child node is null. Repeater decorator requires a child node to repeat.");
                 return NodeStatus.Failure;
             }
             

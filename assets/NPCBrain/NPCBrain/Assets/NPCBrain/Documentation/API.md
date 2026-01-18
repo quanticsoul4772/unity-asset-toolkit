@@ -1,5 +1,55 @@
 # NPCBrain API Reference
 
+## NPCBrainDebug (Static Class)
+
+Centralized debug logging system for all NPCBrain components.
+
+### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `Enabled` | bool | false | Master switch for all debug logging |
+| `LogGeneral` | bool | true | Enable general messages |
+| `LogBehaviorTree` | bool | true | Enable behavior tree logging |
+| `LogUtility` | bool | true | Enable utility AI logging |
+| `LogPerception` | bool | true | Enable sight sensor logging |
+| `LogHearing` | bool | true | Enable hearing sensor logging |
+| `LogMemory` | bool | true | Enable memory system logging |
+| `LogBlackboard` | bool | true | Enable blackboard logging |
+| `LogWaypoints` | bool | true | Enable waypoint logging |
+| `LogCriticality` | bool | true | Enable criticality logging |
+| `AlwaysLogWarnings` | bool | true | Log warnings even when Enabled=false |
+| `AlwaysLogErrors` | bool | true | Log errors even when Enabled=false |
+| `IncludeTimestamp` | bool | false | Include Time.time in messages |
+| `UseColors` | bool | true | Use colored output |
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `EnableAll()` | Enable all logging categories |
+| `DisableAll()` | Disable all logging (sets Enabled=false) |
+| `EnableOnly(params Category[])` | Enable only specific categories |
+| `IsEnabled(Category)` | Check if a category is enabled |
+| `Log(Category, string, Object)` | Log info message |
+| `LogWarning(Category, string, Object)` | Log warning message |
+| `LogError(Category, string, Object)` | Log error message |
+| `SetCategoryEnabled(Category, bool)` | Enable/disable specific category |
+
+### Categories
+
+- `General` - General NPCBrain messages
+- `BehaviorTree` - Behavior tree execution
+- `Utility` - Utility AI and action selection
+- `Perception` - Sight sensor and vision detection
+- `Hearing` - Hearing sensor and sound detection
+- `Memory` - Target memory and tracking
+- `Blackboard` - Blackboard key-value store
+- `Waypoints` - Waypoint paths and navigation
+- `Criticality` - Criticality system
+
+---
+
 Complete API documentation for all public classes and methods.
 
 ## Table of Contents

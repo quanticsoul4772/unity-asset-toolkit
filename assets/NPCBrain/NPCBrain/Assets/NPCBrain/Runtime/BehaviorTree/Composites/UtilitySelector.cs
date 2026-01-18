@@ -39,8 +39,9 @@ namespace NPCBrain.BehaviorTree.Composites
         
         /// <summary>
         /// When true, logs warnings when no action can be selected.
+        /// Also enabled when NPCBrainDebug.LogUtility is true.
         /// </summary>
-        public bool LogWarnings { get; set; } = true;
+        public bool LogWarnings { get; set; } = false;
         
         /// <summary>
         /// Creates a UtilitySelector with the specified actions.
@@ -96,9 +97,10 @@ namespace NPCBrain.BehaviorTree.Composites
         {
             if (_actions.Count == 0)
             {
-                if (LogWarnings)
+                if (ShouldLogWarning())
                 {
-                    Debug.LogWarning($"[UtilitySelector] No actions configured. Add actions before executing.");
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility, 
+                        "No actions configured. Add actions before executing.");
                 }
                 return NodeStatus.Failure;
             }
@@ -129,9 +131,10 @@ namespace NPCBrain.BehaviorTree.Composites
         {
             if (brain == null)
             {
-                if (LogWarnings)
+                if (ShouldLogWarning())
                 {
-                    Debug.LogWarning($"[UtilitySelector] Brain is null. Cannot select action.");
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility, 
+                        "Brain is null. Cannot select action.");
                 }
                 return null;
             }
@@ -150,9 +153,10 @@ namespace NPCBrain.BehaviorTree.Composites
             
             if (maxScore <= 0f)
             {
-                if (LogWarnings)
+                if (ShouldLogWarning())
                 {
-                    Debug.LogWarning($"[UtilitySelector] All {_actions.Count} action(s) scored <= 0. No action selected. " +
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility, 
+                        $"All {_actions.Count} action(s) scored <= 0. No action selected. " +
                         $"Check that considerations return positive values.");
                 }
                 return null;
@@ -175,9 +179,10 @@ namespace NPCBrain.BehaviorTree.Composites
             
             if (sumExp <= 0f)
             {
-                if (LogWarnings)
+                if (ShouldLogWarning())
                 {
-                    Debug.LogWarning($"[UtilitySelector] Softmax sum is zero after filtering. This shouldn't happen if maxScore > 0.");
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility, 
+                        "Softmax sum is zero after filtering. This shouldn't happen if maxScore > 0.");
                 }
                 return null;
             }
@@ -315,6 +320,11 @@ namespace NPCBrain.BehaviorTree.Composites
         public bool RemoveAction(UtilityAction action)
         {
             return _actions.Remove(action);
+        }
+        
+        private bool ShouldLogWarning()
+        {
+            return LogWarnings || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility);
         }
     }
 }
