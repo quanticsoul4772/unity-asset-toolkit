@@ -64,11 +64,37 @@ namespace NPCBrain.Editor
             Debug.Log("Press Play to watch NPCs patrol their color-coded routes!");
         }
         
-        [MenuItem("NPCBrain/Create All Demo Scenes", false, 202)]
+        [MenuItem("NPCBrain/Create Utility Demo Scene", false, 202)]
+        public static void CreateUtilityDemoScene()
+        {
+            if (!ConfirmSceneCreation("UtilityDemo")) return;
+            
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            
+            SetupCamera(new Vector3(0f, 30f, -20f), 50f);
+            SetupLighting();
+            
+            // Create demo controller
+            var controller = new GameObject("UtilityDemoSetup");
+            controller.AddComponent<Demo.UtilityDemoSetup>();
+            
+            // Create info display
+            CreateSceneInfo("Utility AI Demo", "Dynamic decision-making with Criticality system");
+            
+            // Save scene
+            string scenePath = $"{DemoScenesPath}/UtilityDemo.unity";
+            EnsureDirectoryExists(scenePath);
+            EditorSceneManager.SaveScene(scene, scenePath);
+            
+            Debug.Log($"<color=green>Utility Demo Scene created at: {scenePath}</color>");
+            Debug.Log("Press Play to watch NPCs make utility-based decisions. Temperature and Inertia will change!");
+        }
+        
+        [MenuItem("NPCBrain/Create All Demo Scenes", false, 203)]
         public static void CreateAllDemoScenes()
         {
             if (!EditorUtility.DisplayDialog("Create All Demo Scenes",
-                "This will create GuardDemo.unity and PatrolDemo.unity in the Demo/Scenes folder.\n\nContinue?",
+                "This will create GuardDemo.unity, PatrolDemo.unity, and UtilityDemo.unity in the Demo/Scenes folder.\n\nContinue?",
                 "Create All", "Cancel"))
             {
                 return;
@@ -76,6 +102,7 @@ namespace NPCBrain.Editor
             
             CreateGuardDemoSceneInternal();
             CreatePatrolDemoSceneInternal();
+            CreateUtilityDemoSceneInternal();
             
             Debug.Log("<color=green>All demo scenes created successfully!</color>");
         }
@@ -90,6 +117,12 @@ namespace NPCBrain.Editor
         public static void OpenPatrolDemo()
         {
             OpenDemoScene("PatrolDemo");
+        }
+        
+        [MenuItem("NPCBrain/Open Utility Demo", false, 212)]
+        public static void OpenUtilityDemo()
+        {
+            OpenDemoScene("UtilityDemo");
         }
         
         private static void CreateGuardDemoSceneInternal()
@@ -126,6 +159,23 @@ namespace NPCBrain.Editor
             EditorSceneManager.SaveScene(scene, scenePath);
         }
         
+        private static void CreateUtilityDemoSceneInternal()
+        {
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            
+            SetupCamera(new Vector3(0f, 30f, -20f), 50f);
+            SetupLighting();
+            
+            var controller = new GameObject("UtilityDemoSetup");
+            controller.AddComponent<Demo.UtilityDemoSetup>();
+            
+            CreateSceneInfo("Utility AI Demo", "Dynamic decision-making with Criticality system");
+            
+            string scenePath = $"{DemoScenesPath}/UtilityDemo.unity";
+            EnsureDirectoryExists(scenePath);
+            EditorSceneManager.SaveScene(scene, scenePath);
+        }
+        
         private static bool ConfirmSceneCreation(string sceneName)
         {
             string scenePath = $"{DemoScenesPath}/{sceneName}.unity";
@@ -154,6 +204,8 @@ namespace NPCBrain.Editor
                         CreateGuardDemoScene();
                     else if (sceneName == "PatrolDemo")
                         CreatePatrolDemoScene();
+                    else if (sceneName == "UtilityDemo")
+                        CreateUtilityDemoScene();
                 }
                 return;
             }
