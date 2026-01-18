@@ -50,7 +50,9 @@ namespace NPCBrain.Tests.Runtime
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
             _npcObject.transform.forward = Vector3.forward;
             
-            yield return null; // Wait a frame
+            // Wait for physics to register the collider
+            yield return new WaitForFixedUpdate();
+            yield return null;
             
             // Tick the sensor
             _sightSensor.Tick(_brain);
@@ -66,6 +68,8 @@ namespace NPCBrain.Tests.Runtime
             _targetObject.transform.position = new Vector3(0f, 0f, -5f);
             _npcObject.transform.forward = Vector3.forward;
             
+            // Wait for physics to sync
+            yield return new WaitForFixedUpdate();
             yield return null;
             
             _sightSensor.Tick(_brain);
@@ -163,6 +167,7 @@ namespace NPCBrain.Tests.Runtime
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
             _npcObject.transform.forward = Vector3.forward;
             
+            yield return new WaitForFixedUpdate();
             yield return null;
             
             // Step 1: Detect target
@@ -221,6 +226,8 @@ namespace NPCBrain.Tests.Runtime
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
             _npcObject.transform.forward = Vector3.forward;
             
+            // Wait for physics to register the collider
+            yield return new WaitForFixedUpdate();
             yield return null;
             
             _sightSensor.Tick(_brain);
@@ -243,12 +250,14 @@ namespace NPCBrain.Tests.Runtime
             _targetObject.transform.position = new Vector3(0f, 0f, 5f);
             _npcObject.transform.forward = Vector3.forward;
             
+            yield return new WaitForFixedUpdate();
             yield return null;
             _sightSensor.Tick(_brain);
             
             // Now move target out of view
             _targetObject.transform.position = new Vector3(0f, 0f, -10f);
             
+            yield return new WaitForFixedUpdate();
             yield return null;
             _sightSensor.Tick(_brain);
             
