@@ -88,17 +88,15 @@ namespace NPCBrain.Perception
             float effectiveRadiusSqr = effectiveRadius * effectiveRadius;
             
             // If completely out of range, priority is effectively 0
-            float distance;
             float distanceFactor;
             if (distSqr >= effectiveRadiusSqr)
             {
-                distance = effectiveRadius;
                 distanceFactor = 0f;
             }
             else
             {
                 // Only calculate sqrt when in range
-                distance = Mathf.Sqrt(distSqr);
+                float distance = Mathf.Sqrt(distSqr);
                 distanceFactor = 1f - (distance / effectiveRadius);
             }
             
