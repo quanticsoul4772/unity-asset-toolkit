@@ -1,7 +1,9 @@
 {
     "name": "NPCBrain.Runtime",
     "rootNamespace": "NPCBrain",
-    "references": [],
+    "references": [
+        "EasyPath.Runtime"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
