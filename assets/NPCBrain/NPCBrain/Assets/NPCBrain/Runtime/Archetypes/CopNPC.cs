@@ -181,9 +181,6 @@ namespace NPCBrain.Archetypes
         
         private void HandleTargetLost(GameObject target)
         {
-            // Only log if it's a robber we were tracking
-            var robber = target?.GetComponent<RobberNPC>();
-            
             // Single lookup instead of Has + Get
             if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var currentTarget) && currentTarget == target)
             {
@@ -237,6 +234,7 @@ namespace NPCBrain.Archetypes
         }
         
         private float _lastDebugLogTime;
+        private float _lastChaseLogTime;
         
         private void LateUpdate()
         {
@@ -399,8 +397,13 @@ namespace NPCBrain.Archetypes
             var chaseBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastChaseTime, () => Time.time),
                 new SetBlackboard(BBKeys.CurrentState, () => { 
-                    _cachedState = "Chase!"; 
-                    Debug.Log($"<color=blue>[{name}]</color> <color=lime>*** CHASE ACTION STARTED! ***</color>");
+                    _cachedState = "Chase!";
+                    // Throttle chase log to avoid spam (only log every 2 seconds)
+                    if (Time.time - _lastChaseLogTime > 2f)
+                    {
+                        _lastChaseLogTime = Time.time;
+                        Debug.Log($"<color=blue>[{name}]</color> <color=lime>*** CHASING! ***</color>");
+                    }
                     return "Chase!"; 
                 }),
                 new MoveTo(
