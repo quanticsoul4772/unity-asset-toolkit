@@ -56,12 +56,13 @@ namespace NPCBrain.Archetypes
         private Vector3 _homePosition;
         private int _arrestCount;
         private RobberNPC _cachedTargetRobber;
+        private float _arrestDistanceSqr;
         
         /// <summary>Current behavior state for UI display.</summary>
-        public string CurrentState => Blackboard.Get("currentState", "Patrol");
+        public string CurrentState => Blackboard.Get(BBKeys.CurrentState, "Patrol");
         
         /// <summary>Current alert level (0-1).</summary>
-        public float AlertLevel => Blackboard.Get("alertLevel", 0f);
+        public float AlertLevel => Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
         
         /// <summary>Number of arrests made.</summary>
         public int ArrestCount => _arrestCount;
@@ -77,19 +78,20 @@ namespace NPCBrain.Archetypes
             base.Awake();
             NPCRegistry<CopNPC>.Register(this);
             _homePosition = transform.position;
+            _arrestDistanceSqr = _arrestDistance * _arrestDistance;
             
             // Note: Detection uses NPCRegistry<CopNPC> instead of tags to avoid Unity tag setup requirements
             
-            Blackboard.Set("homePosition", _homePosition);
+            Blackboard.SetVector3(BBKeys.HomePosition, _homePosition);
             Blackboard.SetFloat(BBKeys.AlertLevel, 0f);
-            Blackboard.Set("currentState", "Patrol");
+            Blackboard.Set(BBKeys.CurrentState, "Patrol");
             
             // Initialize action timestamps
-            Blackboard.Set("lastChaseTime", -10f);
-            Blackboard.Set("lastInvestigateTime", -10f);
-            Blackboard.Set("lastPatrolTime", -10f);
-            Blackboard.Set("lastReturnTime", -10f);
-            Blackboard.Set("lastArrestTime", -10f);
+            Blackboard.SetFloat(BBKeys.LastChaseTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastInvestigateTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastPatrolTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastReturnTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastArrestTime, -10f);
             
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;
@@ -114,30 +116,27 @@ namespace NPCBrain.Archetypes
             
             // Cache the component reference
             _cachedTargetRobber = robber;
-            Blackboard.Set("target", target);
-            Blackboard.Set("investigatePosition", target.transform.position);
+            Blackboard.Set(BBKeys.Target, target);
+            Blackboard.SetVector3(BBKeys.InvestigatePosition, target.transform.position);
             IncreaseAlert(0.6f);
         }
         
         private void HandleTargetLost(GameObject target)
         {
-            if (Blackboard.Has("target"))
+            // Single lookup instead of Has + Get
+            if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var currentTarget) && currentTarget == target)
             {
-                var currentTarget = Blackboard.Get<GameObject>("target");
-                if (currentTarget == target)
-                {
-                    Blackboard.Remove("target");
-                    _cachedTargetRobber = null;
-                }
+                Blackboard.Remove(BBKeys.Target);
+                _cachedTargetRobber = null;
             }
         }
         
         private void HandleSoundHeard(SoundEvent sound)
         {
-            if (!Blackboard.Has("target"))
+            if (!Blackboard.Has(BBKeys.Target))
             {
-                Blackboard.Set("investigatePosition", sound.Position);
-                Blackboard.Set("lastSoundType", (int)sound.Type);
+                Blackboard.SetVector3(BBKeys.InvestigatePosition, sound.Position);
+                Blackboard.SetInt(BBKeys.LastSoundType, (int)sound.Type);
                 
                 if (sound.Type >= SoundType.Alarm)
                 {
@@ -153,34 +152,35 @@ namespace NPCBrain.Archetypes
         /// <summary>Increases the alert level by the specified amount.</summary>
         public void IncreaseAlert(float amount)
         {
-            float current = Blackboard.Get("alertLevel", 0f);
-            Blackboard.Set("alertLevel", Mathf.Clamp01(current + amount));
+            float current = Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
+            Blackboard.SetFloat(BBKeys.AlertLevel, Mathf.Clamp01(current + amount));
         }
         
         private void DecayAlert()
         {
-            float current = Blackboard.Get("alertLevel", 0f);
+            float current = Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
             if (current > 0f)
             {
-                Blackboard.Set("alertLevel", Mathf.Max(0f, current - _alertDecayRate * Time.deltaTime));
+                Blackboard.SetFloat(BBKeys.AlertLevel, Mathf.Max(0f, current - _alertDecayRate * Time.deltaTime));
             }
         }
         
         private void LateUpdate()
         {
-            if (!Blackboard.Has("target"))
+            // Single lookup for target - fixes redundant Blackboard access
+            if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
             {
-                DecayAlert();
-            }
-            
-            // Update investigation position if we have a visible target
-            if (Blackboard.TryGet<GameObject>("target", out var target) && target != null)
-            {
-                Blackboard.Set("investigatePosition", target.transform.position);
+                // Has visible target - update position and alert
+                Blackboard.SetVector3(BBKeys.InvestigatePosition, target.transform.position);
                 IncreaseAlert(_alertIncreaseRate * Time.deltaTime);
                 
                 // Check for arrest opportunity
                 CheckArrestOpportunity(target);
+            }
+            else
+            {
+                // No target - decay alert over time
+                DecayAlert();
             }
         }
         
@@ -188,9 +188,11 @@ namespace NPCBrain.Archetypes
         {
             if (target == null) return;
             
-            float distance = Vector3.Distance(transform.position, target.transform.position);
-            Blackboard.Set("targetDistance", distance);
-            Blackboard.Set("canArrest", distance <= _arrestDistance);
+            // Use sqrMagnitude to avoid sqrt
+            float distanceSqr = (transform.position - target.transform.position).sqrMagnitude;
+            float distance = Mathf.Sqrt(distanceSqr); // Only compute sqrt once for UI/considerations
+            Blackboard.SetFloat(BBKeys.TargetDistance, distance);
+            Blackboard.SetBool(BBKeys.CanArrest, distanceSqr <= _arrestDistanceSqr);
         }
         
         /// <summary>
@@ -198,7 +200,7 @@ namespace NPCBrain.Archetypes
         /// </summary>
         private void TryArrest()
         {
-            if (!Blackboard.TryGet<GameObject>("target", out var target) || target == null)
+            if (!Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) || target == null)
             {
                 return;
             }
@@ -214,13 +216,14 @@ namespace NPCBrain.Archetypes
             
             if (robber != null && !robber.HasEscaped)
             {
-                float distance = Vector3.Distance(transform.position, target.transform.position);
-                if (distance <= _arrestDistance)
+                // Use sqrMagnitude to avoid sqrt
+                float distanceSqr = (transform.position - target.transform.position).sqrMagnitude;
+                if (distanceSqr <= _arrestDistanceSqr)
                 {
                     robber.OnArrested();
                     _arrestCount++;
-                    Blackboard.Remove("target");
-                    Blackboard.Set("canArrest", false);
+                    Blackboard.Remove(BBKeys.Target);
+                    Blackboard.SetBool(BBKeys.CanArrest, false);
                     _cachedTargetRobber = null;
                     
                     OnArrest?.Invoke(this, robber);
@@ -253,8 +256,8 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateArrestAction()
         {
             var arrestBehavior = new Sequence(
-                new SetBlackboard("lastArrestTime", () => Time.time),
-                new SetBlackboard("currentState", "Arresting!"),
+                new SetBlackboard(BBKeys.LastArrestTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Arresting!"),
                 new Wait(0.5f, () => TryArrest())
             );
             arrestBehavior.Name = "ArrestBehavior";
@@ -264,10 +267,10 @@ namespace NPCBrain.Archetypes
                 arrestBehavior,
                 _arrestWeight,
                 // Must be able to arrest (very close to target)
-                new BlackboardConsideration<bool>("CanArrest", "canArrest",
+                new BlackboardConsideration<bool>("CanArrest", BBKeys.CanArrest,
                     can => can ? 1f : 0f, false),
                 // Must have a target
-                new BlackboardConsideration<GameObject>("HasTarget", "target",
+                new BlackboardConsideration<GameObject>("HasTarget", BBKeys.Target,
                     t => t != null ? 1f : 0f, null)
             );
         }
@@ -275,8 +278,8 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateChaseAction()
         {
             var chaseBehavior = new Sequence(
-                new SetBlackboard("lastChaseTime", () => Time.time),
-                new SetBlackboard("currentState", "Chase!"),
+                new SetBlackboard(BBKeys.LastChaseTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Chase!"),
                 new MoveTo(
                     () => GetTargetPosition(),
                     _arrestDistance * 0.8f, // Get very close for arrest
@@ -291,10 +294,10 @@ namespace NPCBrain.Archetypes
                 chaseBehavior,
                 _chaseWeight,
                 // Must have a visible target
-                new BlackboardConsideration<GameObject>("HasTarget", "target",
+                new BlackboardConsideration<GameObject>("HasTarget", BBKeys.Target,
                     t => t != null ? 1f : 0f, null),
                 // Not close enough to arrest
-                new BlackboardConsideration<bool>("CantArrestYet", "canArrest",
+                new BlackboardConsideration<bool>("CantArrestYet", BBKeys.CanArrest,
                     can => can ? 0f : 1f, false),
                 // Higher score when target is close
                 new DistanceConsideration(
@@ -304,7 +307,7 @@ namespace NPCBrain.Archetypes
                     true
                 ),
                 // Higher score when alert
-                new BlackboardConsideration<float>("AlertForChase", "alertLevel",
+                new BlackboardConsideration<float>("AlertForChase", BBKeys.AlertLevel,
                     a => 0.5f + a * 0.5f, 0f)
             );
         }
@@ -312,16 +315,16 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateAlarmInvestigateAction()
         {
             var investigateBehavior = new Sequence(
-                new SetBlackboard("lastInvestigateTime", () => Time.time),
-                new SetBlackboard("currentState", "Investigate-Alarm"),
+                new SetBlackboard(BBKeys.LastInvestigateTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Investigate-Alarm"),
                 new MoveTo(
-                    () => Blackboard.Get<Vector3>("investigatePosition"),
+                    () => Blackboard.GetVector3(BBKeys.InvestigatePosition, Vector3.zero),
                     _arrivalDistance,
                     _investigateSpeed
                 ),
                 new Wait(_investigateTime * 0.5f),
-                new ClearBlackboardKey("investigatePosition"),
-                new ClearBlackboardKey("lastSoundType")
+                new ClearBlackboardKey(BBKeys.InvestigatePosition),
+                new ClearBlackboardKey(BBKeys.LastSoundType)
             );
             investigateBehavior.Name = "AlarmInvestigateBehavior";
             
@@ -332,31 +335,31 @@ namespace NPCBrain.Archetypes
                 // Must have heard an alarm
                 new HasHeardSoundConsideration("HeardAlarm", SoundType.Alarm),
                 // No visible target
-                new BlackboardConsideration<GameObject>("NoVisibleTarget", "target",
+                new BlackboardConsideration<GameObject>("NoVisibleTarget", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
                 // Higher score when alert
-                new BlackboardConsideration<float>("AlertForAlarm", "alertLevel",
+                new BlackboardConsideration<float>("AlertForAlarm", BBKeys.AlertLevel,
                     a => 0.3f + a * 0.7f, 0f),
                 // Distance consideration
                 new SoundDistanceConsideration("AlarmDistance", 50f, true),
                 // Cooldown
-                new TimeConsideration("InvestigateCooldown", "lastInvestigateTime", 2f)
+                new TimeConsideration("InvestigateCooldown", BBKeys.LastInvestigateTime, 2f)
             );
         }
         
         private UtilityAction CreateSoundInvestigateAction()
         {
             var investigateBehavior = new Sequence(
-                new SetBlackboard("lastInvestigateTime", () => Time.time),
-                new SetBlackboard("currentState", "Investigate"),
+                new SetBlackboard(BBKeys.LastInvestigateTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Investigate"),
                 new MoveTo(
-                    () => Blackboard.Get<Vector3>("investigatePosition"),
+                    () => Blackboard.GetVector3(BBKeys.InvestigatePosition, Vector3.zero),
                     _arrivalDistance,
                     _investigateSpeed * 0.8f
                 ),
                 new Wait(_investigateTime),
-                new ClearBlackboardKey("investigatePosition"),
-                new ClearBlackboardKey("lastSoundType")
+                new ClearBlackboardKey(BBKeys.InvestigatePosition),
+                new ClearBlackboardKey(BBKeys.LastSoundType)
             );
             investigateBehavior.Name = "SoundInvestigateBehavior";
             
@@ -367,23 +370,23 @@ namespace NPCBrain.Archetypes
                 // Must have heard at least a footstep
                 new HasHeardSoundConsideration("HeardSound", SoundType.Footstep),
                 // No visible target
-                new BlackboardConsideration<GameObject>("NoVisibleTarget", "target",
+                new BlackboardConsideration<GameObject>("NoVisibleTarget", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
                 // Moderate alert needed
-                new BlackboardConsideration<float>("AlertForSound", "alertLevel",
+                new BlackboardConsideration<float>("AlertForSound", BBKeys.AlertLevel,
                     a => a > 0.1f ? 0.5f + a * 0.5f : 0.3f, 0f),
                 // Cooldown
-                new TimeConsideration("InvestigateCooldown", "lastInvestigateTime", 3f)
+                new TimeConsideration("InvestigateCooldown", BBKeys.LastInvestigateTime, 3f)
             );
         }
         
         private UtilityAction CreateReturnAction()
         {
             var returnBehavior = new Sequence(
-                new SetBlackboard("lastReturnTime", () => Time.time),
-                new SetBlackboard("currentState", "Return"),
+                new SetBlackboard(BBKeys.LastReturnTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Return"),
                 new MoveTo(
-                    () => Blackboard.Get<Vector3>("homePosition"),
+                    () => Blackboard.GetVector3(BBKeys.HomePosition, transform.position),
                     _arrivalDistance,
                     _patrolSpeed
                 )
@@ -395,28 +398,28 @@ namespace NPCBrain.Archetypes
                 returnBehavior,
                 _returnWeight,
                 // No target
-                new BlackboardConsideration<GameObject>("NoTarget", "target",
+                new BlackboardConsideration<GameObject>("NoTarget", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
                 // No pending investigation
-                new BlackboardConsideration<Vector3>("NoInvestigation", "investigatePosition",
+                new BlackboardConsideration<Vector3>("NoInvestigation", BBKeys.InvestigatePosition,
                     pos => pos == Vector3.zero ? 1f : 0.3f, Vector3.zero),
                 // Higher score when far from home
                 new DistanceConsideration(
                     "DistanceFromHome",
-                    brain => brain.Blackboard.Get("homePosition", brain.transform.position),
+                    brain => brain.Blackboard.GetVector3(BBKeys.HomePosition, brain.transform.position),
                     15f,
                     false
                 ),
                 // Cooldown
-                new TimeConsideration("ReturnCooldown", "lastReturnTime", 5f)
+                new TimeConsideration("ReturnCooldown", BBKeys.LastReturnTime, 5f)
             );
         }
         
         private UtilityAction CreatePatrolAction()
         {
             var patrolBehavior = new Sequence(
-                new SetBlackboard("lastPatrolTime", () => Time.time),
-                new SetBlackboard("currentState", "Patrol"),
+                new SetBlackboard(BBKeys.LastPatrolTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Patrol"),
                 new MoveTo(
                     () => GetCurrentWaypoint(),
                     _arrivalDistance,
@@ -434,25 +437,25 @@ namespace NPCBrain.Archetypes
                 // Always available as baseline
                 new ConstantConsideration(0.8f),
                 // Less likely when alert
-                new BlackboardConsideration<float>("LowAlert", "alertLevel",
+                new BlackboardConsideration<float>("LowAlert", BBKeys.AlertLevel,
                     a => 1f - a * 0.5f, 0f),
                 // Cooldown
-                new TimeConsideration("PatrolCooldown", "lastPatrolTime", 2f)
+                new TimeConsideration("PatrolCooldown", BBKeys.LastPatrolTime, 2f)
             );
         }
         
         private Vector3 GetTargetPosition()
         {
-            if (Blackboard.TryGet<GameObject>("target", out var target) && target != null)
+            if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
             {
                 return target.transform.position;
             }
-            return Blackboard.Get<Vector3>("investigatePosition", transform.position);
+            return Blackboard.GetVector3(BBKeys.InvestigatePosition, transform.position);
         }
         
         private static Vector3 GetTargetPositionForCheck(NPCBrainController brain)
         {
-            if (brain.Blackboard.TryGet<GameObject>("target", out var target) && target != null)
+            if (brain.Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
             {
                 return target.transform.position;
             }

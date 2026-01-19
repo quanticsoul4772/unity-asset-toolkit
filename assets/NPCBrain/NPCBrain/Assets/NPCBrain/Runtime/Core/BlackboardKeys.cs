@@ -17,6 +17,7 @@ namespace NPCBrain
         public const string LastKnownPosition = "lastKnownPosition";
         public const string InvestigatePosition = "investigatePosition";
         public const string InterestPoint = "interestPoint";
+        public const string ClosestCopPosition = "closestCopPosition";
         
         // Timestamp keys for TimeConsideration
         public const string LastPatrolTime = "lastPatrolTime";
@@ -26,8 +27,25 @@ namespace NPCBrain
         public const string LastInvestigateTime = "lastInvestigateTime";
         public const string LastReturnTime = "lastReturnTime";
         public const string LastSeekTime = "lastSeekTime";
+        public const string LastArrestTime = "lastArrestTime";
+        public const string LastStealTime = "lastStealTime";
+        public const string LastFleeTime = "lastFleeTime";
+        public const string LastHideTime = "lastHideTime";
+        public const string LastSneakTime = "lastSneakTime";
+        public const string LastScoutTime = "lastScoutTime";
         
         // Sound keys
         public const string LastSoundType = "lastSoundType";
+        
+        // CopNPC keys
+        public const string CanArrest = "canArrest";
+        public const string TargetDistance = "targetDistance";
+        
+        // RobberNPC keys
+        public const string CanSeeCop = "canSeeCop";
+        public const string FearLevel = "fearLevel";
+        public const string HasLoot = "hasLoot";
+        public const string LootValue = "lootValue";
+        public const string ClosestCopDistance = "closestCopDistance";
     }
 }

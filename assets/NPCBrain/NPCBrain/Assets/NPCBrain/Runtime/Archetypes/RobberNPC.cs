@@ -60,6 +60,9 @@ namespace NPCBrain.Archetypes
         private List<LootPoint> _knownLootPoints = new List<LootPoint>(16);
         private float _lastCopSightTime;
         private bool _hasEscaped;
+        private string _cachedState = "Scout";
+        private float _lootDetectionRangeSqr;
+        private float _copDetectionRangeSqr;
         
         [Header("Performance")]
         [SerializeField] private int _maxCopRaycastsPerFrame = 2;
@@ -67,7 +70,7 @@ namespace NPCBrain.Archetypes
 
         
         /// <summary>Current behavior state for UI display.</summary>
-        public string CurrentState => Blackboard.Get("currentState", "Scout");
+        public string CurrentState => _cachedState;
         
         /// <summary>Value of loot being carried.</summary>
         public int CarriedLootValue => _carriedLootValue;
@@ -85,16 +88,18 @@ namespace NPCBrain.Archetypes
         public float TimeSinceLastCopSight => Time.time - _lastCopSightTime;
         
         /// <summary>Whether a cop is currently visible.</summary>
-        public bool CanSeeCop => Blackboard.Get("canSeeCop", false);
+        public bool CanSeeCop => Blackboard.GetBool(BBKeys.CanSeeCop, false);
         
         /// <summary>Current fear level (0-1) based on cop proximity.</summary>
-        public float FearLevel => Blackboard.Get("fearLevel", 0f);
+        public float FearLevel => Blackboard.GetFloat(BBKeys.FearLevel, 0f);
         
         protected override void Awake()
         {
             base.Awake();
             NPCRegistry<RobberNPC>.Register(this);
             _homePosition = transform.position;
+            _lootDetectionRangeSqr = _lootDetectionRange * _lootDetectionRange;
+            _copDetectionRangeSqr = _copDetectionRange * _copDetectionRange;
             
             // Explicitly initialize state (important if Unity's domain reload is disabled)
             _hasEscaped = false;
@@ -103,18 +108,18 @@ namespace NPCBrain.Archetypes
             _targetLoot = null;
             _targetCover = null;
             
-            Blackboard.Set("currentState", "Scout");
-            Blackboard.Set("fearLevel", 0f);
-            Blackboard.Set("canSeeCop", false);
-            Blackboard.Set("hasLoot", false);
-            Blackboard.Set("lootValue", 0);
+            Blackboard.Set(BBKeys.CurrentState, "Scout");
+            Blackboard.SetFloat(BBKeys.FearLevel, 0f);
+            Blackboard.SetBool(BBKeys.CanSeeCop, false);
+            Blackboard.SetBool(BBKeys.HasLoot, false);
+            Blackboard.SetInt(BBKeys.LootValue, 0);
             
             // Initialize action timestamps
-            Blackboard.Set("lastStealTime", -10f);
-            Blackboard.Set("lastFleeTime", -10f);
-            Blackboard.Set("lastHideTime", -10f);
-            Blackboard.Set("lastSneakTime", -10f);
-            Blackboard.Set("lastScoutTime", -10f);
+            Blackboard.SetFloat(BBKeys.LastStealTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastFleeTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastHideTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastSneakTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastScoutTime, -10f);
             
             // Find all loot points and cover points in scene
             RefreshKnownPoints();
@@ -152,6 +157,7 @@ namespace NPCBrain.Archetypes
         private void UpdateCopDetection()
         {
             bool canSeeCop = false;
+            float closestCopDistanceSqr = float.MaxValue;
             float closestCopDistance = float.MaxValue;
             Vector3 closestCopPosition = Vector3.zero;
             
@@ -171,17 +177,19 @@ namespace NPCBrain.Archetypes
                 if (copNPC == null || !copNPC.gameObject.activeSelf) continue;
                 
                 Vector3 copPosition = copNPC.transform.position;
-                float distance = Vector3.Distance(myPosition, copPosition);
-                if (distance < closestCopDistance)
+                // Use sqrMagnitude for distance comparison
+                float distanceSqr = (myPosition - copPosition).sqrMagnitude;
+                if (distanceSqr < closestCopDistanceSqr)
                 {
-                    closestCopDistance = distance;
+                    closestCopDistanceSqr = distanceSqr;
                     closestCopPosition = copPosition;
                 }
                 
                 // Check if we can see this cop (simple line-of-sight) with raycast budget
-                if (distance <= _copDetectionRange && _raycastCount < _maxCopRaycastsPerFrame)
+                if (distanceSqr <= _copDetectionRangeSqr && _raycastCount < _maxCopRaycastsPerFrame)
                 {
                     _raycastCount++;
+                    float distance = Mathf.Sqrt(distanceSqr);
                     Vector3 dirToCop = (copPosition - myPosition).normalized;
                     if (!Physics.Raycast(myEyePosition, dirToCop, distance - 0.5f))
                     {
@@ -191,22 +199,25 @@ namespace NPCBrain.Archetypes
                 }
             }
             
-            Blackboard.Set("canSeeCop", canSeeCop);
-            Blackboard.Set("closestCopDistance", closestCopDistance);
+            // Only compute sqrt when needed for storage
+            closestCopDistance = closestCopDistanceSqr < float.MaxValue ? Mathf.Sqrt(closestCopDistanceSqr) : float.MaxValue;
+            
+            Blackboard.SetBool(BBKeys.CanSeeCop, canSeeCop);
+            Blackboard.SetFloat(BBKeys.ClosestCopDistance, closestCopDistance);
             if (closestCopPosition != Vector3.zero)
             {
-                Blackboard.Set("closestCopPosition", closestCopPosition);
+                Blackboard.SetVector3(BBKeys.ClosestCopPosition, closestCopPosition);
             }
         }
         
         private void UpdateFearLevel()
         {
-            float fearLevel = Blackboard.Get("fearLevel", 0f);
+            float fearLevel = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
             
-            if (Blackboard.Get("canSeeCop", false))
+            if (Blackboard.GetBool(BBKeys.CanSeeCop, false))
             {
                 // Increase fear when we see a cop
-                float copDist = Blackboard.Get("closestCopDistance", 100f);
+                float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
                 float proximityFear = Mathf.Clamp01(1f - (copDist / _copDetectionRange));
                 fearLevel = Mathf.MoveTowards(fearLevel, 0.5f + proximityFear * 0.5f, Time.deltaTime * 2f);
             }
@@ -216,7 +227,7 @@ namespace NPCBrain.Archetypes
                 fearLevel = Mathf.MoveTowards(fearLevel, 0f, Time.deltaTime * 0.3f);
             }
             
-            Blackboard.Set("fearLevel", fearLevel);
+            Blackboard.SetFloat(BBKeys.FearLevel, fearLevel);
         }
         
         private void TryEscape()
@@ -226,7 +237,8 @@ namespace NPCBrain.Archetypes
             if (_escapeZone.TryEscape(gameObject, _carriedLootValue))
             {
                 _hasEscaped = true;
-                Blackboard.Set("currentState", "Escaped!");
+                _cachedState = "Escaped!";
+                Blackboard.Set(BBKeys.CurrentState, "Escaped!");
                 
                 // Disable the robber
                 gameObject.SetActive(false);
@@ -240,9 +252,10 @@ namespace NPCBrain.Archetypes
         {
             _carriedLootValue = 0;
             _isCarryingLoot = false;
-            Blackboard.Set("hasLoot", false);
-            Blackboard.Set("lootValue", 0);
-            Blackboard.Set("currentState", "Arrested!");
+            Blackboard.SetBool(BBKeys.HasLoot, false);
+            Blackboard.SetInt(BBKeys.LootValue, 0);
+            _cachedState = "Arrested!";
+            Blackboard.Set(BBKeys.CurrentState, "Arrested!");
             
             NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} was arrested!", this);
             
@@ -262,8 +275,8 @@ namespace NPCBrain.Archetypes
                 _targetLoot = null;
                 _carriedLootValue += loot.Value;
                 _isCarryingLoot = true;
-                Blackboard.Set("hasLoot", true);
-                Blackboard.Set("lootValue", _carriedLootValue);
+                Blackboard.SetBool(BBKeys.HasLoot, true);
+                Blackboard.SetInt(BBKeys.LootValue, _carriedLootValue);
                 
                 // Show loot bag visual
                 var bag = transform.Find("LootBag");
@@ -296,8 +309,8 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateFleeAction()
         {
             var fleeBehavior = new Sequence(
-                new SetBlackboard("lastFleeTime", () => Time.time),
-                new SetBlackboard("currentState", "Flee!"),
+                new SetBlackboard(BBKeys.LastFleeTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Flee!"; return "Flee!"; }),
                 new MoveTo(
                     () => GetFleePosition(),
                     _arrivalDistance,
@@ -312,13 +325,13 @@ namespace NPCBrain.Archetypes
                 fleeBehavior,
                 _fleeWeight,
                 // Must see a cop - critical gate
-                new BlackboardConsideration<bool>("SeesCop", "canSeeCop",
+                new BlackboardConsideration<bool>("SeesCop", BBKeys.CanSeeCop,
                     sees => sees ? 1f : 0f, false),
                 // Higher score when cop is close
-                new BlackboardConsideration<float>("CopProximity", "closestCopDistance",
+                new BlackboardConsideration<float>("CopProximity", BBKeys.ClosestCopDistance,
                     dist => Mathf.Clamp01(1f - (dist / _copDetectionRange)), 100f),
                 // Higher score when fear is high
-                new BlackboardConsideration<float>("FearForFlee", "fearLevel",
+                new BlackboardConsideration<float>("FearForFlee", BBKeys.FearLevel,
                     f => 0.5f + f * 0.5f, 0f)
             );
         }
@@ -326,7 +339,7 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateCarryToEscapeAction()
         {
             var carryBehavior = new Sequence(
-                new SetBlackboard("currentState", "Escaping"),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Escaping"; return "Escaping"; }),
                 new MoveTo(
                     () => GetEscapePosition(),
                     _arrivalDistance,
@@ -341,10 +354,10 @@ namespace NPCBrain.Archetypes
                 carryBehavior,
                 _carryToEscapeWeight,
                 // Must have loot - critical gate
-                new BlackboardConsideration<bool>("HasLoot", "hasLoot",
+                new BlackboardConsideration<bool>("HasLoot", BBKeys.HasLoot,
                     has => has ? 1f : 0f, false),
                 // Higher score when no cop visible
-                new BlackboardConsideration<bool>("NoCopForEscape", "canSeeCop",
+                new BlackboardConsideration<bool>("NoCopForEscape", BBKeys.CanSeeCop,
                     sees => sees ? 0.3f : 1f, false),
                 // Higher score when closer to escape
                 new DistanceConsideration(
@@ -359,8 +372,8 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateStealAction()
         {
             var stealBehavior = new Sequence(
-                new SetBlackboard("lastStealTime", () => Time.time),
-                new SetBlackboard("currentState", "Stealing"),
+                new SetBlackboard(BBKeys.LastStealTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Stealing"; return "Stealing"; }),
                 new MoveTo(
                     () => GetTargetLootPosition(),
                     1.5f,
@@ -375,26 +388,26 @@ namespace NPCBrain.Archetypes
                 stealBehavior,
                 _stealWeight,
                 // Must not have loot already
-                new BlackboardConsideration<bool>("NoLootYet", "hasLoot",
+                new BlackboardConsideration<bool>("NoLootYet", BBKeys.HasLoot,
                     has => has ? 0f : 1f, false),
                 // Must not see cop (too risky)
-                new BlackboardConsideration<bool>("NoCopForSteal", "canSeeCop",
+                new BlackboardConsideration<bool>("NoCopForSteal", BBKeys.CanSeeCop,
                     sees => sees ? 0f : 1f, false),
                 // Has a target loot nearby
                 new ConstantConsideration(0.8f), // Base score if conditions met
                 // Lower score when fear is high
-                new BlackboardConsideration<float>("LowFearForSteal", "fearLevel",
+                new BlackboardConsideration<float>("LowFearForSteal", BBKeys.FearLevel,
                     f => 1f - f * 0.7f, 0f),
                 // Cooldown
-                new TimeConsideration("StealCooldown", "lastStealTime", 3f)
+                new TimeConsideration("StealCooldown", BBKeys.LastStealTime, 3f)
             );
         }
         
         private UtilityAction CreateHideAction()
         {
             var hideBehavior = new Sequence(
-                new SetBlackboard("lastHideTime", () => Time.time),
-                new SetBlackboard("currentState", "Hiding"),
+                new SetBlackboard(BBKeys.LastHideTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Hiding"; return "Hiding"; }),
                 new MoveTo(
                     () => GetNearestCoverPosition(),
                     _arrivalDistance,
@@ -409,21 +422,21 @@ namespace NPCBrain.Archetypes
                 hideBehavior,
                 _hideWeight,
                 // Higher score when fear is high
-                new BlackboardConsideration<float>("FearForHide", "fearLevel",
+                new BlackboardConsideration<float>("FearForHide", BBKeys.FearLevel,
                     f => f > 0.3f ? 0.5f + f * 0.5f : 0.2f, 0f),
                 // Not seeing cop but was recently
-                new BlackboardConsideration<bool>("NoCopNow", "canSeeCop",
+                new BlackboardConsideration<bool>("NoCopNow", BBKeys.CanSeeCop,
                     sees => sees ? 0.3f : 1f, false),
                 // Cooldown
-                new TimeConsideration("HideCooldown", "lastHideTime", 5f)
+                new TimeConsideration("HideCooldown", BBKeys.LastHideTime, 5f)
             );
         }
         
         private UtilityAction CreateSneakAction()
         {
             var sneakBehavior = new Sequence(
-                new SetBlackboard("lastSneakTime", () => Time.time),
-                new SetBlackboard("currentState", "Sneaking"),
+                new SetBlackboard(BBKeys.LastSneakTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Sneaking"; return "Sneaking"; }),
                 new MoveTo(
                     () => GetSneakPosition(),
                     _arrivalDistance,
@@ -438,21 +451,21 @@ namespace NPCBrain.Archetypes
                 sneakBehavior,
                 _sneakWeight,
                 // Not seeing cop
-                new BlackboardConsideration<bool>("NoCopForSneak", "canSeeCop",
+                new BlackboardConsideration<bool>("NoCopForSneak", BBKeys.CanSeeCop,
                     sees => sees ? 0f : 1f, false),
                 // Moderate fear (cautious)
-                new BlackboardConsideration<float>("ModerateFear", "fearLevel",
+                new BlackboardConsideration<float>("ModerateFear", BBKeys.FearLevel,
                     f => f > 0.1f && f < 0.6f ? 0.8f : 0.3f, 0f),
                 // Cooldown
-                new TimeConsideration("SneakCooldown", "lastSneakTime", 4f)
+                new TimeConsideration("SneakCooldown", BBKeys.LastSneakTime, 4f)
             );
         }
         
         private UtilityAction CreateScoutAction()
         {
             var scoutBehavior = new Sequence(
-                new SetBlackboard("lastScoutTime", () => Time.time),
-                new SetBlackboard("currentState", "Scouting"),
+                new SetBlackboard(BBKeys.LastScoutTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Scouting"; return "Scouting"; }),
                 new MoveTo(
                     () => GetScoutPosition(),
                     _arrivalDistance,
@@ -469,17 +482,17 @@ namespace NPCBrain.Archetypes
                 // Baseline behavior
                 new ConstantConsideration(0.7f),
                 // Lower when fear is high
-                new BlackboardConsideration<float>("LowFearForScout", "fearLevel",
+                new BlackboardConsideration<float>("LowFearForScout", BBKeys.FearLevel,
                     f => 1f - f * 0.8f, 0f),
                 // Cooldown
-                new TimeConsideration("ScoutCooldown", "lastScoutTime", 3f)
+                new TimeConsideration("ScoutCooldown", BBKeys.LastScoutTime, 3f)
             );
         }
         
         private Vector3 GetFleePosition()
         {
             // Flee away from the closest cop
-            Vector3 copPos = Blackboard.Get("closestCopPosition", transform.position);
+            Vector3 copPos = Blackboard.GetVector3(BBKeys.ClosestCopPosition, transform.position);
             Vector3 fleeDir = (transform.position - copPos).normalized;
             
             // Try to flee toward escape zone if carrying loot
@@ -520,7 +533,7 @@ namespace NPCBrain.Archetypes
         private LootPoint FindNearestLoot()
         {
             LootPoint nearest = null;
-            float nearestDist = float.MaxValue;
+            float nearestDistSqr = float.MaxValue;
             
             // Cache transform.position
             Vector3 myPosition = transform.position;
@@ -530,10 +543,11 @@ namespace NPCBrain.Archetypes
                 var loot = _knownLootPoints[i];
                 if (loot == null || loot.IsStolen) continue;
                 
-                float dist = Vector3.Distance(myPosition, loot.transform.position);
-                if (dist < nearestDist && dist <= _lootDetectionRange)
+                // Use sqrMagnitude for distance comparison
+                float distSqr = (myPosition - loot.transform.position).sqrMagnitude;
+                if (distSqr < nearestDistSqr && distSqr <= _lootDetectionRangeSqr)
                 {
-                    nearestDist = dist;
+                    nearestDistSqr = distSqr;
                     nearest = loot;
                 }
             }
@@ -545,8 +559,10 @@ namespace NPCBrain.Archetypes
         {
             if (_targetLoot != null && !_targetLoot.IsStolen)
             {
-                float dist = Vector3.Distance(transform.position, _targetLoot.transform.position);
-                if (dist <= _targetLoot.StealRadius)
+                // Use sqrMagnitude for distance check
+                float distSqr = (transform.position - _targetLoot.transform.position).sqrMagnitude;
+                float stealRadiusSqr = _targetLoot.StealRadius * _targetLoot.StealRadius;
+                if (distSqr <= stealRadiusSqr)
                 {
                     PickupLoot(_targetLoot);
                 }
@@ -556,7 +572,7 @@ namespace NPCBrain.Archetypes
         private Vector3 GetNearestCoverPosition()
         {
             CoverPoint nearest = null;
-            float nearestDist = float.MaxValue;
+            float nearestDistSqr = float.MaxValue;
             
             // Cache transform.position
             Vector3 myPosition = transform.position;
@@ -566,10 +582,11 @@ namespace NPCBrain.Archetypes
                 var cover = _knownCoverPoints[i];
                 if (cover == null || !cover.CanHide(gameObject)) continue;
                 
-                float dist = Vector3.Distance(myPosition, cover.transform.position);
-                if (dist < nearestDist)
+                // Use sqrMagnitude for distance comparison
+                float distSqr = (myPosition - cover.transform.position).sqrMagnitude;
+                if (distSqr < nearestDistSqr)
                 {
-                    nearestDist = dist;
+                    nearestDistSqr = distSqr;
                     nearest = cover;
                 }
             }
