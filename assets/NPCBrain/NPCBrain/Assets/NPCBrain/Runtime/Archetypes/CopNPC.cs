@@ -75,6 +75,10 @@ namespace NPCBrain.Archetypes
         private float _lastSearchPositionTime;  // When the search position was last calculated
         private SightSensor _sightSensor;  // Cached sight sensor for re-evaluation
         
+        // Coordinated pursuit role tracking
+        private enum PursuitRole { None, Pursuer, Interceptor }
+        private PursuitRole _lastPursuitRole = PursuitRole.None;  // Track role for logging transitions
+        
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
         
@@ -736,19 +740,94 @@ namespace NPCBrain.Archetypes
             {
                 if (IsClosestCopToRobber())
                 {
+                    // Log role transition if changed
+                    if (_lastPursuitRole != PursuitRole.Pursuer)
+                    {
+                        _lastPursuitRole = PursuitRole.Pursuer;
+                        Debug.Log($"<color=blue>[{name}]</color> <color=lime>ROLE: PURSUER</color> - I'm closest, chasing directly!");
+                    }
+                    
                     // I'm closest - chase directly!
                     return CopAlertSystem.GetPredictedRobberPosition(_pursuitPredictionMultiplier);
                 }
                 else
                 {
+                    // Log role transition if changed
+                    if (_lastPursuitRole != PursuitRole.Interceptor)
+                    {
+                        _lastPursuitRole = PursuitRole.Interceptor;
+                        Debug.Log($"<color=blue>[{name}]</color> <color=yellow>ROLE: INTERCEPTOR</color> - Blocking escape zone!");
+                    }
+                    
                     // I'm not closest - intercept at escape zone!
-                    // This blocks the robber's only escape route
-                    return CopAlertSystem.EscapeZonePosition;
+                    // Spread cops around the escape zone perimeter based on cop index
+                    return GetInterceptPosition();
                 }
+            }
+            
+            // Reset role when not in coordinated pursuit
+            if (_lastPursuitRole != PursuitRole.None)
+            {
+                _lastPursuitRole = PursuitRole.None;
             }
             
             // Fallback: use standard pursuit (all chase to same position)
             return CopAlertSystem.GetPredictedRobberPosition(_pursuitPredictionMultiplier);
+        }
+        
+        /// <summary>
+        /// Gets an intercept position around the escape zone perimeter.
+        /// Spreads non-closest cops evenly around the escape zone to provide better coverage.
+        /// </summary>
+        private Vector3 GetInterceptPosition()
+        {
+            Vector3 escapeZone = CopAlertSystem.EscapeZonePosition;
+            
+            // Get this cop's index among all interceptors (non-closest cops)
+            int interceptorIndex = 0;
+            int totalInterceptors = 0;
+            var allCops = NPCRegistry<CopNPC>.Instances;
+            
+            for (int i = 0; i < allCops.Count; i++)
+            {
+                var cop = allCops[i];
+                if (cop == null || !cop.gameObject.activeSelf) continue;
+                
+                // Skip the closest cop (they're the pursuer)
+                if (cop.IsClosestCopToRobber()) continue;
+                
+                totalInterceptors++;
+                if (cop == this)
+                {
+                    interceptorIndex = totalInterceptors - 1;
+                }
+            }
+            
+            // If only one interceptor or no valid data, return center
+            if (totalInterceptors <= 1)
+            {
+                return escapeZone;
+            }
+            
+            // Spread interceptors in a semicircle facing the likely approach direction
+            // The robber typically approaches from the north (where the bank/loot is)
+            // so interceptors should spread across the southern escape zone
+            float spreadRadius = 5f;  // How far apart to spread (escape zone is ~5m radius)
+            
+            // Calculate angle: spread evenly across 180 degrees (semicircle facing north)
+            // Start from -90 degrees (west) to +90 degrees (east)
+            float angleRange = 180f;
+            float startAngle = -90f;
+            float angleStep = angleRange / (totalInterceptors + 1);
+            float angle = (startAngle + angleStep * (interceptorIndex + 1)) * Mathf.Deg2Rad;
+            
+            Vector3 offset = new Vector3(
+                Mathf.Sin(angle) * spreadRadius,  // X offset (east-west)
+                0f,
+                Mathf.Cos(angle) * spreadRadius   // Z offset (north-south, positive = toward robber)
+            );
+            
+            return escapeZone + offset;
         }
         
         /// <summary>
