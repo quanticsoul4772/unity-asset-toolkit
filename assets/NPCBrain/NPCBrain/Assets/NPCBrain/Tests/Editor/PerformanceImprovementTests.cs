@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using NPCBrain;
@@ -17,6 +18,17 @@ namespace NPCBrain.Tests.Editor
     public class PerformanceImprovementTests
     {
         private const int ITERATIONS = 10000;
+        private static MethodInfo _fastExpMethod;
+
+        [OneTimeSetUp]
+        public void Setup()
+        {
+            // Use reflection to access the private static FastExp method from UtilitySelector
+            _fastExpMethod = typeof(UtilitySelector).GetMethod("FastExp",
+                BindingFlags.NonPublic | BindingFlags.Static);
+
+            Assert.IsNotNull(_fastExpMethod, "Could not find FastExp method in UtilitySelector");
+        }
 
         #region FastExp Accuracy Tests
 
@@ -80,16 +92,13 @@ namespace NPCBrain.Tests.Editor
             Assert.Greater(speedup, 1.0f, "FastExp should be faster than Math.Exp");
         }
 
-        // Helper to access FastExp via reflection or direct implementation
+        /// <summary>
+        /// Calls the production FastExp method via reflection.
+        /// This ensures tests validate the actual implementation in UtilitySelector.
+        /// </summary>
         private static float FastExpHelper(float x)
         {
-            if (x < -20f) return 0f;
-            if (x > 20f) return (float)Math.Exp(20f);
-
-            const float a = 12102203.16156f;
-            const float b = 1064866805.0f;
-            int i = (int)(a * x + b);
-            return BitConverter.Int32BitsToSingle(i);
+            return (float)_fastExpMethod.Invoke(null, new object[] { x });
         }
 
         #endregion
