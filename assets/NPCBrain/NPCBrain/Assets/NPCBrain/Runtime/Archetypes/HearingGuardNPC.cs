@@ -56,7 +56,7 @@ namespace NPCBrain.Archetypes
         private Vector3 _homePosition;
         
         /// <summary>Current behavior state for UI display.</summary>
-        public string CurrentState => Blackboard.Get("currentState", "Patrol");
+        public string CurrentState => Blackboard.Get(BBKeys.CurrentState, "Patrol");
         
         /// <summary>Current alert level (0-1).</summary>
         public float AlertLevel => Blackboard.GetFloat(BBKeys.AlertLevel, 0f);

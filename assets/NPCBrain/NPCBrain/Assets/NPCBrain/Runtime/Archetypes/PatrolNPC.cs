@@ -65,7 +65,7 @@ namespace NPCBrain.Archetypes
         public event Action<float> OnEnergyChanged;
         
         /// <summary>Current behavior state for UI display.</summary>
-        public string CurrentState => Blackboard.Get("currentState", "Patrol");
+        public string CurrentState => _cachedState;
         
         /// <summary>Current energy level (0-1).</summary>
         public float Energy => _energy;
