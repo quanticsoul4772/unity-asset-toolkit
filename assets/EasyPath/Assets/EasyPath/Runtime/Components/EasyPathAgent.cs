@@ -204,6 +204,9 @@ namespace EasyPath
             }
 
             transform.position = currentPos + direction * moveDistance;
+
+            // Invalidate remaining distance cache since we moved
+            _remainingDistanceDirty = true;
         }
         
         private void OnReachedDestination()
