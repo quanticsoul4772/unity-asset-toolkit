@@ -18,6 +18,7 @@ namespace EasyPath.Tests.Editor
         #region Version-Based Reset Tests
 
         [Test]
+        [Category("Performance")]
         public void VersionBasedReset_IsOOneComplexity()
         {
             // Verify that IncrementPathVersion() is O(1) regardless of grid size
@@ -36,8 +37,17 @@ namespace EasyPath.Tests.Editor
 
             Object.DestroyImmediate(gridObject);
 
-            // Should complete in < 1ms (it's just incrementing an int)
+            // Log timing for local inspection
             Debug.Log($"[VersionReset] 10,000 IncrementPathVersion calls: {stopwatch.ElapsedTicks} ticks ({stopwatch.ElapsedMilliseconds}ms)");
+
+            // Skip hard timing assertion in CI environments (batch mode or CI env var)
+            bool isCI = Application.isBatchMode || System.Environment.GetEnvironmentVariable("CI") != null;
+            if (isCI)
+            {
+                Assert.Ignore("Performance timing test skipped in CI environment (run locally for timing validation)");
+            }
+
+            // Local-only assertion: should complete in < 5ms (it's just incrementing an int)
             Assert.Less(stopwatch.ElapsedMilliseconds, 5, "Version increment should be nearly instant");
         }
 
