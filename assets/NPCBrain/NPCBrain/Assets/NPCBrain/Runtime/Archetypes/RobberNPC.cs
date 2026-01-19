@@ -552,9 +552,9 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetTargetLootPosition(),
                     1.5f,
-                    _sneakSpeed
+                    _normalSpeed  // Use normal speed - urgency handled by action selection
                 ),
-                new Wait(_stealTime, () => TryStealTargetLoot())
+                new Wait(_stealTime * 0.8f, () => TryStealTargetLoot())  // Slightly faster steal
             );
             stealBehavior.Name = "StealBehavior";
             
@@ -568,16 +568,36 @@ namespace NPCBrain.Archetypes
                 // Must have loot available to steal - critical gate! (uses cached value for performance)
                 new FunctionalConsideration("LootAvailable", 
                     _ => _hasLootAvailable ? 1f : 0f),
-                // Must not see cop (too risky)
-                new BlackboardConsideration<bool>("NoCopForSteal", BBKeys.CanSeeCop,
-                    sees => sees ? 0f : 1f, false),
-                // Has a target loot nearby
-                new ConstantConsideration(0.8f), // Base score if conditions met
-                // Lower score when fear is high
-                new BlackboardConsideration<float>("LowFearForSteal", BBKeys.FearLevel,
-                    f => 1f - f * 0.7f, 0f),
-                // Cooldown
-                new TimeConsideration("StealCooldown", BBKeys.LastStealTime, 3f)
+                // Cop visibility - at high urgency, take more risks!
+                // Normally: 0 if sees cop. At high urgency: 0.5 even if sees cop (risky steal!)
+                new FunctionalConsideration("CopRiskVsUrgency",
+                    _ => {
+                        bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
+                        float urgency = Urgency;
+                        if (!seesCop) return 1f;
+                        // At high urgency, we might try to steal even with cop visible (risky!)
+                        return urgency > 0.7f ? 0.4f : 0f;
+                    }),
+                // Has a target loot nearby - boost when urgent
+                new FunctionalConsideration("BaseStealScore",
+                    _ => 0.8f + Urgency * 0.2f), // 0.8 base, up to 1.0 at max urgency
+                // Fear matters less when urgent - take risks!
+                new FunctionalConsideration("FearVsUrgencyForSteal",
+                    _ => {
+                        float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
+                        float urgency = Urgency;
+                        // Normal: fear reduces score by 70%. At max urgency: only 20%
+                        float fearMultiplier = Mathf.Lerp(0.7f, 0.2f, urgency);
+                        return 1f - fear * fearMultiplier;
+                    }),
+                // Cooldown - reduced at high urgency (act faster!)
+                new FunctionalConsideration("StealCooldown",
+                    _ => {
+                        float lastSteal = Blackboard.GetFloat(BBKeys.LastStealTime, -10f);
+                        float cooldown = Mathf.Lerp(3f, 1f, Urgency); // 3s normal, 1s at max urgency
+                        float elapsed = Time.time - lastSteal;
+                        return elapsed >= cooldown ? 1f : elapsed / cooldown;
+                    })
             );
         }
         

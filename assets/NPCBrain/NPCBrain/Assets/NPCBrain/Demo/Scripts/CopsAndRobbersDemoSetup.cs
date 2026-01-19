@@ -87,6 +87,18 @@ namespace NPCBrain.Demo
         /// <summary>Whether the heist is currently active.</summary>
         public static bool IsHeistActive => _staticGameActive;
         
+        /// <summary>
+        /// Resets static variables on domain reload (important when domain reload is disabled).
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _staticHeistTimeLimit = 120f;
+            _staticHeistStartTime = 0f;
+            _staticTimeLimitEnabled = false;
+            _staticGameActive = false;
+        }
+        
         private void Start()
         {
             Debug.Log("<color=lime>[CopsAndRobbersDemoSetup] START - Scripts are loaded and running!</color>");
