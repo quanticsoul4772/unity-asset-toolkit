@@ -132,6 +132,7 @@ namespace NPCBrain.Archetypes
             base.Awake();
             NPCRegistry<RobberNPC>.Register(this);
             _homePosition = transform.position;
+            _lastPosition = transform.position;  // Initialize to avoid false footstep on first frame
             _lootDetectionRangeSqr = _lootDetectionRange * _lootDetectionRange;
             _copDetectionRangeSqr = _copDetectionRange * _copDetectionRange;
             

@@ -36,6 +36,8 @@ namespace NPCBrain
         
         // Sound keys
         public const string LastSoundType = "lastSoundType";
+        public const string LastFootstepPosition = "lastFootstepPosition";
+        public const string LastFootstepTime = "lastFootstepTime";
         
         // CopNPC keys
         public const string CanArrest = "canArrest";
