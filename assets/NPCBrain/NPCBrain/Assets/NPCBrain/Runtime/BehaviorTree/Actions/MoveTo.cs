@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using NPCBrain.Debug;
 
 namespace NPCBrain.BehaviorTree.Actions
 {
@@ -104,6 +105,9 @@ namespace NPCBrain.BehaviorTree.Actions
             {
                 _cachedNavAgent.ResetPath();
             }
+            
+            // Unregister path from visualizer
+            NPCPathVisualizer.UnregisterPath(brain.name);
         }
         
         public override void Reset()
@@ -231,6 +235,10 @@ namespace NPCBrain.BehaviorTree.Actions
                     }
                 }
                 
+                // Register path with visualizer for debug drawing
+                NPCPathVisualizer.RegisterPath(brain.name, _currentPath, _currentWaypointIndex, 
+                    transform.position, target);
+                
                 if (_currentPath == null || _currentPath.Count == 0)
                 {
                     // Path failed - target is unreachable
@@ -261,6 +269,9 @@ namespace NPCBrain.BehaviorTree.Actions
             if (distanceToWaypoint <= waypointTolerance)
             {
                 _currentWaypointIndex++;
+                
+                // Update visualizer with new waypoint index
+                NPCPathVisualizer.UpdatePathProgress(brain.name, _currentWaypointIndex, transform.position);
                 
                 // Skip waypoints if low inertia (more aggressive corner cutting)
                 if (inertia < 0.3f && _currentWaypointIndex < _currentPath.Count - 1)

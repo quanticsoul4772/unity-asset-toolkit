@@ -4,6 +4,7 @@ using NPCBrain.Archetypes;
 using NPCBrain.Components;
 using NPCBrain.Perception;
 using NPCBrain.BehaviorTree.Composites;
+using NPCBrain.Debug;
 using EasyPath;
 
 namespace NPCBrain.Demo
@@ -34,6 +35,7 @@ namespace NPCBrain.Demo
         [Header("Pathfinding")]
         [SerializeField] private float _gridCellSize = 1f;
         [SerializeField] private bool _showPathfindingDebug = false;
+        [SerializeField] private bool _showNPCPaths = true;
         
         [Header("References (auto-populated)")]
         [SerializeField] private List<CopNPC> _cops = new List<CopNPC>();
@@ -41,6 +43,7 @@ namespace NPCBrain.Demo
         [SerializeField] private List<LootPoint> _lootPoints = new List<LootPoint>();
         [SerializeField] private EscapeZone _escapeZone;
         private EasyPathGrid _pathfindingGrid;
+        private NPCPathVisualizer _pathVisualizer;
         
         // Layer for obstacles (used by pathfinding)
         // NOTE: Layer 8 should be named "Obstacles" in Unity (Edit → Project Settings → Tags and Layers)
@@ -113,6 +116,7 @@ namespace NPCBrain.Demo
             CreatePathfindingGrid();  // Create grid AFTER all obstacles
             CreateCops();
             CreateRobbers();
+            CreatePathVisualizer();  // Create visualizer for path debug
             
             Debug.Log("<color=cyan>Cops and Robbers Demo generated!</color>\n" +
                 "Watch the AI battle it out! Robbers steal loot and escape, Cops patrol and arrest.");
@@ -167,6 +171,8 @@ namespace NPCBrain.Demo
             _lootPoints.Clear();
             _escapeZone = null;
             _pathfindingGrid = null;
+            _pathVisualizer = null;
+            NPCPathVisualizer.ClearAllPaths();
         }
         
         private void OnDestroy()
@@ -596,6 +602,17 @@ namespace NPCBrain.Demo
         }
         
         /// <summary>
+        /// Creates the NPCPathVisualizer for debug path visualization.
+        /// </summary>
+        private void CreatePathVisualizer()
+        {
+            var visualizerObj = new GameObject("NPCPathVisualizer");
+            visualizerObj.transform.SetParent(transform);
+            _pathVisualizer = visualizerObj.AddComponent<NPCPathVisualizer>();
+            _pathVisualizer.ShowPaths = _showNPCPaths;
+        }
+        
+        /// <summary>
         /// Creates an EasyPathGrid for A* pathfinding after all obstacles have been placed.
         /// </summary>
         private void CreatePathfindingGrid()
@@ -877,6 +894,7 @@ namespace NPCBrain.Demo
                 GUILayout.Label("<b>🗺️ A* PATHFINDING</b>");
                 GUILayout.Label($"  Grid: {_pathfindingGrid.Width}x{_pathfindingGrid.Height} cells");
                 GUILayout.Label($"  Walkable: {_pathfindingGrid.WalkableCount} cells");
+                GUILayout.Label($"  Active paths: {NPCPathVisualizer.PathCount}");
                 GUILayout.Label("  Integrated with Criticality!");
                 GUILayout.EndVertical();
             }
@@ -890,6 +908,30 @@ namespace NPCBrain.Demo
             {
                 RestartGame();
             }
+            
+            // Debug visualization toggles
+            GUILayout.Space(5);
+            GUILayout.Label("<b>Debug Visualization (Scene View)</b>");
+            
+            bool newShowPaths = GUILayout.Toggle(_showNPCPaths, " Show NPC Paths");
+            if (newShowPaths != _showNPCPaths)
+            {
+                _showNPCPaths = newShowPaths;
+                if (_pathVisualizer != null)
+                {
+                    _pathVisualizer.ShowPaths = _showNPCPaths;
+                }
+            }
+            
+            bool newShowGrid = GUILayout.Toggle(_showPathfindingDebug, " Show Pathfinding Grid");
+            if (newShowGrid != _showPathfindingDebug)
+            {
+                _showPathfindingDebug = newShowGrid;
+                // Note: Grid debug is controlled via the EasyPathGrid inspector
+            }
+            
+            GUILayout.Space(5);
+            GUILayout.Label("  <size=10><i>View in Scene window with Gizmos enabled</i></size>");
             GUILayout.Label("  Drag camera with mouse to observe");
             GUILayout.Label("  All AI is fully autonomous!");
             GUILayout.EndVertical();
