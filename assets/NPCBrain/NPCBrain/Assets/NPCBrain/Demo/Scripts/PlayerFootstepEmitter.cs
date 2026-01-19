@@ -26,6 +26,9 @@ namespace NPCBrain.Demo
         private bool _isMoving;
         private bool _isSprinting;
         
+        // Cached squared threshold for movement detection (0.01f squared)
+        private const float MovementThresholdSqr = 0.0001f;
+        
         /// <summary>The most recent footstep sound emitted.</summary>
         public SoundEvent LastFootstep { get; private set; }
         
@@ -53,8 +56,9 @@ namespace NPCBrain.Demo
         private void CheckMovement()
         {
             Vector3 currentPos = transform.position;
-            float movement = Vector3.Distance(currentPos, _lastPosition);
-            _isMoving = movement > 0.01f;
+            // Use sqrMagnitude to avoid sqrt operation
+            float movementSqr = (currentPos - _lastPosition).sqrMagnitude;
+            _isMoving = movementSqr > MovementThresholdSqr;
             
             // Check sprint
             var keyboard = Keyboard.current;

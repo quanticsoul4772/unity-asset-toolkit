@@ -31,9 +31,13 @@ namespace NPCBrain.Demo
         
         private List<Vector3> _recentGunshotPositions = new List<Vector3>();
         private List<float> _gunshotTimes = new List<float>();
+        private Camera _cachedCamera;
         
         private void Start()
         {
+            // Cache Camera.main to avoid repeated FindGameObjectWithTag calls
+            _cachedCamera = Camera.main;
+            
             if (_autoGenerate)
             {
                 GenerateScene();
@@ -52,9 +56,9 @@ namespace NPCBrain.Demo
             if (mouse == null) return;
             
             // Left click to fire gunshot at mouse position
-            if (mouse.leftButton.wasPressedThisFrame)
+            if (mouse.leftButton.wasPressedThisFrame && _cachedCamera != null)
             {
-                Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
+                Ray ray = _cachedCamera.ScreenPointToRay(mouse.position.ReadValue());
                 if (Physics.Raycast(ray, out RaycastHit hit, 100f))
                 {
                     Vector3 gunshotPos = hit.point;

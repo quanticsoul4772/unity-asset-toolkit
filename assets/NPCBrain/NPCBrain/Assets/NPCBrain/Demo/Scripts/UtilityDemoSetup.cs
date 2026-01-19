@@ -28,9 +28,16 @@ namespace NPCBrain.Demo
         
         private List<GameObject> _interestPoints = new List<GameObject>();
         private float _lastInterestSpawnTime;
+        private Camera _cachedCamera;
+        
+        // Cached squared distance for interest point notification
+        private const float InterestNotifyDistanceSqr = 225f; // 15 * 15
         
         private void Start()
         {
+            // Cache Camera.main to avoid repeated FindGameObjectWithTag calls
+            _cachedCamera = Camera.main;
+            
             if (_autoGenerate)
             {
                 GenerateScene();
@@ -246,12 +253,10 @@ namespace NPCBrain.Demo
             if (mouse == null || keyboard == null) return;
             
             // Left click to create interest point at mouse position
-            if (mouse.leftButton.wasPressedThisFrame)
+            if (mouse.leftButton.wasPressedThisFrame && _cachedCamera != null)
             {
-                var cam = Camera.main;
-                if (cam != null)
                 {
-                    Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+                    Ray ray = _cachedCamera.ScreenPointToRay(mouse.position.ReadValue());
                     if (Physics.Raycast(ray, out RaycastHit hit))
                     {
                         SpawnInterestPoint(hit.point);
@@ -309,12 +314,14 @@ namespace NPCBrain.Demo
             lifetime.Position = position;
             
             // Register NPCs that should be notified when this point expires
-            foreach (var npc in _npcs)
+            // Use for loop and sqrMagnitude for better performance
+            for (int i = 0; i < _npcs.Count; i++)
             {
+                var npc = _npcs[i];
                 if (npc != null)
                 {
-                    float distance = Vector3.Distance(npc.transform.position, position);
-                    if (distance < 15f)
+                    float distSqr = (npc.transform.position - position).sqrMagnitude;
+                    if (distSqr < InterestNotifyDistanceSqr)
                     {
                         npc.SetInterestPoint(position);
                         lifetime.RegisterNPC(npc);

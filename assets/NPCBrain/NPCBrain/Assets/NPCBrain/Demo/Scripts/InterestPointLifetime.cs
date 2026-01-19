@@ -15,6 +15,9 @@ namespace NPCBrain.Demo
         private float _spawnTime;
         private List<UtilityNPC> _registeredNPCs = new List<UtilityNPC>();
         
+        // Cached squared threshold for position comparison (0.1f squared)
+        private const float PositionMatchThresholdSqr = 0.01f;
+        
         private void Start()
         {
             _spawnTime = Time.time;
@@ -36,13 +39,15 @@ namespace NPCBrain.Demo
             if (Time.time - _spawnTime > Duration)
             {
                 // Clear interest point from all registered NPCs before destroying
-                foreach (var npc in _registeredNPCs)
+                // Use for loop and sqrMagnitude for better performance
+                for (int i = 0; i < _registeredNPCs.Count; i++)
                 {
+                    var npc = _registeredNPCs[i];
                     if (npc != null)
                     {
                         // Only clear if the NPC's interest point matches this one
                         Vector3 npcInterest = npc.Blackboard.Get("interestPoint", Vector3.zero);
-                        if (Vector3.Distance(npcInterest, Position) < 0.1f)
+                        if ((npcInterest - Position).sqrMagnitude < PositionMatchThresholdSqr)
                         {
                             npc.ClearInterestPoint();
                         }

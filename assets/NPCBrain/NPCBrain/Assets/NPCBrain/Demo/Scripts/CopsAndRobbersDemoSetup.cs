@@ -63,9 +63,11 @@ namespace NPCBrain.Demo
         private void CheckGameEnd()
         {
             // Check if all robbers are captured or escaped
+            // Use for loop to avoid enumerator allocation
             int activeRobbers = 0;
-            foreach (var robber in _robbers)
+            for (int i = 0; i < _robbers.Count; i++)
             {
+                var robber = _robbers[i];
                 if (robber != null && robber.gameObject.activeSelf && !robber.HasEscaped)
                 {
                     activeRobbers++;
