@@ -71,6 +71,8 @@ namespace NPCBrain.Archetypes
         private float _lastPursueLogTime;
         private float _lastActionLogTime;
         private Vector3 _lastTrackedRobberPosition;  // For calculating robber velocity/direction
+        private Vector3 _cachedSearchPosition;  // Cached search position to avoid jittery movement
+        private float _lastSearchPositionTime;  // When the search position was last calculated
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
@@ -889,25 +891,58 @@ namespace NPCBrain.Archetypes
         }
         
         /// <summary>
-        /// Gets a position to search - moves toward the last known alarm location or a random patrol point.
+        /// Gets a position to search - moves toward the last known alarm location with cop-specific offsets.
+        /// Uses cached position to avoid jittery movement, regenerating every 5 seconds or when arrived.
         /// </summary>
         private Vector3 GetSearchPosition()
         {
-            // First priority: move toward the last alarm location
-            Vector3 alarmLocation = Blackboard.GetVector3(BBKeys.AlarmLocation, Vector3.zero);
-            if (alarmLocation != Vector3.zero)
+            // Check if we need to regenerate the search position
+            // Regenerate if: never set, or 5+ seconds old, or we're close to current position
+            bool needNewPosition = _cachedSearchPosition == Vector3.zero ||
+                                   Time.time - _lastSearchPositionTime > 5f ||
+                                   Vector3.Distance(transform.position, _cachedSearchPosition) < _arrivalDistance * 2f;
+            
+            if (needNewPosition)
             {
-                // Add some randomness to spread cops out
-                Vector3 offset = new Vector3(
-                    UnityEngine.Random.Range(-8f, 8f),
-                    0f,
-                    UnityEngine.Random.Range(-8f, 8f)
-                );
-                return alarmLocation + offset;
+                _cachedSearchPosition = CalculateSearchPosition();
+                _lastSearchPositionTime = Time.time;
             }
             
-            // Fallback: move to a random waypoint at faster pace
-            return GetCurrentWaypoint();
+            return _cachedSearchPosition;
+        }
+        
+        /// <summary>
+        /// Calculates a new search position based on cop index for better coverage.
+        /// </summary>
+        private Vector3 CalculateSearchPosition()
+        {
+            Vector3 alarmLocation = Blackboard.GetVector3(BBKeys.AlarmLocation, Vector3.zero);
+            if (alarmLocation == Vector3.zero)
+            {
+                // Fallback: move to a random waypoint
+                return GetCurrentWaypoint();
+            }
+            
+            // Use cop index to spread out - each cop searches a different quadrant
+            int copIndex = NPCRegistry<CopNPC>.Instances.IndexOf(this);
+            int copCount = Mathf.Max(1, NPCRegistry<CopNPC>.Instances.Count);
+            
+            // Calculate angle based on cop index (spread evenly around the alarm location)
+            float baseAngle = (copIndex * 360f / copCount) * Mathf.Deg2Rad;
+            // Add some randomness to the angle (±30 degrees)
+            float angleOffset = UnityEngine.Random.Range(-0.5f, 0.5f);
+            float angle = baseAngle + angleOffset;
+            
+            // Distance from alarm location (8-15m radius)
+            float distance = UnityEngine.Random.Range(8f, 15f);
+            
+            Vector3 offset = new Vector3(
+                Mathf.Cos(angle) * distance,
+                0f,
+                Mathf.Sin(angle) * distance
+            );
+            
+            return alarmLocation + offset;
         }
         
         private UtilityAction CreatePatrolAction()
