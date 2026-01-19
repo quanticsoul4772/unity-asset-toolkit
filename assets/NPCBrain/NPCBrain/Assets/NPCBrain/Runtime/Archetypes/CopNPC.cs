@@ -153,7 +153,7 @@ namespace NPCBrain.Archetypes
             var robber = target.GetComponent<RobberNPC>();
             if (robber == null)
             {
-                Debug.Log($"<color=blue>[{name}]</color> Target acquired but not a RobberNPC: {target.name}");
+                // Don't log non-robber targets - too spammy
                 return;
             }
             
@@ -181,15 +181,17 @@ namespace NPCBrain.Archetypes
         
         private void HandleTargetLost(GameObject target)
         {
-            Debug.Log($"<color=blue>[{name}]</color> <color=red>TARGET LOST: {target?.name}</color>");
+            // Only log if it's a robber we were tracking
+            var robber = target?.GetComponent<RobberNPC>();
             
             // Single lookup instead of Has + Get
             if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var currentTarget) && currentTarget == target)
             {
-                Debug.Log($"<color=blue>[{name}]</color> Clearing target from blackboard");
+                Debug.Log($"<color=blue>[{name}]</color> <color=red>LOST SIGHT OF ROBBER: {target?.name}</color>");
                 Blackboard.Remove(BBKeys.Target);
                 _cachedTargetRobber = null;
             }
+            // Don't log losing sight of walls/buildings - too spammy
         }
         
         private void HandleSoundHeard(SoundEvent sound)
