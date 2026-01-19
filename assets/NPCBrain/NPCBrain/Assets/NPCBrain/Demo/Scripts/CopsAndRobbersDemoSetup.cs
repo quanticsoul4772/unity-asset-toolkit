@@ -45,6 +45,7 @@ namespace NPCBrain.Demo
         
         private void Start()
         {
+            Debug.Log("<color=lime>[CopsAndRobbersDemoSetup] START - Scripts are loaded and running!</color>");
             if (_autoGenerate)
             {
                 GenerateScene();
