@@ -65,6 +65,11 @@ namespace NPCBrain.BehaviorTree.Composites
         private const float LOG_INTERVAL = 2f; // Log every 2 seconds max
         private string _lastLoggedActionName;
         
+        // Interruption log throttle: avoid spam when same interruption keeps happening
+        private string _lastInterruptFromAction;
+        private string _lastInterruptToAction;
+        private float _lastInterruptLogTime;
+        
         /// <summary>
         /// When true, logs warnings when no action can be selected.
         /// Also enabled when NPCBrainDebug.LogUtility is true.
@@ -202,10 +207,7 @@ namespace NPCBrain.BehaviorTree.Composites
                     // If a significantly better action exists, interrupt current and switch
                     if (bestAction != null)
                     {
-                        if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
-                        {
-                            Debug.Log($"<color=yellow>[UtilitySelector]</color> Interrupting {_currentAction.Name} (score {currentScore:F2}) for {bestAction.Name} (score {bestScore:F2})");
-                        }
+                        LogInterruption(_currentAction.Name, bestAction.Name, currentScore, bestScore, false);
                         _currentAction.Action.Abort(brain);
                         _currentAction = bestAction;
                         _currentActionIndex = bestIndex;
@@ -215,10 +217,7 @@ namespace NPCBrain.BehaviorTree.Composites
                     {
                         // IMPORTANT: If current action scores 0, we MUST switch to something else!
                         // Use the best positive action we already found during the loop
-                        if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
-                        {
-                            Debug.Log($"<color=yellow>[UtilitySelector]</color> Force-switching from {_currentAction.Name} (score 0) to {bestPositiveAction.Name} (score {bestPositiveScore:F2})");
-                        }
+                        LogInterruption(_currentAction.Name, bestPositiveAction.Name, currentScore, bestPositiveScore, true);
                         _currentAction.Action.Abort(brain);
                         _currentAction = bestPositiveAction;
                         _currentActionIndex = bestPositiveIndex;
@@ -485,6 +484,9 @@ namespace NPCBrain.BehaviorTree.Composites
             _lastSelectedActionIndex = -1; // Full reset clears inertia history
             _lastLoggedActionName = null; // Reset logging state
             _lastLogTime = 0f;
+            _lastInterruptFromAction = null; // Reset interruption logging
+            _lastInterruptToAction = null;
+            _lastInterruptLogTime = 0f;
         }
 
         /// <summary>
@@ -505,6 +507,9 @@ namespace NPCBrain.BehaviorTree.Composites
             _lastSelectedActionIndex = -1; // Full abort clears inertia history
             _lastLoggedActionName = null; // Reset logging state
             _lastLogTime = 0f;
+            _lastInterruptFromAction = null; // Reset interruption logging
+            _lastInterruptToAction = null;
+            _lastInterruptLogTime = 0f;
             base.Abort(brain);
         }
         
@@ -591,6 +596,37 @@ namespace NPCBrain.BehaviorTree.Composites
         private bool ShouldLogWarning()
         {
             return LogWarnings || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility);
+        }
+        
+        /// <summary>
+        /// Logs interruption events, but only when it's a NEW interruption (different from/to pair)
+        /// or enough time has passed since the last log of the same interruption.
+        /// </summary>
+        private void LogInterruption(string fromAction, string toAction, float fromScore, float toScore, bool isForceSwitch)
+        {
+            if (!NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+                return;
+                
+            float currentTime = Time.time;
+            bool sameInterruption = fromAction == _lastInterruptFromAction && toAction == _lastInterruptToAction;
+            bool timeElapsed = currentTime - _lastInterruptLogTime >= LOG_INTERVAL;
+            
+            // Only log if it's a different interruption OR enough time has passed
+            if (sameInterruption && !timeElapsed)
+                return;
+                
+            _lastInterruptFromAction = fromAction;
+            _lastInterruptToAction = toAction;
+            _lastInterruptLogTime = currentTime;
+            
+            if (isForceSwitch)
+            {
+                Debug.Log($"<color=yellow>[UtilitySelector]</color> Force-switching from {fromAction} (score {fromScore:F2}) to {toAction} (score {toScore:F2})");
+            }
+            else
+            {
+                Debug.Log($"<color=yellow>[UtilitySelector]</color> Interrupting {fromAction} (score {fromScore:F2}) for {toAction} (score {toScore:F2})");
+            }
         }
     }
 }
