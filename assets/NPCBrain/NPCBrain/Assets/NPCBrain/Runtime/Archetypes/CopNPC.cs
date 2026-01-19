@@ -78,6 +78,8 @@ namespace NPCBrain.Archetypes
         // Coordinated pursuit role tracking
         private enum PursuitRole { None, Pursuer, Interceptor }
         private PursuitRole _lastPursuitRole = PursuitRole.None;  // Track role for logging transitions
+        private Vector3 _cachedInterceptPosition;  // Cached intercept position to avoid jittery movement
+        private float _lastInterceptPositionTime;  // When the intercept position was last calculated
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
@@ -777,11 +779,35 @@ namespace NPCBrain.Archetypes
         
         /// <summary>
         /// Gets an intercept position around the escape zone perimeter.
-        /// Spreads non-closest cops evenly around the escape zone to provide better coverage.
+        /// Uses cached position to avoid jittery movement, regenerating every 2 seconds or when arrived.
         /// </summary>
         private Vector3 GetInterceptPosition()
         {
+            // Check if we need to regenerate the intercept position
+            // Regenerate if: never set, or 2+ seconds old, or we're close to current position
+            bool needNewPosition = _cachedInterceptPosition == Vector3.zero ||
+                                   Time.time - _lastInterceptPositionTime > 2f ||
+                                   Vector3.Distance(transform.position, _cachedInterceptPosition) < _arrivalDistance * 2f;
+            
+            if (needNewPosition)
+            {
+                _cachedInterceptPosition = CalculateInterceptPosition();
+                _lastInterceptPositionTime = Time.time;
+            }
+            
+            return _cachedInterceptPosition;
+        }
+        
+        /// <summary>
+        /// Calculates an intercept position around the escape zone perimeter.
+        /// Spreads non-closest cops evenly around the escape zone to provide better coverage.
+        /// </summary>
+        private Vector3 CalculateInterceptPosition()
+        {
             Vector3 escapeZone = CopAlertSystem.EscapeZonePosition;
+            
+            // Find who the closest cop is (the pursuer) - do this once to avoid O(n²)
+            CopNPC closestCop = GetClosestCopToRobber();
             
             // Get this cop's index among all interceptors (non-closest cops)
             int interceptorIndex = 0;
@@ -794,7 +820,7 @@ namespace NPCBrain.Archetypes
                 if (cop == null || !cop.gameObject.activeSelf) continue;
                 
                 // Skip the closest cop (they're the pursuer)
-                if (cop.IsClosestCopToRobber()) continue;
+                if (cop == closestCop) continue;
                 
                 totalInterceptors++;
                 if (cop == this)
@@ -831,32 +857,47 @@ namespace NPCBrain.Archetypes
         }
         
         /// <summary>
-        /// Determines if this cop is the closest to the last known robber position.
-        /// Used for coordinated pursuit - closest cop chases while others intercept.
+        /// Finds the closest cop to the robber's last known position.
+        /// Uses deterministic tie-breaking (lower registry index wins).
         /// </summary>
-        private bool IsClosestCopToRobber()
+        private static CopNPC GetClosestCopToRobber()
         {
             Vector3 robberPos = CopAlertSystem.LastKnownRobberPosition;
-            if (robberPos == Vector3.zero) return true; // No data, assume closest
+            if (robberPos == Vector3.zero) return null;
             
-            float myDistanceSqr = (transform.position - robberPos).sqrMagnitude;
+            CopNPC closestCop = null;
+            float closestDistanceSqr = float.MaxValue;
+            int closestIndex = int.MaxValue;
             
-            // Check all other cops
             var allCops = NPCRegistry<CopNPC>.Instances;
             for (int i = 0; i < allCops.Count; i++)
             {
-                var otherCop = allCops[i];
-                if (otherCop == this || otherCop == null || !otherCop.gameObject.activeSelf)
-                    continue;
+                var cop = allCops[i];
+                if (cop == null || !cop.gameObject.activeSelf) continue;
                 
-                float otherDistanceSqr = (otherCop.transform.position - robberPos).sqrMagnitude;
-                if (otherDistanceSqr < myDistanceSqr)
+                float distanceSqr = (cop.transform.position - robberPos).sqrMagnitude;
+                
+                // Deterministic tie-breaking: if equal distance, lower index wins
+                if (distanceSqr < closestDistanceSqr || 
+                    (Mathf.Approximately(distanceSqr, closestDistanceSqr) && i < closestIndex))
                 {
-                    return false; // Another cop is closer
+                    closestDistanceSqr = distanceSqr;
+                    closestCop = cop;
+                    closestIndex = i;
                 }
             }
             
-            return true; // I'm the closest!
+            return closestCop;
+        }
+        
+        /// <summary>
+        /// Determines if this cop is the closest to the last known robber position.
+        /// Used for coordinated pursuit - closest cop chases while others intercept.
+        /// Uses deterministic tie-breaking (lower registry index wins ties).
+        /// </summary>
+        private bool IsClosestCopToRobber()
+        {
+            return GetClosestCopToRobber() == this;
         }
         
         private UtilityAction CreateTrackFootstepsAction()
