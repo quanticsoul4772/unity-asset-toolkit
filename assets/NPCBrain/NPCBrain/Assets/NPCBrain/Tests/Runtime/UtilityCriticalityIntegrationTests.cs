@@ -251,13 +251,13 @@ namespace NPCBrain.Tests.Runtime
 
             // Execute once to establish a "previous" action
             selector.Execute(_brain);
-            string firstAction = selector.CurrentAction?.Name;
-            Assert.IsNotNull(firstAction, "First action should be selected");
+            string previousAction = selector.CurrentAction?.Name;
+            Assert.IsNotNull(previousAction, "First action should be selected");
 
             // Complete the action so inertia can apply on next selection
             yield return new WaitForSeconds(0.02f);
 
-            // Count how often the same action is selected with high inertia
+            // Count how often consecutive actions repeat with high inertia
             // Note: Don't reset the selector inside the loop - we need to preserve
             // _lastSelectedActionIndex so inertia can apply between selections
             int sameActionCount = 0;
@@ -274,19 +274,21 @@ namespace NPCBrain.Tests.Runtime
                 } while (status == NodeStatus.Running);
 
                 // After completion, selector.Execute will choose a new action
-                // Inertia should favor the previous action (firstAction)
+                // Inertia should favor repeating the previous action
                 selector.Execute(_brain);
 
-                if (selector.CurrentAction?.Name == firstAction)
+                string currentAction = selector.CurrentAction?.Name;
+                if (currentAction == previousAction)
                 {
                     sameActionCount++;
                 }
+                previousAction = currentAction;
             }
 
             // High inertia should favor the previous action
-            // With equal scores and high inertia, we expect > 50% same action
-            Assert.Greater(sameActionCount, totalRuns * 0.4f,
-                $"High inertia should favor previous action. Same action selected {sameActionCount}/{totalRuns} times");
+            // With equal scores and high inertia, we expect > 50% consecutive repeats
+            Assert.Greater(sameActionCount, totalRuns * 0.5f,
+                $"High inertia should favor previous action. Same action repeated {sameActionCount}/{totalRuns} times");
         }
 
         [UnityTest]
