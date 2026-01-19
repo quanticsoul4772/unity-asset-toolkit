@@ -72,6 +72,33 @@ namespace NPCBrain.Archetypes
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
         
+        /// <summary>The robber's role in the scenario.</summary>
+        public string Role => "Bank Robber";
+        
+        /// <summary>The robber's primary objective.</summary>
+        public string Goal => "Steal money and escape without getting caught";
+        
+        /// <summary>Dynamic explanation of current behavior.</summary>
+        public string CurrentReason
+        {
+            get
+            {
+                if (_cachedState == "Flee!") return "Cop spotted - need to escape!";
+                if (_cachedState == "Escaping") return _isCarryingLoot ? $"Got ${_carriedLootValue} - heading to escape zone!" : "Making my getaway!";
+                if (_cachedState == "Stealing") return "Coast is clear - grabbing the loot!";
+                if (_cachedState == "Hiding")
+                {
+                    float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
+                    return fear > 0.5f ? "Too dangerous - laying low" : "Staying out of sight";
+                }
+                if (_cachedState == "Sneaking") return _isCarryingLoot ? "Moving carefully with the goods" : "Approaching target quietly";
+                if (_cachedState == "Scouting") return "Looking for opportunities...";
+                if (_cachedState == "Arrested!") return "Busted!";
+                if (_cachedState == "Escaped!") return "Got away with the loot!";
+                return "Planning the heist...";
+            }
+        }
+        
         /// <summary>Value of loot being carried.</summary>
         public int CarriedLootValue => _carriedLootValue;
         

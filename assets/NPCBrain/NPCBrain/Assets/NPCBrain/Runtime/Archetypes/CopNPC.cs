@@ -62,6 +62,34 @@ namespace NPCBrain.Archetypes
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
         
+        /// <summary>The cop's role in the scenario.</summary>
+        public string Role => "Bank Security Guard";
+        
+        /// <summary>The cop's primary objective.</summary>
+        public string Goal => "Protect the bank money from theft";
+        
+        /// <summary>Dynamic explanation of current behavior.</summary>
+        public string CurrentReason
+        {
+            get
+            {
+                if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
+                {
+                    if (_cachedState == "Arresting!") return "Robber within reach - making arrest!";
+                    if (_cachedState == "Chase!") return "Robber spotted - pursuing suspect!";
+                }
+                if (_cachedState == "Investigate-Alarm") return "Alarm triggered - responding to potential robbery!";
+                if (_cachedState == "Investigate") return "Suspicious sound heard - checking it out";
+                if (_cachedState == "Return") return "No threats detected - returning to patrol area";
+                if (_cachedState == "Patrol")
+                {
+                    float alert = Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
+                    return alert > 0.3f ? "Patrolling - staying vigilant" : "Routine patrol - area secure";
+                }
+                return "Monitoring the area";
+            }
+        }
+        
         /// <summary>Current alert level (0-1).</summary>
         public float AlertLevel => Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
         

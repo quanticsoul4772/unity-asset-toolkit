@@ -19,7 +19,7 @@ namespace NPCBrain.Demo
         
         [Header("NPC Counts")]
         [SerializeField] private int _copCount = 4;
-        [SerializeField] private int _robberCount = 3;
+        [SerializeField] private int _robberCount = 1;
         [SerializeField] private int _lootCount = 6;
         
         [Header("Colors")]
@@ -794,7 +794,11 @@ namespace NPCBrain.Demo
             // Criticality info
             string critInfo = GetCriticalityInfo(cop);
             
-            GUILayout.Label($"  <b>{cop.name}</b>: <color={stateColor}>{actionName}</color>{critInfo}");
+            // Role and Goal display
+            GUILayout.Label($"  <b>{cop.name}</b> - <i>{cop.Role}</i>");
+            GUILayout.Label($"      <size=10><color=#888888>Goal: {cop.Goal}</color></size>");
+            GUILayout.Label($"      Action: <color={stateColor}>{actionName}</color>{critInfo}");
+            GUILayout.Label($"      <color=#AADDFF>→ {cop.CurrentReason}</color>");
             GUILayout.Label($"      Alert: {alert:F2} | Arrests: {cop.ArrestCount}");
         }
         
@@ -803,7 +807,9 @@ namespace NPCBrain.Demo
             if (!robber.gameObject.activeSelf)
             {
                 string status = robber.HasEscaped ? "<color=green>ESCAPED!</color>" : "<color=red>ARRESTED!</color>";
-                GUILayout.Label($"  <b>{robber.name}</b>: {status}");
+                GUILayout.Label($"  <b>{robber.name}</b> - <i>{robber.Role}</i>");
+                GUILayout.Label($"      {status}");
+                GUILayout.Label($"      <color=#AADDFF>→ {robber.CurrentReason}</color>");
                 return;
             }
             
@@ -823,7 +829,11 @@ namespace NPCBrain.Demo
             string lootInfo = robber.IsCarryingLoot ? $" 💰${robber.CarriedLootValue}" : "";
             string fearInfo = robber.FearLevel > 0.3f ? " 😰" : "";
             
-            GUILayout.Label($"  <b>{robber.name}</b>: <color={stateColor}>{actionName}</color>{critInfo}{lootInfo}{fearInfo}");
+            // Role and Goal display
+            GUILayout.Label($"  <b>{robber.name}</b> - <i>{robber.Role}</i>{lootInfo}{fearInfo}");
+            GUILayout.Label($"      <size=10><color=#888888>Goal: {robber.Goal}</color></size>");
+            GUILayout.Label($"      Action: <color={stateColor}>{actionName}</color>{critInfo}");
+            GUILayout.Label($"      <color=#FFDDAA>→ {robber.CurrentReason}</color>");
             GUILayout.Label($"      Fear: {robber.FearLevel:F2} | CanSeeCop: {robber.CanSeeCop}");
         }
         
