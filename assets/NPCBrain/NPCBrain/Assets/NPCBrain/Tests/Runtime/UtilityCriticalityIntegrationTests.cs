@@ -258,19 +258,29 @@ namespace NPCBrain.Tests.Runtime
             yield return new WaitForSeconds(0.02f);
 
             // Count how often the same action is selected with high inertia
+            // Note: Don't reset the selector inside the loop - we need to preserve
+            // _lastSelectedActionIndex so inertia can apply between selections
             int sameActionCount = 0;
             int totalRuns = 20;
 
             for (int i = 0; i < totalRuns; i++)
             {
-                selector.Reset();
+                // Execute until action completes (Wait nodes complete after their duration)
+                NodeStatus status;
+                do
+                {
+                    status = selector.Execute(_brain);
+                    yield return null;
+                } while (status == NodeStatus.Running);
+
+                // After completion, selector.Execute will choose a new action
+                // Inertia should favor the previous action (firstAction)
                 selector.Execute(_brain);
 
                 if (selector.CurrentAction?.Name == firstAction)
                 {
                     sameActionCount++;
                 }
-                yield return null;
             }
 
             // High inertia should favor the previous action
@@ -305,9 +315,20 @@ namespace NPCBrain.Tests.Runtime
             int aCount = 0, bCount = 0, cCount = 0;
             int totalRuns = 30;
 
+            // Note: Don't reset the selector inside the loop - we need to preserve
+            // _lastSelectedActionIndex so inertia behavior can be properly tested
             for (int i = 0; i < totalRuns; i++)
             {
-                selector.Reset();
+                // Execute until action completes (Wait nodes complete after their duration)
+                NodeStatus status;
+                do
+                {
+                    status = selector.Execute(_brain);
+                    yield return null;
+                } while (status == NodeStatus.Running);
+
+                // After completion, selector.Execute will choose a new action
+                // With low inertia, should see more variation
                 selector.Execute(_brain);
 
                 switch (selector.CurrentAction?.Name)
@@ -316,7 +337,6 @@ namespace NPCBrain.Tests.Runtime
                     case "B": bCount++; break;
                     case "C": cCount++; break;
                 }
-                yield return null;
             }
 
             // With low inertia and equal scores, all actions should have some selection
