@@ -41,6 +41,15 @@ namespace NPCBrain
         public const string CanArrest = "canArrest";
         public const string TargetDistance = "targetDistance";
         
+        // Shared alert keys
+        public const string HasSharedAlert = "hasSharedAlert";
+        public const string SharedAlertPosition = "sharedAlertPosition";
+        public const string IsRespondingToAlert = "isRespondingToAlert";
+        
+        // Shared alert keys
+        public const string RespondingToAlert = "respondingToAlert";
+        public const string AlertPosition = "alertPosition";
+        
         // RobberNPC keys
         public const string CanSeeCop = "canSeeCop";
         public const string FearLevel = "fearLevel";

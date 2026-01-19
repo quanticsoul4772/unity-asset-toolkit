@@ -48,6 +48,7 @@ namespace NPCBrain.Archetypes
         [Header("Utility Weights")]
         [SerializeField] private float _arrestWeight = 1.1f;
         [SerializeField] private float _chaseWeight = 1.0f;
+        [SerializeField] private float _respondToAlertWeight = 0.95f;
         [SerializeField] private float _alarmInvestigateWeight = 0.9f;
         [SerializeField] private float _soundInvestigateWeight = 0.5f;
         [SerializeField] private float _returnWeight = 0.4f;
@@ -78,6 +79,7 @@ namespace NPCBrain.Archetypes
                     if (_cachedState == "Arresting!") return "Robber within reach - making arrest!";
                     if (_cachedState == "Chase!") return "Robber spotted - pursuing suspect!";
                 }
+                if (_cachedState == "Responding!") return "Team alert - converging on robber's position!";
                 if (_cachedState == "Investigate-Alarm") return "Alarm triggered - responding to potential robbery!";
                 if (_cachedState == "Investigate") return "Suspicious sound heard - checking it out";
                 if (_cachedState == "Return") return "No threats detected - returning to patrol area";
@@ -199,8 +201,12 @@ namespace NPCBrain.Archetypes
             if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
             {
                 // Has visible target - update position and alert
-                Blackboard.SetVector3(BBKeys.InvestigatePosition, target.transform.position);
+                Vector3 robberPosition = target.transform.position;
+                Blackboard.SetVector3(BBKeys.InvestigatePosition, robberPosition);
                 IncreaseAlert(_alertIncreaseRate * Time.deltaTime);
+                
+                // Broadcast robber sighting to all cops
+                CopAlertSystem.BroadcastRobberSighting(robberPosition, target);
                 
                 // Check for arrest opportunity
                 CheckArrestOpportunity(target);
@@ -209,6 +215,24 @@ namespace NPCBrain.Archetypes
             {
                 // No target - decay alert over time
                 DecayAlert();
+                
+                // Check if we should respond to shared alert
+                UpdateSharedAlertResponse();
+            }
+        }
+        
+        private void UpdateSharedAlertResponse()
+        {
+            // Check if there's an active shared alert we should respond to
+            if (CopAlertSystem.HasActiveAlert)
+            {
+                Blackboard.SetBool(BBKeys.RespondingToAlert, true);
+                Blackboard.SetVector3(BBKeys.AlertPosition, CopAlertSystem.LastKnownRobberPosition);
+                IncreaseAlert(0.3f * Time.deltaTime); // Stay alert while responding
+            }
+            else
+            {
+                Blackboard.SetBool(BBKeys.RespondingToAlert, false);
             }
         }
         
@@ -254,6 +278,9 @@ namespace NPCBrain.Archetypes
                     Blackboard.SetBool(BBKeys.CanArrest, false);
                     _cachedTargetRobber = null;
                     
+                    // Clear the shared alert since robber is caught
+                    CopAlertSystem.ClearAlert();
+                    
                     OnArrest?.Invoke(this, robber);
                     
                     NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} arrested {robber.name}!", this);
@@ -266,6 +293,7 @@ namespace NPCBrain.Archetypes
         {
             var arrestAction = CreateArrestAction();
             var chaseAction = CreateChaseAction();
+            var respondToAlertAction = CreateRespondToAlertAction();
             var alarmInvestigateAction = CreateAlarmInvestigateAction();
             var soundInvestigateAction = CreateSoundInvestigateAction();
             var returnAction = CreateReturnAction();
@@ -274,6 +302,7 @@ namespace NPCBrain.Archetypes
             return new UtilitySelector(
                 arrestAction,
                 chaseAction,
+                respondToAlertAction,
                 alarmInvestigateAction,
                 soundInvestigateAction,
                 returnAction,
@@ -337,6 +366,39 @@ namespace NPCBrain.Archetypes
                 // Higher score when alert
                 new BlackboardConsideration<float>("AlertForChase", BBKeys.AlertLevel,
                     a => 0.5f + a * 0.5f, 0f)
+            );
+        }
+        
+        private UtilityAction CreateRespondToAlertAction()
+        {
+            var respondBehavior = new Sequence(
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Responding!"; return "Responding!"; }),
+                new MoveTo(
+                    () => Blackboard.GetVector3(BBKeys.AlertPosition, transform.position),
+                    _arrivalDistance,
+                    _chaseSpeed, // Move fast when responding to alert
+                    4f
+                )
+            );
+            respondBehavior.Name = "RespondToAlertBehavior";
+            
+            return new UtilityAction(
+                "RespondToAlert",
+                respondBehavior,
+                _respondToAlertWeight,
+                // Must be responding to an active alert
+                new BlackboardConsideration<bool>("HasAlert", BBKeys.RespondingToAlert,
+                    responding => responding ? 1f : 0f, false),
+                // Must NOT have direct visual on target (otherwise Chase takes over)
+                new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
+                    t => t == null ? 1f : 0f, null),
+                // Higher score when closer to alert position (converge faster)
+                new DistanceConsideration(
+                    "AlertDistance",
+                    brain => brain.Blackboard.GetVector3(BBKeys.AlertPosition, brain.transform.position),
+                    30f,
+                    true
+                )
             );
         }
         
