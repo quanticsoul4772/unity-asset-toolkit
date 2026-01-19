@@ -405,18 +405,39 @@ namespace NPCBrain.Criticality
                 : 0f;
 
             // Compute weighted chaos index from all metrics
-            float totalWeight = _entropyWeight + _churnWeight + _volatilityWeight;
+            // IMPORTANT: Only include weights for metrics that have data!
+            // This prevents metrics with no data from diluting the chaos index.
+            float totalWeight = 0f;
+            float weightedSum = 0f;
+            
+            // Include entropy weight if we have action history
+            if (_actionHistory.Count > 0)
+            {
+                totalWeight += _entropyWeight;
+                weightedSum += _entropyWeight * normalizedEntropy;
+            }
+            
+            // Include churn weight if we have plan history
+            if (_planHistory.Count >= 2)
+            {
+                totalWeight += _churnWeight;
+                weightedSum += _churnWeight * _planChurn;
+            }
+            
+            // Include volatility weight if we have state history
+            if (_stateHistory.Count >= 2)
+            {
+                totalWeight += _volatilityWeight;
+                weightedSum += _volatilityWeight * _stateVolatility;
+            }
+            
             if (totalWeight > 0f)
             {
-                _chaosIndex = (
-                    _entropyWeight * normalizedEntropy +
-                    _churnWeight * _planChurn +
-                    _volatilityWeight * _stateVolatility
-                ) / totalWeight;
+                _chaosIndex = weightedSum / totalWeight;
             }
             else
             {
-                _chaosIndex = normalizedEntropy; // Fallback to entropy only
+                _chaosIndex = 0f; // No data yet
             }
 
             // Clamp chaos index to valid range
