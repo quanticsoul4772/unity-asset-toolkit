@@ -897,7 +897,9 @@ namespace NPCBrain.Archetypes
         /// </summary>
         private bool IsClosestCopToRobber()
         {
-            return GetClosestCopToRobber() == this;
+            var closest = GetClosestCopToRobber();
+            // If null (no robber position data), assume closest (original behavior)
+            return closest == null || closest == this;
         }
         
         private UtilityAction CreateTrackFootstepsAction()
