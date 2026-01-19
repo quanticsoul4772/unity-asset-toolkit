@@ -212,7 +212,7 @@ namespace NPCBrain.Archetypes
                 // COORDINATED PURSUIT: Broadcast lost sight to ALL cops so they all pursue together!
                 CopAlertSystem.BroadcastLostSight(lastPosition, lastDirection);
                 
-                Debug.Log($"<color=blue>[{name}]</color> <color=red>LOST SIGHT OF ROBBER: {target?.name}</color> | Last pos: {lastPosition} | Direction: {lastDirection} | ALL COPS pursuing for {_pursuitPersistenceTime}s");
+                Debug.Log($"<color=blue>[{name}]</color> <color=red>LOST SIGHT OF ROBBER: {target?.name}</color> | Last pos: {lastPosition} | Direction: {lastDirection} | ALL COPS pursuing for {CopAlertSystem.PursuitValidDuration}s");
                 
                 Blackboard.Remove(BBKeys.Target);
                 _cachedTargetRobber = null;
