@@ -41,6 +41,8 @@ namespace NPCBrain.Archetypes
         private Vector3 _homePosition;
         private Vector3 _currentWanderTarget;
         private float _energy = 1f;
+        private float _lastBlackboardEnergy = 1f;
+        private float _arrivalDistanceSqr2x;
         private const float EnergyDecayRate = 0.05f;
         private const float EnergyRecoveryRate = 0.2f;
         
@@ -49,13 +51,14 @@ namespace NPCBrain.Archetypes
             base.Awake();
             _homePosition = transform.position;
             _currentWanderTarget = GetRandomWanderPoint();
+            _arrivalDistanceSqr2x = (_arrivalDistance * 2f) * (_arrivalDistance * 2f);
             
-            Blackboard.Set("homePosition", _homePosition);
-            Blackboard.Set("energy", _energy);
-            Blackboard.Set("lastWanderTime", -10f);
-            Blackboard.Set("lastRestTime", -10f);
-            Blackboard.Set("lastPatrolTime", -10f);
-            Blackboard.Set("lastSeekTime", -10f);
+            Blackboard.SetVector3(BBKeys.HomePosition, _homePosition);
+            Blackboard.SetFloat(BBKeys.Energy, _energy);
+            Blackboard.SetFloat(BBKeys.LastWanderTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastRestTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastPatrolTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastSeekTime, -10f);
         }
         
         private void LateUpdate()
@@ -65,7 +68,13 @@ namespace NPCBrain.Archetypes
             {
                 _energy = Mathf.Max(0f, _energy - EnergyDecayRate * Time.deltaTime);
             }
-            Blackboard.Set("energy", _energy);
+            
+            // Only update Blackboard when energy changed significantly
+            if (Mathf.Abs(_energy - _lastBlackboardEnergy) > 0.001f)
+            {
+                Blackboard.SetFloat(BBKeys.Energy, _energy);
+                _lastBlackboardEnergy = _energy;
+            }
         }
         
         /// <inheritdoc/>
@@ -89,7 +98,7 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateWanderAction()
         {
             var moveBehavior = new Sequence(
-                new SetBlackboard("lastWanderTime", () => Time.time),
+                new SetBlackboard(BBKeys.LastWanderTime, () => Time.time),
                 new MoveTo(
                     () => GetOrRefreshWanderTarget(),
                     _arrivalDistance,
@@ -104,9 +113,9 @@ namespace NPCBrain.Archetypes
                 moveBehavior,
                 _wanderWeight,
                 // More likely when we haven't wandered recently
-                new TimeConsideration("WanderCooldown", "lastWanderTime", 5f),
+                new TimeConsideration("WanderCooldown", BBKeys.LastWanderTime, 5f),
                 // More likely when we have energy (0.7-1.0 range maps to 0-1 score)
-                new BlackboardConsideration<float>("EnergyCheck", "energy", 
+                new BlackboardConsideration<float>("EnergyCheck", BBKeys.Energy, 
                     e => Mathf.Clamp01((e - 0.7f) / 0.3f), 1f)
             );
         }
@@ -114,7 +123,7 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateRestAction()
         {
             var restBehavior = new Sequence(
-                new SetBlackboard("lastRestTime", () => Time.time),
+                new SetBlackboard(BBKeys.LastRestTime, () => Time.time),
                 new Wait(_restDuration, () => RecoverEnergy())
             );
             restBehavior.Name = "RestBehavior";
@@ -125,17 +134,17 @@ namespace NPCBrain.Archetypes
                 _restWeight,
                 // More likely when energy is low (inverted - low energy = high score)
                 // Energy 0-0.5 maps to score 1-0, with exponential curve making low energy more urgent
-                new BlackboardConsideration<float>("TiredCheck", "energy", 
+                new BlackboardConsideration<float>("TiredCheck", BBKeys.Energy, 
                     e => Mathf.Pow(1f - Mathf.Clamp01(e / 0.5f), 2f), 1f),
                 // Cooldown
-                new TimeConsideration("RestCooldown", "lastRestTime", 8f)
+                new TimeConsideration("RestCooldown", BBKeys.LastRestTime, 8f)
             );
         }
         
         private UtilityAction CreatePatrolAction()
         {
             var patrolBehavior = new Sequence(
-                new SetBlackboard("lastPatrolTime", () => Time.time),
+                new SetBlackboard(BBKeys.LastPatrolTime, () => Time.time),
                 new MoveTo(
                     () => GetCurrentWaypoint(),
                     _arrivalDistance,
@@ -152,9 +161,9 @@ namespace NPCBrain.Archetypes
                 _patrolWeight,
                 // More likely when we have waypoints and haven't patrolled recently
                 new ConstantConsideration(0.8f),
-                new TimeConsideration("PatrolCooldown", "lastPatrolTime", 3f),
+                new TimeConsideration("PatrolCooldown", BBKeys.LastPatrolTime, 3f),
                 // Moderate energy needed (0.3-1.0 range maps to 0-1 score)
-                new BlackboardConsideration<float>("EnergyForPatrol", "energy", 
+                new BlackboardConsideration<float>("EnergyForPatrol", BBKeys.Energy, 
                     e => Mathf.Clamp01((e - 0.3f) / 0.7f), 1f)
             );
         }
@@ -162,7 +171,7 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateSeekInterestAction()
         {
             var seekBehavior = new Sequence(
-                new SetBlackboard("lastSeekTime", () => Time.time),
+                new SetBlackboard(BBKeys.LastSeekTime, () => Time.time),
                 new MoveTo(
                     () => GetInterestPoint(),
                     _arrivalDistance,
@@ -178,17 +187,17 @@ namespace NPCBrain.Archetypes
                 seekBehavior,
                 _seekInterestWeight,
                 // Has an interest point - returns 1 if key exists, 0 if not
-                new BlackboardConsideration<Vector3>("HasInterest", "interestPoint",
+                new BlackboardConsideration<Vector3>("HasInterest", BBKeys.InterestPoint,
                     pos => pos != Vector3.zero ? 1f : 0f, Vector3.zero),
                 // Distance consideration - closer interest points are more attractive
                 new DistanceConsideration(
                     "InterestDistance",
-                    brain => brain.Blackboard.Get("interestPoint", brain.transform.position),
+                    brain => brain.Blackboard.GetVector3(BBKeys.InterestPoint, brain.transform.position),
                     _wanderRadius * 2f,
                     true
                 ),
                 // Cooldown
-                new TimeConsideration("SeekCooldown", "lastSeekTime", 4f)
+                new TimeConsideration("SeekCooldown", BBKeys.LastSeekTime, 4f)
             );
         }
         
@@ -201,8 +210,8 @@ namespace NPCBrain.Archetypes
         
         private Vector3 GetOrRefreshWanderTarget()
         {
-            // Refresh if we're close to current target
-            if (Vector3.Distance(transform.position, _currentWanderTarget) < _arrivalDistance * 2f)
+            // Refresh if we're close to current target (use sqrMagnitude to avoid sqrt)
+            if ((transform.position - _currentWanderTarget).sqrMagnitude < _arrivalDistanceSqr2x)
             {
                 _currentWanderTarget = GetRandomWanderPoint();
             }
@@ -211,13 +220,14 @@ namespace NPCBrain.Archetypes
         
         private Vector3 GetInterestPoint()
         {
-            return Blackboard.Get("interestPoint", _homePosition);
+            return Blackboard.GetVector3(BBKeys.InterestPoint, _homePosition);
         }
         
         private void RecoverEnergy()
         {
             _energy = Mathf.Min(1f, _energy + EnergyRecoveryRate * _restDuration);
-            Blackboard.Set("energy", _energy);
+            Blackboard.SetFloat(BBKeys.Energy, _energy);
+            _lastBlackboardEnergy = _energy;
         }
         
         /// <summary>
@@ -225,7 +235,7 @@ namespace NPCBrain.Archetypes
         /// </summary>
         public void SetInterestPoint(Vector3 point)
         {
-            Blackboard.Set("interestPoint", point);
+            Blackboard.SetVector3(BBKeys.InterestPoint, point);
         }
         
         /// <summary>
@@ -233,7 +243,7 @@ namespace NPCBrain.Archetypes
         /// </summary>
         public void ClearInterestPoint()
         {
-            Blackboard.Remove("interestPoint");
+            Blackboard.Remove(BBKeys.InterestPoint);
         }
         
         /// <summary>Current energy level (0-1).</summary>
@@ -255,7 +265,7 @@ namespace NPCBrain.Archetypes
         protected void SetCurrentState(string state)
         {
             _currentState = state;
-            Blackboard?.Set("currentState", state);
+            Blackboard?.Set(BBKeys.CurrentState, state);
         }
         
         /// <summary>Whether this NPC is still active.</summary>

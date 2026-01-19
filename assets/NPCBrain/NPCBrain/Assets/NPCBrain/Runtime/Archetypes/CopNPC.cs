@@ -81,7 +81,7 @@ namespace NPCBrain.Archetypes
             // Note: Detection uses NPCRegistry<CopNPC> instead of tags to avoid Unity tag setup requirements
             
             Blackboard.Set("homePosition", _homePosition);
-            Blackboard.Set("alertLevel", 0f);
+            Blackboard.SetFloat(BBKeys.AlertLevel, 0f);
             Blackboard.Set("currentState", "Patrol");
             
             // Initialize action timestamps

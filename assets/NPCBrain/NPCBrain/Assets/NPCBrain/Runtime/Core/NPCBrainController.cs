@@ -72,6 +72,8 @@ namespace NPCBrain
         private NodeStatus _lastStatus;
         private float _lastTickTime;
         private bool _isPaused;
+        private int _cleanupCounter;
+        private const int CleanupInterval = 10;
         
         /// <summary>
         /// The result of the last behavior tree tick.
@@ -175,7 +177,12 @@ namespace NPCBrain
                 return;
             }
             
-            Blackboard?.CleanupExpired();
+            // Rate-limit cleanup to every 10 ticks to reduce overhead
+            if (++_cleanupCounter >= CleanupInterval)
+            {
+                _cleanupCounter = 0;
+                Blackboard?.CleanupExpired();
+            }
             Perception?.Tick(this);
             Hearing?.Tick(this);
             Criticality?.Update();

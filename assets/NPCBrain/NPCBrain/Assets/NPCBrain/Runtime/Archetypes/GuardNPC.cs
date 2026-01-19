@@ -53,7 +53,7 @@ namespace NPCBrain.Archetypes
         public string CurrentState => Blackboard.Get("currentState", "Patrol");
         
         /// <summary>Current alert level (0-1).</summary>
-        public float AlertLevel => Blackboard.Get("alertLevel", 0f);
+        public float AlertLevel => Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
         
         /// <summary>Whether this NPC is still active.</summary>
         public bool IsActive => gameObject.activeSelf;
@@ -61,23 +61,23 @@ namespace NPCBrain.Archetypes
         /// <summary>Increases the alert level by the specified amount.</summary>
         public void IncreaseAlert(float amount)
         {
-            float current = Blackboard.Get("alertLevel", 0f);
-            Blackboard.Set("alertLevel", Mathf.Clamp01(current + amount));
+            float current = Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
+            Blackboard.SetFloat(BBKeys.AlertLevel, Mathf.Clamp01(current + amount));
         }
         
         protected override void Awake()
         {
             base.Awake();
             _homePosition = transform.position;
-            Blackboard.Set("homePosition", _homePosition);
-            Blackboard.Set("alertLevel", 0f);
-            Blackboard.Set("currentState", "Patrol");
+            Blackboard.SetVector3(BBKeys.HomePosition, _homePosition);
+            Blackboard.SetFloat(BBKeys.AlertLevel, 0f);
+            Blackboard.Set(BBKeys.CurrentState, "Patrol");
             
             // Initialize action timestamps for TimeConsiderations
-            Blackboard.Set("lastChaseTime", -10f);
-            Blackboard.Set("lastInvestigateTime", -10f);
-            Blackboard.Set("lastPatrolTime", -10f);
-            Blackboard.Set("lastReturnTime", -10f);
+            Blackboard.SetFloat(BBKeys.LastChaseTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastInvestigateTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastPatrolTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastReturnTime, -10f);
             
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;
@@ -93,46 +93,42 @@ namespace NPCBrain.Archetypes
         
         private void HandleTargetAcquired(GameObject target)
         {
-            Blackboard.Set("target", target);
-            Blackboard.Set("lastKnownPosition", target.transform.position);
+            Blackboard.Set(BBKeys.Target, target);
+            Blackboard.SetVector3(BBKeys.LastKnownPosition, target.transform.position);
             IncreaseAlert(0.5f);
         }
         
         private void HandleTargetLost(GameObject target)
         {
             // Keep last known position for investigation
-            if (Blackboard.Has("target"))
+            if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var currentTarget) && currentTarget == target)
             {
-                var currentTarget = Blackboard.Get<GameObject>("target");
-                if (currentTarget == target)
-                {
-                    Blackboard.Remove("target");
-                }
+                Blackboard.Remove(BBKeys.Target);
             }
         }
         
         private void DecayAlert()
         {
-            float current = Blackboard.Get("alertLevel", 0f);
+            float current = Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
             if (current > 0f)
             {
-                Blackboard.Set("alertLevel", Mathf.Max(0f, current - _alertDecayRate * Time.deltaTime));
+                Blackboard.SetFloat(BBKeys.AlertLevel, Mathf.Max(0f, current - _alertDecayRate * Time.deltaTime));
             }
         }
         
         private void LateUpdate()
         {
-            // Decay alert over time when not actively engaged
-            if (!Blackboard.Has("target"))
+            // Single lookup for target - fixes redundant Blackboard access
+            if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
             {
-                DecayAlert();
-            }
-            
-            // Update last known position if we have a visible target
-            if (Blackboard.TryGet<GameObject>("target", out var target) && target != null)
-            {
-                Blackboard.Set("lastKnownPosition", target.transform.position);
+                // Has visible target - update position and alert
+                Blackboard.SetVector3(BBKeys.LastKnownPosition, target.transform.position);
                 IncreaseAlert(_alertIncreaseRate * Time.deltaTime);
+            }
+            else
+            {
+                // No target - decay alert over time
+                DecayAlert();
             }
         }
         
@@ -157,8 +153,8 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateChaseAction()
         {
             var chaseBehavior = new Sequence(
-                new SetBlackboard("lastChaseTime", () => Time.time),
-                new SetBlackboard("currentState", "Chase"),
+                new SetBlackboard(BBKeys.LastChaseTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Chase"),
                 new MoveTo(
                     () => GetTargetPosition(),
                     _chaseArrivalDistance,
@@ -173,7 +169,7 @@ namespace NPCBrain.Archetypes
                 chaseBehavior,
                 _chaseWeight,
                 // Must have a visible target - this is the key gate
-                new BlackboardConsideration<GameObject>("HasTarget", "target",
+                new BlackboardConsideration<GameObject>("HasTarget", BBKeys.Target,
                     t => t != null ? 1f : 0f, null),
                 // Higher score when target is close
                 new DistanceConsideration(
@@ -183,7 +179,7 @@ namespace NPCBrain.Archetypes
                     true
                 ),
                 // Higher score when alert level is high
-                new BlackboardConsideration<float>("AlertForChase", "alertLevel",
+                new BlackboardConsideration<float>("AlertForChase", BBKeys.AlertLevel,
                     a => 0.5f + a * 0.5f, 0f)
             );
         }
@@ -191,15 +187,15 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreateInvestigateAction()
         {
             var investigateBehavior = new Sequence(
-                new SetBlackboard("lastInvestigateTime", () => Time.time),
-                new SetBlackboard("currentState", "Investigate"),
+                new SetBlackboard(BBKeys.LastInvestigateTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Investigate"),
                 new MoveTo(
-                    () => Blackboard.Get<Vector3>("lastKnownPosition"),
+                    () => Blackboard.GetVector3(BBKeys.LastKnownPosition, Vector3.zero),
                     _arrivalDistance,
                     _investigateSpeed
                 ),
                 new Wait(_investigateTime),
-                new ClearBlackboardKey("lastKnownPosition")
+                new ClearBlackboardKey(BBKeys.LastKnownPosition)
             );
             investigateBehavior.Name = "InvestigateBehavior";
             
@@ -208,33 +204,33 @@ namespace NPCBrain.Archetypes
                 investigateBehavior,
                 _investigateWeight,
                 // Must have a last known position
-                new BlackboardConsideration<Vector3>("HasLastKnown", "lastKnownPosition",
+                new BlackboardConsideration<Vector3>("HasLastKnown", BBKeys.LastKnownPosition,
                     pos => pos != Vector3.zero ? 1f : 0f, Vector3.zero),
                 // Must not have a visible target (chase takes priority)
-                new BlackboardConsideration<GameObject>("NoVisibleTarget", "target",
+                new BlackboardConsideration<GameObject>("NoVisibleTarget", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
                 // Higher score when alert level is moderate to high
-                new BlackboardConsideration<float>("AlertForInvestigate", "alertLevel",
+                new BlackboardConsideration<float>("AlertForInvestigate", BBKeys.AlertLevel,
                     a => a > 0.1f ? 0.5f + a * 0.5f : 0.2f, 0f),
                 // Distance to last known position - closer = higher priority
                 new DistanceConsideration(
                     "LastKnownDistance",
-                    brain => brain.Blackboard.Get("lastKnownPosition", brain.transform.position),
+                    brain => brain.Blackboard.GetVector3(BBKeys.LastKnownPosition, brain.transform.position),
                     _maxChaseDistance,
                     true
                 ),
                 // Cooldown between investigations
-                new TimeConsideration("InvestigateCooldown", "lastInvestigateTime", 2f)
+                new TimeConsideration("InvestigateCooldown", BBKeys.LastInvestigateTime, 2f)
             );
         }
         
         private UtilityAction CreateReturnAction()
         {
             var returnBehavior = new Sequence(
-                new SetBlackboard("lastReturnTime", () => Time.time),
-                new SetBlackboard("currentState", "Return"),
+                new SetBlackboard(BBKeys.LastReturnTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Return"),
                 new MoveTo(
-                    () => Blackboard.Get<Vector3>("homePosition"),
+                    () => Blackboard.GetVector3(BBKeys.HomePosition, transform.position),
                     _arrivalDistance,
                     _patrolSpeed
                 )
@@ -246,28 +242,28 @@ namespace NPCBrain.Archetypes
                 returnBehavior,
                 _returnWeight,
                 // Must not have target or investigation
-                new BlackboardConsideration<GameObject>("NoTarget", "target",
+                new BlackboardConsideration<GameObject>("NoTarget", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
                 // No pending investigation
-                new BlackboardConsideration<Vector3>("NoLastKnown", "lastKnownPosition",
+                new BlackboardConsideration<Vector3>("NoLastKnown", BBKeys.LastKnownPosition,
                     pos => pos == Vector3.zero ? 1f : 0.3f, Vector3.zero),
                 // Higher score when far from home
                 new DistanceConsideration(
                     "DistanceFromHome",
-                    brain => brain.Blackboard.Get("homePosition", brain.transform.position),
+                    brain => brain.Blackboard.GetVector3(BBKeys.HomePosition, brain.transform.position),
                     15f,
                     false  // farther = higher score
                 ),
                 // Cooldown
-                new TimeConsideration("ReturnCooldown", "lastReturnTime", 5f)
+                new TimeConsideration("ReturnCooldown", BBKeys.LastReturnTime, 5f)
             );
         }
         
         private UtilityAction CreatePatrolAction()
         {
             var patrolBehavior = new Sequence(
-                new SetBlackboard("lastPatrolTime", () => Time.time),
-                new SetBlackboard("currentState", "Patrol"),
+                new SetBlackboard(BBKeys.LastPatrolTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, "Patrol"),
                 new MoveTo(
                     () => GetCurrentWaypoint(),
                     _arrivalDistance,
@@ -285,25 +281,25 @@ namespace NPCBrain.Archetypes
                 // Always available as baseline (constant score)
                 new ConstantConsideration(0.8f),
                 // Less likely when alert is high
-                new BlackboardConsideration<float>("LowAlert", "alertLevel",
+                new BlackboardConsideration<float>("LowAlert", BBKeys.AlertLevel,
                     a => 1f - a * 0.5f, 0f),
                 // Cooldown between patrol waypoints
-                new TimeConsideration("PatrolCooldown", "lastPatrolTime", 2f)
+                new TimeConsideration("PatrolCooldown", BBKeys.LastPatrolTime, 2f)
             );
         }
         
         private Vector3 GetTargetPosition()
         {
-            if (Blackboard.TryGet<GameObject>("target", out var target) && target != null)
+            if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
             {
                 return target.transform.position;
             }
-            return Blackboard.Get<Vector3>("lastKnownPosition", transform.position);
+            return Blackboard.GetVector3(BBKeys.LastKnownPosition, transform.position);
         }
         
         private static Vector3 GetTargetPositionForCheck(NPCBrainController brain)
         {
-            if (brain.Blackboard.TryGet<GameObject>("target", out var target) && target != null)
+            if (brain.Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
             {
                 return target.transform.position;
             }

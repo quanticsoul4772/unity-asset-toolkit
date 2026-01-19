@@ -52,8 +52,11 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _wanderWeight = 0.4f;
         
         private float _energy = 1f;
+        private float _lastBlackboardEnergy = 1f;
         private Vector3 _currentWanderTarget;
         private Vector3 _homePosition;
+        private float _arrivalDistanceSqr2x;
+        private string _cachedState = "Patrol";
         
         private const float EnergyDecayRate = 0.03f;
         private const float EnergyRecoveryRate = 0.3f;
@@ -81,15 +84,16 @@ namespace NPCBrain.Archetypes
             base.Awake();
             _homePosition = transform.position;
             _currentWanderTarget = GetRandomWanderPoint();
+            _arrivalDistanceSqr2x = (_arrivalDistance * 2f) * (_arrivalDistance * 2f);
             
-            Blackboard.Set("currentState", "Patrol");
-            Blackboard.Set("energy", _energy);
-            Blackboard.Set("homePosition", _homePosition);
+            Blackboard.Set(BBKeys.CurrentState, "Patrol");
+            Blackboard.SetFloat(BBKeys.Energy, _energy);
+            Blackboard.SetVector3(BBKeys.HomePosition, _homePosition);
             
             // Initialize action timestamps for TimeConsiderations
-            Blackboard.Set("lastPatrolTime", -10f);
-            Blackboard.Set("lastRestTime", -10f);
-            Blackboard.Set("lastWanderTime", -10f);
+            Blackboard.SetFloat(BBKeys.LastPatrolTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastRestTime, -10f);
+            Blackboard.SetFloat(BBKeys.LastWanderTime, -10f);
         }
         
         protected override void OnDestroy()
@@ -102,9 +106,8 @@ namespace NPCBrain.Archetypes
         {
             float previousEnergy = _energy;
             
-            // Update energy based on current state
-            string state = CurrentState;
-            if (state == "Rest")
+            // Update energy based on current state (use cached state to avoid Blackboard lookup)
+            if (_cachedState == "Rest")
             {
                 // Recover energy while resting
                 _energy = Mathf.Min(1f, _energy + EnergyRecoveryRate * Time.deltaTime);
@@ -114,11 +117,12 @@ namespace NPCBrain.Archetypes
                 // Deplete energy while active
                 _energy = Mathf.Max(0f, _energy - EnergyDecayRate * Time.deltaTime);
             }
-            Blackboard.Set("energy", _energy);
             
-            // Fire event if energy changed significantly
-            if (Mathf.Abs(_energy - previousEnergy) > 0.001f)
+            // Only update Blackboard when energy changed significantly
+            if (Mathf.Abs(_energy - _lastBlackboardEnergy) > 0.001f)
             {
+                Blackboard.SetFloat(BBKeys.Energy, _energy);
+                _lastBlackboardEnergy = _energy;
                 OnEnergyChanged?.Invoke(_energy);
             }
         }
@@ -141,8 +145,8 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreatePatrolAction()
         {
             var patrolBehavior = new Sequence(
-                new SetBlackboard("lastPatrolTime", () => Time.time),
-                new SetBlackboard("currentState", "Patrol"),
+                new SetBlackboard(BBKeys.LastPatrolTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Patrol"; return "Patrol"; }),
                 new MoveTo(
                     () => GetCurrentWaypoint(),
                     _arrivalDistance,
@@ -158,18 +162,18 @@ namespace NPCBrain.Archetypes
                 patrolBehavior,
                 _patrolWeight,
                 // More likely when energy is good (0.5-1.0 range)
-                new BlackboardConsideration<float>("EnergyForPatrol", "energy",
+                new BlackboardConsideration<float>("EnergyForPatrol", BBKeys.Energy,
                     e => 0.3f + Mathf.Clamp01(e) * 0.7f, 1f),
                 // Cooldown between patrol waypoints
-                new TimeConsideration("PatrolCooldown", "lastPatrolTime", 3f)
+                new TimeConsideration("PatrolCooldown", BBKeys.LastPatrolTime, 3f)
             );
         }
         
         private UtilityAction CreateRestAction()
         {
             var restBehavior = new Sequence(
-                new SetBlackboard("lastRestTime", () => Time.time),
-                new SetBlackboard("currentState", "Rest"),
+                new SetBlackboard(BBKeys.LastRestTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Rest"; return "Rest"; }),
                 new Wait(_restDuration)
             );
             restBehavior.Name = "RestBehavior";
@@ -180,18 +184,18 @@ namespace NPCBrain.Archetypes
                 _restWeight,
                 // More likely when energy is low (inverted curve)
                 // Energy 0-0.5 maps to high score, 0.5-1.0 maps to low score
-                new BlackboardConsideration<float>("TiredCheck", "energy",
+                new BlackboardConsideration<float>("TiredCheck", BBKeys.Energy,
                     e => Mathf.Pow(1f - Mathf.Clamp01(e / 0.6f), 2f), 1f),
                 // Cooldown between rests
-                new TimeConsideration("RestCooldown", "lastRestTime", 8f)
+                new TimeConsideration("RestCooldown", BBKeys.LastRestTime, 8f)
             );
         }
         
         private UtilityAction CreateWanderAction()
         {
             var wanderBehavior = new Sequence(
-                new SetBlackboard("lastWanderTime", () => Time.time),
-                new SetBlackboard("currentState", "Wander"),
+                new SetBlackboard(BBKeys.LastWanderTime, () => Time.time),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Wander"; return "Wander"; }),
                 new MoveTo(
                     () => GetOrRefreshWanderTarget(),
                     _arrivalDistance,
@@ -206,10 +210,10 @@ namespace NPCBrain.Archetypes
                 wanderBehavior,
                 _wanderWeight,
                 // More likely when energy is moderate to high
-                new BlackboardConsideration<float>("EnergyForWander", "energy",
+                new BlackboardConsideration<float>("EnergyForWander", BBKeys.Energy,
                     e => Mathf.Clamp01((e - 0.3f) / 0.7f), 1f),
                 // Cooldown between wanders
-                new TimeConsideration("WanderCooldown", "lastWanderTime", 5f)
+                new TimeConsideration("WanderCooldown", BBKeys.LastWanderTime, 5f)
             );
         }
         
@@ -223,8 +227,8 @@ namespace NPCBrain.Archetypes
         
         private Vector3 GetOrRefreshWanderTarget()
         {
-            // Refresh if close to current target
-            if (Vector3.Distance(transform.position, _currentWanderTarget) < _arrivalDistance * 2f)
+            // Refresh if close to current target (use sqrMagnitude to avoid sqrt)
+            if ((transform.position - _currentWanderTarget).sqrMagnitude < _arrivalDistanceSqr2x)
             {
                 _currentWanderTarget = GetRandomWanderPoint();
             }
