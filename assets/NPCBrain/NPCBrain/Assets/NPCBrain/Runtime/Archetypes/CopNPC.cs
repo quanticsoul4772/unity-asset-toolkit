@@ -57,9 +57,10 @@ namespace NPCBrain.Archetypes
         private int _arrestCount;
         private RobberNPC _cachedTargetRobber;
         private float _arrestDistanceSqr;
+        private string _cachedState = "Patrol";
         
         /// <summary>Current behavior state for UI display.</summary>
-        public string CurrentState => Blackboard.Get(BBKeys.CurrentState, "Patrol");
+        public string CurrentState => _cachedState;
         
         /// <summary>Current alert level (0-1).</summary>
         public float AlertLevel => Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
@@ -257,7 +258,7 @@ namespace NPCBrain.Archetypes
         {
             var arrestBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastArrestTime, () => Time.time),
-                new SetBlackboard(BBKeys.CurrentState, "Arresting!"),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Arresting!"; return "Arresting!"; }),
                 new Wait(0.5f, () => TryArrest())
             );
             arrestBehavior.Name = "ArrestBehavior";
@@ -279,7 +280,7 @@ namespace NPCBrain.Archetypes
         {
             var chaseBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastChaseTime, () => Time.time),
-                new SetBlackboard(BBKeys.CurrentState, "Chase!"),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Chase!"; return "Chase!"; }),
                 new MoveTo(
                     () => GetTargetPosition(),
                     _arrestDistance * 0.8f, // Get very close for arrest
@@ -316,7 +317,7 @@ namespace NPCBrain.Archetypes
         {
             var investigateBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastInvestigateTime, () => Time.time),
-                new SetBlackboard(BBKeys.CurrentState, "Investigate-Alarm"),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Investigate-Alarm"; return "Investigate-Alarm"; }),
                 new MoveTo(
                     () => Blackboard.GetVector3(BBKeys.InvestigatePosition, Vector3.zero),
                     _arrivalDistance,
@@ -351,7 +352,7 @@ namespace NPCBrain.Archetypes
         {
             var investigateBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastInvestigateTime, () => Time.time),
-                new SetBlackboard(BBKeys.CurrentState, "Investigate"),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Investigate"; return "Investigate"; }),
                 new MoveTo(
                     () => Blackboard.GetVector3(BBKeys.InvestigatePosition, Vector3.zero),
                     _arrivalDistance,
@@ -384,7 +385,7 @@ namespace NPCBrain.Archetypes
         {
             var returnBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastReturnTime, () => Time.time),
-                new SetBlackboard(BBKeys.CurrentState, "Return"),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Return"; return "Return"; }),
                 new MoveTo(
                     () => Blackboard.GetVector3(BBKeys.HomePosition, transform.position),
                     _arrivalDistance,
@@ -419,7 +420,7 @@ namespace NPCBrain.Archetypes
         {
             var patrolBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastPatrolTime, () => Time.time),
-                new SetBlackboard(BBKeys.CurrentState, "Patrol"),
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Patrol"; return "Patrol"; }),
                 new MoveTo(
                     () => GetCurrentWaypoint(),
                     _arrivalDistance,
