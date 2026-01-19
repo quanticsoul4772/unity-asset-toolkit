@@ -67,27 +67,33 @@ namespace NPCBrain.Archetypes
         public string Role => "Bank Security Guard";
         
         /// <summary>The cop's primary objective.</summary>
-        public string Goal => "Protect the bank money from theft";
+        public string Goal => CrimeInProgress ? "Apprehend the robber!" : "Protect the bank money from theft";
+        
+        /// <summary>Whether a crime is in progress (alarm has been triggered).</summary>
+        public bool CrimeInProgress => Blackboard.GetBool(BBKeys.CrimeInProgress, false);
         
         /// <summary>Dynamic explanation of current behavior.</summary>
         public string CurrentReason
         {
             get
             {
+                bool crimeActive = CrimeInProgress;
+                
                 if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null)
                 {
                     if (_cachedState == "Arresting!") return "Robber within reach - making arrest!";
                     if (_cachedState == "Chase!") return "Robber spotted - pursuing suspect!";
                 }
-                if (_cachedState == "Responding!") return "Team alert - converging on robber's position!";
-                if (_cachedState == "Investigate-Alarm") return "Alarm triggered - responding to potential robbery!";
+                if (_cachedState == "Responding!") return "ALARM! Converging on robbery location!";
+                if (_cachedState == "Investigate-Alarm") return "ALARM! Robbery in progress - responding!";
                 if (_cachedState == "Investigate") return "Suspicious sound heard - checking it out";
-                if (_cachedState == "Return") return "No threats detected - returning to patrol area";
+                if (_cachedState == "Return") return crimeActive ? "Searching for robber - returning to patrol" : "No threats - returning to patrol area";
                 if (_cachedState == "Patrol")
                 {
-                    return AlertLevel > 0.3f ? "Patrolling - staying vigilant" : "Routine patrol - area secure";
+                    if (crimeActive) return "Searching for the robber...";
+                    return AlertLevel > 0.3f ? "Guarding the money - staying vigilant" : "Routine patrol - protecting the bank";
                 }
-                return "Monitoring the area";
+                return crimeActive ? "Hunting for the robber..." : "Guarding the money";
             }
         }
         
@@ -123,6 +129,7 @@ namespace NPCBrain.Archetypes
             Blackboard.SetFloat(BBKeys.LastReturnTime, -10f);
             Blackboard.SetFloat(BBKeys.LastArrestTime, -10f);
             Blackboard.SetBool(BBKeys.RespondingToAlert, false);
+            Blackboard.SetBool(BBKeys.CrimeInProgress, false);
             
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;
@@ -145,11 +152,23 @@ namespace NPCBrain.Archetypes
             var robber = target.GetComponent<RobberNPC>();
             if (robber == null) return;
             
-            // Cache the component reference
+            // IMPORTANT: Only chase robbers if a crime is in progress (alarm triggered)
+            // Before the alarm, cops just patrol and guard - they don't chase civilians
+            if (!Blackboard.GetBool(BBKeys.CrimeInProgress, false))
+            {
+                // Cop sees robber but no crime yet - just note their presence
+                NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} sees suspicious person but no crime reported yet", this);
+                return;
+            }
+            
+            // Crime in progress - chase the robber!
             _cachedTargetRobber = robber;
             Blackboard.Set(BBKeys.Target, target);
             Blackboard.SetVector3(BBKeys.InvestigatePosition, target.transform.position);
             IncreaseAlert(0.6f);
+            
+            // Broadcast to other cops
+            CopAlertSystem.BroadcastRobberSighting(target.transform.position, target);
         }
         
         private void HandleTargetLost(GameObject target)
@@ -171,7 +190,15 @@ namespace NPCBrain.Archetypes
                 
                 if (sound.Type >= SoundType.Alarm)
                 {
+                    // ALARM TRIGGERED - Crime is now in progress!
+                    Blackboard.SetBool(BBKeys.CrimeInProgress, true);
+                    Blackboard.SetVector3(BBKeys.AlarmLocation, sound.Position);
                     IncreaseAlert(_alarmAlertBoost);
+                    
+                    // Broadcast alarm to all cops so they ALL converge
+                    CopAlertSystem.BroadcastRobberSighting(sound.Position, sound.Source);
+                    
+                    NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} heard ALARM at {sound.Position}! Crime in progress!", this);
                 }
                 else if (sound.Type >= SoundType.Footstep)
                 {
@@ -295,6 +322,7 @@ namespace NPCBrain.Archetypes
             var arrestAction = CreateArrestAction();
             var chaseAction = CreateChaseAction();
             var respondToAlertAction = CreateRespondToAlertAction();
+            var respondToAlarmAction = CreateRespondToAlarmAction();
             var alarmInvestigateAction = CreateAlarmInvestigateAction();
             var soundInvestigateAction = CreateSoundInvestigateAction();
             var returnAction = CreateReturnAction();
@@ -304,6 +332,7 @@ namespace NPCBrain.Archetypes
                 arrestAction,
                 chaseAction,
                 respondToAlertAction,
+                respondToAlarmAction,
                 alarmInvestigateAction,
                 soundInvestigateAction,
                 returnAction,
@@ -398,6 +427,43 @@ namespace NPCBrain.Archetypes
                     "AlertDistance",
                     brain => brain.Blackboard.GetVector3(BBKeys.AlertPosition, brain.transform.position),
                     30f,
+                    true
+                )
+            );
+        }
+        
+        private UtilityAction CreateRespondToAlarmAction()
+        {
+            // This action makes cops converge on the alarm location when a crime occurs
+            var respondBehavior = new Sequence(
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Responding!"; return "Responding!"; }),
+                new MoveTo(
+                    () => Blackboard.GetVector3(BBKeys.AlarmLocation, transform.position),
+                    _arrivalDistance,
+                    _chaseSpeed, // Move fast to alarm location
+                    6f
+                )
+            );
+            respondBehavior.Name = "RespondToAlarmBehavior";
+            
+            return new UtilityAction(
+                "RespondToAlarm",
+                respondBehavior,
+                _alarmInvestigateWeight + 0.05f, // Slightly higher than investigate
+                // Must have a crime in progress
+                new BlackboardConsideration<bool>("CrimeActive", BBKeys.CrimeInProgress,
+                    crime => crime ? 1f : 0f, false),
+                // Must NOT have direct visual on target (otherwise Chase takes over)
+                new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
+                    t => t == null ? 1f : 0f, null),
+                // Must NOT already be responding to a team alert (avoid duplicate)
+                new BlackboardConsideration<bool>("NotAlreadyResponding", BBKeys.RespondingToAlert,
+                    responding => responding ? 0.3f : 1f, false),
+                // Higher score when closer to alarm (converge faster)
+                new DistanceConsideration(
+                    "AlarmDistance",
+                    brain => brain.Blackboard.GetVector3(BBKeys.AlarmLocation, brain.transform.position),
+                    40f,
                     true
                 )
             );

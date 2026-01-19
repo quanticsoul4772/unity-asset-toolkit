@@ -44,6 +44,8 @@ namespace NPCBrain
         // Shared alert keys (used by CopAlertSystem)
         public const string RespondingToAlert = "respondingToAlert";
         public const string AlertPosition = "alertPosition";
+        public const string CrimeInProgress = "crimeInProgress";
+        public const string AlarmLocation = "alarmLocation";
         
         // RobberNPC keys
         public const string CanSeeCop = "canSeeCop";
