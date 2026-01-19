@@ -60,6 +60,11 @@ namespace NPCBrain.BehaviorTree.Composites
         private float[] _probabilities;
         private readonly System.Random _random;
         
+        // Logging throttle: only log periodically or on action change
+        private float _lastLogTime;
+        private const float LOG_INTERVAL = 2f; // Log every 2 seconds max
+        private string _lastLoggedActionName;
+        
         /// <summary>
         /// When true, logs warnings when no action can be selected.
         /// Also enabled when NPCBrainDebug.LogUtility is true.
@@ -366,26 +371,12 @@ namespace NPCBrain.BehaviorTree.Composites
                         }
                     }
 
-                    if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
-                    {
-                        Debug.Log($"[UtilitySelector] Inertia applied: {_actions[_lastSelectedActionIndex].Name} " +
-                                  $"boosted from {currentProb:P0} to {_probabilities[_lastSelectedActionIndex]:P0} " +
-                                  $"(inertia={inertia:F2})");
-                    }
+                    // Inertia logging is now combined with the main action log below to reduce spam
                 }
             }
 
-            // Debug: Log all action scores and probabilities
-            if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
-            {
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                sb.Append($"[UtilitySelector] T={temperature:F2} I={inertia:F2} | ");
-                for (int i = 0; i < _actions.Count; i++)
-                {
-                    sb.Append($"{_actions[i].Name}={_scores[i]:F2}({_probabilities[i]:P0}) ");
-                }
-                Debug.Log(sb.ToString());
-            }
+            // Debug: Log action scores - but only every LOG_INTERVAL seconds OR when action changes
+            // This drastically reduces log spam while still showing important state changes
 
             float randomValue = (float)_random.NextDouble();
             float cumulative = 0f;
@@ -397,13 +388,61 @@ namespace NPCBrain.BehaviorTree.Composites
                 {
                     _currentActionIndex = i;
                     _lastSelectedActionIndex = i;
+                    LogActionSelection(i, temperature, inertia);
                     return _actions[i];
                 }
             }
 
             _currentActionIndex = _actions.Count - 1;
             _lastSelectedActionIndex = _actions.Count - 1;
+            LogActionSelection(_actions.Count - 1, temperature, inertia);
             return _actions[_actions.Count - 1];
+        }
+        
+        /// <summary>
+        /// Logs action selection, but only on action change or every LOG_INTERVAL seconds to reduce spam.
+        /// </summary>
+        private void LogActionSelection(int selectedIndex, float temperature, float inertia)
+        {
+            if (!NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+                return;
+                
+            string selectedActionName = _actions[selectedIndex].Name;
+            float currentTime = Time.time;
+            bool actionChanged = selectedActionName != _lastLoggedActionName;
+            bool timeElapsed = currentTime - _lastLogTime >= LOG_INTERVAL;
+            
+            // Only log if action changed OR enough time has passed
+            if (!actionChanged && !timeElapsed)
+                return;
+                
+            _lastLogTime = currentTime;
+            _lastLoggedActionName = selectedActionName;
+            
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            
+            if (actionChanged && _lastLoggedActionName != null)
+            {
+                sb.Append($"<color=green>[UtilitySelector]</color> ACTION CHANGED → ");
+            }
+            else
+            {
+                sb.Append($"[UtilitySelector] ");
+            }
+            
+            sb.Append($"T={temperature:F2} I={inertia:F2} | ");
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                if (i == selectedIndex)
+                {
+                    sb.Append($"<b>{_actions[i].Name}={_scores[i]:F2}({_probabilities[i]:P0})</b> ");
+                }
+                else
+                {
+                    sb.Append($"{_actions[i].Name}={_scores[i]:F2}({_probabilities[i]:P0}) ");
+                }
+            }
+            Debug.Log(sb.ToString());
         }
         
         protected override void OnEnter(NPCBrainController brain)
