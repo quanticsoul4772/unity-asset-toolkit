@@ -121,6 +121,14 @@ namespace NPCBrain.BehaviorTree.Composites
         /// </summary>
         public float InterruptThreshold { get; set; } = 0.5f;
         
+        /// <summary>
+        /// How often to check for action interruption (in seconds). Default 0.25s.
+        /// Lower values = more responsive but higher CPU cost.
+        /// </summary>
+        public float InterruptCheckInterval { get; set; } = 0.25f;
+        
+        private float _lastInterruptCheckTime;
+        
         protected override NodeStatus Tick(NPCBrainController brain)
         {
             if (_actions.Count == 0)
@@ -133,36 +141,43 @@ namespace NPCBrain.BehaviorTree.Composites
                 return NodeStatus.Failure;
             }
             
-            // IMPORTANT: Re-evaluate scores every tick to allow interruption
+            // IMPORTANT: Re-evaluate scores periodically to allow interruption
             // This fixes the issue where cops wouldn't switch from Patrol to Chase
             if (_currentAction != null)
             {
-                // Check if a significantly better action is available
-                float currentScore = _currentAction.Score(brain);
-                UtilityAction bestAction = null;
-                float bestScore = currentScore;
-                int bestIndex = _currentActionIndex;
-                
-                for (int i = 0; i < _actions.Count; i++)
+                // Throttle interruption checks for performance (default every 0.25s)
+                float currentTime = Time.time;
+                if (currentTime - _lastInterruptCheckTime >= InterruptCheckInterval)
                 {
-                    if (_actions[i] == _currentAction) continue;
-                    float score = _actions[i].Score(brain);
-                    if (score > bestScore + InterruptThreshold)
+                    _lastInterruptCheckTime = currentTime;
+                    
+                    // Check if a significantly better action is available
+                    float currentScore = _currentAction.Score(brain);
+                    UtilityAction bestAction = null;
+                    float bestScore = currentScore;
+                    int bestIndex = _currentActionIndex;
+                    
+                    for (int i = 0; i < _actions.Count; i++)
                     {
-                        bestScore = score;
-                        bestAction = _actions[i];
-                        bestIndex = i;
+                        if (_actions[i] == _currentAction) continue;
+                        float score = _actions[i].Score(brain);
+                        if (score > bestScore + InterruptThreshold)
+                        {
+                            bestScore = score;
+                            bestAction = _actions[i];
+                            bestIndex = i;
+                        }
                     }
-                }
-                
-                // If a significantly better action exists, interrupt current and switch
-                if (bestAction != null)
-                {
-                    NPCBrainDebug.Log(NPCBrainDebug.Category.Utility,
-                        $"Interrupting {_currentAction.Name} (score {currentScore:F2}) for {bestAction.Name} (score {bestScore:F2})");
-                    _currentAction.Action.Abort(brain);
-                    _currentAction = bestAction;
-                    _currentActionIndex = bestIndex;
+                    
+                    // If a significantly better action exists, interrupt current and switch
+                    if (bestAction != null)
+                    {
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Utility,
+                            $"Interrupting {_currentAction.Name} (score {currentScore:F2}) for {bestAction.Name} (score {bestScore:F2})");
+                        _currentAction.Action.Abort(brain);
+                        _currentAction = bestAction;
+                        _currentActionIndex = bestIndex;
+                    }
                 }
             }
             else
