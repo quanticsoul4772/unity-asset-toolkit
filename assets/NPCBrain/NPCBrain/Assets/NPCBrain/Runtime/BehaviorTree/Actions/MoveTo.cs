@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using NPCBrain.Debug;
+using NPCBrain.Settings;
 
 namespace NPCBrain.BehaviorTree.Actions
 {
@@ -27,17 +28,10 @@ namespace NPCBrain.BehaviorTree.Actions
         private Vector3 _lastTargetPosition;
         private float _lastPathCalcTime;
         
-        // Criticality-adaptive settings
-        private const float BaseRecalcInterval = 0.5f;  // Base interval between path recalculations
-        private const float BaseWaypointTolerance = 0.5f;  // Base tolerance for reaching waypoints
-        
-        // Stuck detection
+        // Stuck detection state
         private Vector3 _lastStuckCheckPosition;
         private float _lastStuckCheckTime;
         private int _stuckCounter;
-        private const float StuckCheckInterval = 1.0f;
-        private const float StuckDistanceThreshold = 0.3f;
-        private const int MaxStuckCount = 3;
         
         // Smart logging - only log when path changes significantly
         private int _lastLoggedWaypointCount = -1;
@@ -197,18 +191,17 @@ namespace NPCBrain.BehaviorTree.Actions
             float inertia = brain.Criticality?.Inertia ?? 0.5f;
             
             // Temperature-based path recalculation interval:
-            // Low temp (0.5) = recalc every 0.25s → always seeking optimal path
-            // High temp (2.0) = recalc every 1.0s → commits to suboptimal paths
-            float recalcInterval = BaseRecalcInterval * temperature;
+            // See PathfindingSettings for parameter documentation
+            float recalcInterval = PathfindingSettings.BaseRecalcInterval * temperature;
             
             // Inertia-based waypoint tolerance:
-            // High inertia (1.0) = tight 0.5m tolerance → precise path following
-            // Low inertia (0.0) = loose 2.0m tolerance → cuts corners, more direct
-            float waypointTolerance = BaseWaypointTolerance + (1f - inertia) * 1.5f;
+            // See PathfindingSettings for parameter documentation
+            float waypointTolerance = PathfindingSettings.BaseWaypointTolerance + 
+                (1f - inertia) * PathfindingSettings.InertiaToleranceMultiplier;
             
             // Check if we need to recalculate path
             bool needsNewPath = _currentPath == null || _currentPath.Count == 0;
-            bool targetMoved = Vector3.Distance(target, _lastTargetPosition) > 2f;
+            bool targetMoved = Vector3.Distance(target, _lastTargetPosition) > PathfindingSettings.TargetMovedThreshold;
             bool timeForRecalc = Time.time - _lastPathCalcTime > recalcInterval;
             
             if (needsNewPath || (targetMoved && timeForRecalc))
@@ -223,7 +216,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 {
                     int newWaypointCount = _currentPath?.Count ?? 0;
                     bool isFirstPath = !_hasLoggedInitialPath;
-                    bool waypointCountChangedSignificantly = Mathf.Abs(newWaypointCount - _lastLoggedWaypointCount) >= 3;
+                    bool waypointCountChangedSignificantly = Mathf.Abs(newWaypointCount - _lastLoggedWaypointCount) >= PathfindingSettings.SignificantWaypointChange;
                     bool pathFailed = _currentPath == null || _currentPath.Count == 0;
                     
                     if (isFirstPath || waypointCountChangedSignificantly || pathFailed)
@@ -274,17 +267,16 @@ namespace NPCBrain.BehaviorTree.Actions
                 NPCPathVisualizer.UpdatePathProgress(brain.name, _currentWaypointIndex, transform.position);
                 
                 // Skip waypoints if low inertia (more aggressive corner cutting)
-                if (inertia < 0.3f && _currentWaypointIndex < _currentPath.Count - 1)
+                if (inertia < PathfindingSettings.CornerCuttingInertiaThreshold && _currentWaypointIndex < _currentPath.Count - 1)
                 {
                     // Try to skip to a further waypoint if we have actual line of sight (raycast check)
-                    int skipTarget = Mathf.Min(_currentWaypointIndex + 2, _currentPath.Count - 1);
+                    int skipTarget = Mathf.Min(_currentWaypointIndex + PathfindingSettings.CornerCuttingSkipCount, _currentPath.Count - 1);
                     Vector3 skipPos = _currentPath[skipTarget];
                     skipPos.y = transform.position.y;
                     
                     // Raycast to check for actual line of sight - don't skip through walls
-                    // Use obstacle layer mask to avoid hitting NPCs or other non-obstacle colliders
-                    Vector3 rayOrigin = transform.position + Vector3.up * 0.5f; // Raise to avoid ground
-                    Vector3 rayTarget = skipPos + Vector3.up * 0.5f;
+                    Vector3 rayOrigin = transform.position + Vector3.up * PathfindingSettings.CornerCuttingRaycastHeight;
+                    Vector3 rayTarget = skipPos + Vector3.up * PathfindingSettings.CornerCuttingRaycastHeight;
                     Vector3 rayDirection = rayTarget - rayOrigin;
                     float rayDistance = rayDirection.magnitude;
                     
@@ -292,7 +284,8 @@ namespace NPCBrain.BehaviorTree.Actions
                     int obstacleMask = _cachedGrid != null ? (1 << LayerMask.NameToLayer("Obstacles")) : ~0;
                     if (obstacleMask == (1 << -1)) obstacleMask = ~0; // Fallback if layer doesn't exist
                     
-                    if (rayDistance < 5f && !Physics.Raycast(rayOrigin, rayDirection.normalized, rayDistance, obstacleMask))
+                    if (rayDistance < PathfindingSettings.CornerCuttingMaxDistance && 
+                        !Physics.Raycast(rayOrigin, rayDirection.normalized, rayDistance, obstacleMask))
                     {
                         // Clear line of sight - safe to skip waypoints
                         _currentWaypointIndex = skipTarget;
@@ -312,7 +305,7 @@ namespace NPCBrain.BehaviorTree.Actions
             }
             
             // Move toward current waypoint using CharacterController
-            if (distanceToWaypoint > 0.01f)
+            if (distanceToWaypoint > PathfindingSettings.MinMovementForRotation)
             {
                 Vector3 direction = toWaypoint / distanceToWaypoint;
                 Vector3 movement = direction * _moveSpeed * Time.deltaTime;
@@ -320,7 +313,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 // Add gravity
                 if (!controller.isGrounded)
                 {
-                    movement.y = -9.81f * Time.deltaTime;
+                    movement.y = -PathfindingSettings.Gravity * Time.deltaTime;
                 }
                 
                 controller.Move(movement);
@@ -332,13 +325,13 @@ namespace NPCBrain.BehaviorTree.Actions
             }
             
             // Stuck detection - if we haven't moved much over time, we might be blocked
-            if (Time.time - _lastStuckCheckTime > StuckCheckInterval)
+            if (Time.time - _lastStuckCheckTime > PathfindingSettings.StuckCheckInterval)
             {
                 float movedDistance = Vector3.Distance(transform.position, _lastStuckCheckPosition);
-                if (movedDistance < StuckDistanceThreshold)
+                if (movedDistance < PathfindingSettings.StuckDistanceThreshold)
                 {
                     _stuckCounter++;
-                    if (_stuckCounter >= MaxStuckCount)
+                    if (_stuckCounter >= PathfindingSettings.MaxStuckCount)
                     {
                         // We're stuck - force path recalculation
                         if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
@@ -381,7 +374,7 @@ namespace NPCBrain.BehaviorTree.Actions
             // Add gravity to keep grounded
             if (!controller.isGrounded)
             {
-                movement.y = -9.81f * Time.deltaTime;
+                movement.y = -PathfindingSettings.Gravity * Time.deltaTime;
             }
 
             controller.Move(movement);
