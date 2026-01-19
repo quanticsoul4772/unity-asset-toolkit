@@ -37,7 +37,6 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _arrestDistance = 2f;
         [SerializeField] private float _waypointWaitTime = 2f;
         [SerializeField] private float _investigateTime = 3f;
-        [SerializeField] private float _maxChaseDistance = 25f;
         
         [Header("Alert Settings")]
         [SerializeField] private float _alertDecayRate = 0.1f;
