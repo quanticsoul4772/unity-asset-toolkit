@@ -212,6 +212,7 @@ namespace NPCBrain.Archetypes
         
         protected override void OnDestroy()
         {
+            CancelInvoke();  // Cancel any pending Invoke calls
             NPCRegistry<RobberNPC>.Unregister(this);
             base.OnDestroy();
         }
@@ -322,16 +323,9 @@ namespace NPCBrain.Archetypes
         private void UpdateLootAvailability()
         {
             // Cache loot availability to avoid repeated FindNearestLoot() calls during utility scoring
+            // Note: FindNearestLoot() handles refresh internally if needed
             var nearestLoot = FindNearestLoot();
             _hasLootAvailable = nearestLoot != null;
-            
-            // If no loot found but we know loot points exist, try refreshing
-            if (!_hasLootAvailable && _knownLootPoints.Count == 0)
-            {
-                RefreshKnownPoints();
-                nearestLoot = FindNearestLoot();
-                _hasLootAvailable = nearestLoot != null;
-            }
         }
         
         private void EmitFootstepsIfMoving()
@@ -813,10 +807,8 @@ namespace NPCBrain.Archetypes
                 
                 // Use sqrMagnitude for distance comparison
                 float distSqr = (myPosition - loot.transform.position).sqrMagnitude;
-                // Increased detection range - robber should find loot across the map!
-                // Use 10000 (100^2) as max range instead of configured range for initial finding
-                float maxRangeSqr = Mathf.Max(_lootDetectionRangeSqr, 10000f);
-                if (distSqr < nearestDistSqr && distSqr <= maxRangeSqr)
+                // Use configured detection range (already set to 100m = 10000 sqr)
+                if (distSqr < nearestDistSqr && distSqr <= _lootDetectionRangeSqr)
                 {
                     nearestDistSqr = distSqr;
                     nearest = loot;
