@@ -799,7 +799,13 @@ namespace NPCBrain.Demo
             GUILayout.Label($"      <size=10><color=#888888>Goal: {cop.Goal}</color></size>");
             GUILayout.Label($"      Action: <color={stateColor}>{actionName}</color>{critInfo}");
             GUILayout.Label($"      <color=#AADDFF>→ {cop.CurrentReason}</color>");
-            GUILayout.Label($"      Alert: {alert:F2} | Arrests: {cop.ArrestCount}");
+            // Show vision info for debugging
+            string visionInfo = cop.Perception != null && cop.Perception.HasVisibleTargets 
+                ? $"<color=red>SEES TARGET!</color>" 
+                : $"No visual ({cop.Perception?.VisibleTargets.Count ?? 0} targets)";
+            string crimeStatus = cop.CrimeInProgress ? "<color=red>CRIME!</color>" : "No crime";
+            GUILayout.Label($"      Alert: {alert:F2} | Arrests: {cop.ArrestCount} | {crimeStatus}");
+            GUILayout.Label($"      Vision: {visionInfo}");
         }
         
         private void DrawRobberStatus(RobberNPC robber)
