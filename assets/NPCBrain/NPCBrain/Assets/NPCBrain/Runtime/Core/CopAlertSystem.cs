@@ -98,19 +98,27 @@ namespace NPCBrain
             if (!_hasActivePursuit || (Time.time - _timeLostSight) > 0.5f)
             {
                 _lastKnownRobberPosition = lastPosition;
-                _lastKnownRobberDirection = lastDirection;
                 _timeLostSight = Time.time;
                 _hasActivePursuit = true;
                 
+                // Only update direction if the new one is valid
+                // This preserves any previously tracked direction if the new one is zero
                 bool hasValidDirection = lastDirection.sqrMagnitude > 0.01f;
-                string directionStatus = hasValidDirection ? $"direction {lastDirection}" : "<color=red>NO DIRECTION (zero vector!)</color>";
-                
-                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=magenta>COORDINATED PURSUIT STARTED!</color> Position: {lastPosition} | {directionStatus} | Duration: {PursuitValidDuration}s");
-                
-                if (!hasValidDirection)
+                if (hasValidDirection)
                 {
-                    Debug.LogWarning($"[CopAlertSystem] WARNING: Pursuit started with zero direction! Cops will pursue to last known position only.");
+                    _lastKnownRobberDirection = lastDirection;
                 }
+                else if (_lastKnownRobberDirection.sqrMagnitude < 0.01f)
+                {
+                    // No previous direction either - this shouldn't happen with ultimate fallback
+                    Debug.LogWarning($"[CopAlertSystem] WARNING: No direction available! HandleTargetLost should have provided ultimate fallback.");
+                }
+                
+                string directionStatus = _lastKnownRobberDirection.sqrMagnitude > 0.01f 
+                    ? $"direction {_lastKnownRobberDirection}" 
+                    : "<color=red>NO DIRECTION!</color>";
+                
+                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=magenta>COORDINATED PURSUIT STARTED!</color> Position: {lastPosition} | {directionStatus} | Duration: {PursuitValidDuration}s | HasActivePursuit: {_hasActivePursuit}");
             }
         }
         
@@ -121,6 +129,12 @@ namespace NPCBrain
         /// <returns>Predicted position of the robber.</returns>
         public static Vector3 GetPredictedRobberPosition(float predictionMultiplier = 1.5f)
         {
+            // Always return something useful, even if pursuit has expired
+            if (_lastKnownRobberPosition == Vector3.zero)
+            {
+                return Vector3.zero;  // No data at all
+            }
+            
             if (!HasActivePursuit)
             {
                 return _lastKnownRobberPosition;
@@ -128,9 +142,10 @@ namespace NPCBrain
             
             float timeSinceLost = Time.time - _timeLostSight;
             
-            // If no direction, just return last known position
+            // If no direction, just return last known position (cops will converge there)
             if (_lastKnownRobberDirection.sqrMagnitude < 0.01f)
             {
+                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=yellow>No direction for prediction - returning last known position</color>");
                 return _lastKnownRobberPosition;
             }
             

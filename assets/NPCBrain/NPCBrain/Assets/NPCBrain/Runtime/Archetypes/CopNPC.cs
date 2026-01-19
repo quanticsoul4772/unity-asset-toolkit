@@ -208,20 +208,26 @@ namespace NPCBrain.Archetypes
                 Vector3 lastPosition = target.transform.position;
                 Vector3 lastDirection = Blackboard.GetVector3(BBKeys.LastKnownRobberDirection, Vector3.zero);
                 
-                // FALLBACK: If stored direction is zero (robber wasn't moving much), calculate from position delta
-                if (lastDirection.sqrMagnitude < 0.01f && _lastTrackedRobberPosition != Vector3.zero)
+                // FALLBACK: If stored direction is zero (robber wasn't moving much), calculate alternatives
+                if (lastDirection.sqrMagnitude < 0.01f)
                 {
-                    Vector3 positionDelta = lastPosition - _lastTrackedRobberPosition;
-                    if (positionDelta.sqrMagnitude > 0.1f)
+                    // Try position delta if we have previous position
+                    if (_lastTrackedRobberPosition != Vector3.zero)
                     {
-                        lastDirection = positionDelta.normalized;
-                        Debug.Log($"<color=blue>[{name}]</color> <color=yellow>Using fallback direction from position delta: {lastDirection}</color>");
+                        Vector3 positionDelta = lastPosition - _lastTrackedRobberPosition;
+                        if (positionDelta.sqrMagnitude > 0.1f)
+                        {
+                            lastDirection = positionDelta.normalized;
+                            Debug.Log($"<color=blue>[{name}]</color> <color=yellow>Using fallback direction from position delta: {lastDirection}</color>");
+                        }
                     }
-                    else
+                    
+                    // ULTIMATE FALLBACK: If still no direction, use direction from cop to robber
+                    // This ensures we ALWAYS have a valid direction for pursuit!
+                    if (lastDirection.sqrMagnitude < 0.01f)
                     {
-                        // Robber was stationary - use direction from cop to robber as a guess
                         lastDirection = (lastPosition - transform.position).normalized;
-                        Debug.Log($"<color=blue>[{name}]</color> <color=yellow>Robber stationary - using direction away from cop: {lastDirection}</color>");
+                        Debug.Log($"<color=blue>[{name}]</color> <color=yellow>Using ultimate fallback - direction from cop to robber: {lastDirection}</color>");
                     }
                 }
                 
@@ -600,28 +606,50 @@ namespace NPCBrain.Archetypes
                 pursueBehavior,
                 _pursueLastKnownWeight,
                 // Must have crime in progress
-                new BlackboardConsideration<bool>("CrimeActive", BBKeys.CrimeInProgress,
-                    crime => crime ? 1f : 0f, false),
+                new FunctionalConsideration("CrimeActive",
+                    brain => {
+                        bool crime = brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false);
+                        if (!crime && Time.time - _lastPursueLogTime > 5f)
+                        {
+                            Debug.Log($"<color=blue>[{name}]</color> <color=gray>PursueLastKnown: CrimeActive=0 (no crime)</color>");
+                        }
+                        return crime ? 1f : 0f;
+                    }),
                 // Must NOT have direct visual on target (otherwise Chase takes over)
-                new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
-                    t => t == null ? 1f : 0f, null),
+                new FunctionalConsideration("NoDirectVisual",
+                    brain => {
+                        bool hasTarget = brain.Blackboard.TryGet<GameObject>(BBKeys.Target, out var t) && t != null;
+                        return hasTarget ? 0f : 1f;
+                    }),
                 // Must have active coordinated pursuit from CopAlertSystem (ANY cop lost sight recently)
                 new FunctionalConsideration("HasActivePursuit",
                     _ => {
-                        if (!CopAlertSystem.HasActivePursuit) return 0f;
+                        if (!CopAlertSystem.HasActivePursuit)
+                        {
+                            // Debug only occasionally to avoid spam
+                            return 0f;
+                        }
                         // High score throughout pursuit - slight decay but stays above 0.5
                         float timeSinceLost = CopAlertSystem.TimeSinceLostSight;
                         float decay = 1f - (timeSinceLost / CopAlertSystem.PursuitValidDuration) * 0.5f;
                         return Mathf.Clamp01(decay);  // Decays from 1.0 to 0.5 over 5 seconds
                     }),
-                // Must have a valid shared direction (not zero) - or fallback to position-based pursuit
-                new FunctionalConsideration("HasSharedDirection",
+                // Direction consideration - with ultimate fallbacks, always returns positive score during pursuit
+                new FunctionalConsideration("HasPursuitData",
                     _ => {
-                        // With fallback direction in HandleTargetLost, direction should rarely be zero
-                        // But allow position-based pursuit as ultimate fallback
+                        // If active pursuit, ALWAYS return positive score
+                        // Direction should always be valid now with ultimate fallback in HandleTargetLost
+                        if (!CopAlertSystem.HasActivePursuit) return 0f;
+                        
+                        // Check if we have good direction data
                         if (CopAlertSystem.LastKnownRobberDirection.sqrMagnitude > 0.01f) return 1f;
-                        if (CopAlertSystem.HasActivePursuit && CopAlertSystem.LastKnownRobberPosition != Vector3.zero) return 0.7f;
-                        return 0f;
+                        
+                        // Fallback: pursue to last known position even without direction
+                        if (CopAlertSystem.LastKnownRobberPosition != Vector3.zero) return 0.9f;
+                        
+                        // Ultimate fallback: still pursue with lower confidence
+                        Debug.LogWarning($"<color=blue>[{name}]</color> <color=red>PursueLastKnown: No direction or position! This shouldn't happen.</color>");
+                        return 0.5f;  // Still positive so pursuit can happen
                     })
             );
         }
