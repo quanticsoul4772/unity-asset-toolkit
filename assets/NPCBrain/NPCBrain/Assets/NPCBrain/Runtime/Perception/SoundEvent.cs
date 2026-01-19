@@ -60,8 +60,13 @@ namespace NPCBrain.Perception
         /// <returns>Attenuated volume (0-1).</returns>
         public float GetVolumeAtPosition(Vector3 listenerPosition)
         {
-            float distance = Vector3.Distance(Position, listenerPosition);
-            if (distance >= Radius) return 0f;
+            // Early-out using sqrMagnitude to avoid sqrt when out of range
+            float radiusSqr = Radius * Radius;
+            float distSqr = (Position - listenerPosition).sqrMagnitude;
+            if (distSqr >= radiusSqr) return 0f;
+            
+            // Only calculate actual distance when in range
+            float distance = Mathf.Sqrt(distSqr);
             
             // Inverse linear falloff
             float attenuation = 1f - (distance / Radius);
@@ -76,11 +81,26 @@ namespace NPCBrain.Perception
         /// <returns>Priority score (higher = more important).</returns>
         public float CalculatePriority(Vector3 listenerPosition, float hearingRange)
         {
-            float distance = Vector3.Distance(Position, listenerPosition);
             float effectiveRadius = Mathf.Min(Radius, hearingRange);
             
-            // Distance factor (closer = higher priority)
-            float distanceFactor = 1f - Mathf.Clamp01(distance / effectiveRadius);
+            // Use sqrMagnitude for early-out check
+            float distSqr = (Position - listenerPosition).sqrMagnitude;
+            float effectiveRadiusSqr = effectiveRadius * effectiveRadius;
+            
+            // If completely out of range, priority is effectively 0
+            float distance;
+            float distanceFactor;
+            if (distSqr >= effectiveRadiusSqr)
+            {
+                distance = effectiveRadius;
+                distanceFactor = 0f;
+            }
+            else
+            {
+                // Only calculate sqrt when in range
+                distance = Mathf.Sqrt(distSqr);
+                distanceFactor = 1f - (distance / effectiveRadius);
+            }
             
             // Type factor (normalized 0-1 based on enum value)
             float typeFactor = (int)Type / (float)SoundType.Explosion;

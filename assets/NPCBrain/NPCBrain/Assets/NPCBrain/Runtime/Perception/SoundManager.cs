@@ -75,10 +75,12 @@ namespace NPCBrain.Perception
             for (int i = 0; i < _activeSounds.Count; i++)
             {
                 var sound = _activeSounds[i];
-                float distance = Vector3.Distance(position, sound.Position);
                 float effectiveRange = Mathf.Min(range, sound.Radius);
+                // Use sqrMagnitude to avoid sqrt operation
+                float distSqr = (position - sound.Position).sqrMagnitude;
+                float effectiveRangeSqr = effectiveRange * effectiveRange;
                 
-                if (distance <= effectiveRange)
+                if (distSqr <= effectiveRangeSqr)
                 {
                     yield return sound;
                 }
@@ -99,10 +101,12 @@ namespace NPCBrain.Perception
             for (int i = 0; i < _activeSounds.Count; i++)
             {
                 var sound = _activeSounds[i];
-                float distance = Vector3.Distance(position, sound.Position);
                 float effectiveRange = Mathf.Min(range, sound.Radius);
+                // Use sqrMagnitude to avoid sqrt operation
+                float distSqr = (position - sound.Position).sqrMagnitude;
+                float effectiveRangeSqr = effectiveRange * effectiveRange;
                 
-                if (distance <= effectiveRange)
+                if (distSqr <= effectiveRangeSqr)
                 {
                     results.Add(sound);
                 }

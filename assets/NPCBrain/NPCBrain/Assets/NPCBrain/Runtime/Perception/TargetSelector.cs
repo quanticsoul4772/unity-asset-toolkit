@@ -191,8 +191,11 @@ namespace NPCBrain.Perception
             Blackboard blackboard,
             bool wasRecentlyHeard)
         {
-            float distance = Vector3.Distance(selectorPosition, targetPosition);
-            Vector3 dirToTarget = (targetPosition - selectorPosition).normalized;
+            // Compute direction and distance together to avoid redundant calculations
+            Vector3 toTarget = targetPosition - selectorPosition;
+            float distanceSqr = toTarget.sqrMagnitude;
+            float distance = Mathf.Sqrt(distanceSqr);
+            Vector3 dirToTarget = distance > 0.0001f ? toTarget / distance : Vector3.zero;
             float angle = Vector3.Angle(selectorForward, dirToTarget);
             
             // Calculate distance score (inverse - closer is better)

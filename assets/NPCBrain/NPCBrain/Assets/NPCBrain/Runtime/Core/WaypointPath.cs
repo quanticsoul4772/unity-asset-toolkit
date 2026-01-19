@@ -217,16 +217,17 @@ namespace NPCBrain
             if (_waypoints.Count == 0) return -1;
             
             int nearest = 0;
-            float nearestDistance = float.MaxValue;
+            float nearestDistanceSqr = float.MaxValue;
             
             for (int i = 0; i < _waypoints.Count; i++)
             {
                 if (_waypoints[i] == null) continue;
                 
-                float distance = Vector3.Distance(position, _waypoints[i].position);
-                if (distance < nearestDistance)
+                // Use sqrMagnitude to avoid sqrt - we only need to compare distances
+                float distanceSqr = (position - _waypoints[i].position).sqrMagnitude;
+                if (distanceSqr < nearestDistanceSqr)
                 {
-                    nearestDistance = distance;
+                    nearestDistanceSqr = distanceSqr;
                     nearest = i;
                 }
             }
