@@ -4,6 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using NPCBrain;
+using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.UtilityAI;
 using NPCBrain.Criticality;
@@ -283,11 +284,9 @@ namespace NPCBrain.Tests.Editor
         }
 
         // Simple test node for UtilityAction
-        private class TestNode : BehaviorTree.BTNode
+        private class TestNode : BTNode
         {
-            protected override void OnEnter(NPCBrainController brain) { }
-            protected override NodeStatus OnTick(NPCBrainController brain) => NodeStatus.Success;
-            protected override void OnExit(NPCBrainController brain) { }
+            protected override NodeStatus Tick(NPCBrainController brain) => NodeStatus.Success;
         }
 
         #endregion
