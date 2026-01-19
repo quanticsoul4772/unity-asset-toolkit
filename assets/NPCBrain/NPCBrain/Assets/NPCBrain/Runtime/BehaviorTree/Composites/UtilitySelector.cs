@@ -157,43 +157,55 @@ namespace NPCBrain.BehaviorTree.Composites
                     float bestScore = currentScore;
                     int bestIndex = _currentActionIndex;
                     
+                    // Track best positive-scoring action for force-switch (avoids second loop)
+                    UtilityAction bestPositiveAction = null;
+                    float bestPositiveScore = 0f;
+                    int bestPositiveIndex = -1;
+                    
                     for (int i = 0; i < _actions.Count; i++)
                     {
                         if (_actions[i] == _currentAction) continue;
                         float score = _actions[i].Score(brain);
+                        
+                        // Check for interrupt (significantly better action)
                         if (score > bestScore + InterruptThreshold)
                         {
                             bestScore = score;
                             bestAction = _actions[i];
                             bestIndex = i;
                         }
+                        
+                        // Track best positive for potential force-switch
+                        if (score > bestPositiveScore)
+                        {
+                            bestPositiveScore = score;
+                            bestPositiveAction = _actions[i];
+                            bestPositiveIndex = i;
+                        }
                     }
                     
                     // If a significantly better action exists, interrupt current and switch
                     if (bestAction != null)
                     {
-                        Debug.Log($"<color=yellow>[UtilitySelector]</color> Interrupting {_currentAction.Name} (score {currentScore:F2}) for {bestAction.Name} (score {bestScore:F2})");
+                        if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+                        {
+                            Debug.Log($"<color=yellow>[UtilitySelector]</color> Interrupting {_currentAction.Name} (score {currentScore:F2}) for {bestAction.Name} (score {bestScore:F2})");
+                        }
                         _currentAction.Action.Abort(brain);
                         _currentAction = bestAction;
                         _currentActionIndex = bestIndex;
                     }
-                    else if (currentScore <= 0f)
+                    else if (currentScore <= 0f && bestPositiveAction != null)
                     {
                         // IMPORTANT: If current action scores 0, we MUST switch to something else!
-                        // Find any action with positive score
-                        for (int i = 0; i < _actions.Count; i++)
+                        // Use the best positive action we already found during the loop
+                        if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
                         {
-                            if (_actions[i] == _currentAction) continue;
-                            float score = _actions[i].Score(brain);
-                            if (score > 0f)
-                            {
-                                Debug.Log($"<color=yellow>[UtilitySelector]</color> Force-switching from {_currentAction.Name} (score 0) to {_actions[i].Name} (score {score:F2})");
-                                _currentAction.Action.Abort(brain);
-                                _currentAction = _actions[i];
-                                _currentActionIndex = i;
-                                break;
-                            }
+                            Debug.Log($"<color=yellow>[UtilitySelector]</color> Force-switching from {_currentAction.Name} (score 0) to {bestPositiveAction.Name} (score {bestPositiveScore:F2})");
                         }
+                        _currentAction.Action.Abort(brain);
+                        _currentAction = bestPositiveAction;
+                        _currentActionIndex = bestPositiveIndex;
                     }
                 }
             }

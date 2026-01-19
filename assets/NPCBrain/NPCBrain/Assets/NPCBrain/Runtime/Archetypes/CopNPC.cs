@@ -883,18 +883,10 @@ namespace NPCBrain.Archetypes
                 _searchWeight,
                 // MUST have crime in progress - this is the active search behavior
                 new FunctionalConsideration("CrimeActive",
-                    brain => {
-                        bool crime = brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false);
-                        float score = crime ? 1f : 0f;
-                        return score;
-                    }),
+                    brain => brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false) ? 1f : 0f),
                 // Must NOT have direct visual on target (otherwise Chase takes over)
                 new FunctionalConsideration("NoDirectVisual",
-                    brain => {
-                        bool hasTarget = brain.Blackboard.TryGet<GameObject>(BBKeys.Target, out var t) && t != null;
-                        float score = hasTarget ? 0f : 1f;
-                        return score;
-                    }),
+                    brain => (brain.Blackboard.TryGet<GameObject>(BBKeys.Target, out var t) && t != null) ? 0f : 1f),
                 // Less priority when there's an active pursuit
                 new FunctionalConsideration("NoActivePursuit",
                     _ => CopAlertSystem.HasActivePursuit ? 0.3f : 1f),
