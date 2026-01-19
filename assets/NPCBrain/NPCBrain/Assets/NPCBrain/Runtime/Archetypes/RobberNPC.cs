@@ -63,6 +63,7 @@ namespace NPCBrain.Archetypes
         private string _cachedState = "Scout";
         private float _lootDetectionRangeSqr;
         private float _copDetectionRangeSqr;
+        private bool _hasLootAvailable;  // Cached for performance
         
         [Header("Performance")]
         [SerializeField] private int _maxCopRaycastsPerFrame = 2;
@@ -179,6 +180,7 @@ namespace NPCBrain.Archetypes
             
             UpdateCopDetection();
             UpdateFearLevel();
+            UpdateLootAvailability();  // Cache loot availability for utility scoring
             TryEscape();
             
             // Debug log every 2 seconds
@@ -246,6 +248,12 @@ namespace NPCBrain.Archetypes
             {
                 Blackboard.SetVector3(BBKeys.ClosestCopPosition, closestCopPosition);
             }
+        }
+        
+        private void UpdateLootAvailability()
+        {
+            // Cache loot availability to avoid repeated FindNearestLoot() calls during utility scoring
+            _hasLootAvailable = FindNearestLoot() != null;
         }
         
         private void UpdateFearLevel()
@@ -432,9 +440,9 @@ namespace NPCBrain.Archetypes
                 // Must not have loot already
                 new BlackboardConsideration<bool>("NoLootYet", BBKeys.HasLoot,
                     has => has ? 0f : 1f, false),
-                // Must have loot available to steal - critical gate!
+                // Must have loot available to steal - critical gate! (uses cached value for performance)
                 new FunctionalConsideration("LootAvailable", 
-                    brain => FindNearestLoot() != null ? 1f : 0f),
+                    _ => _hasLootAvailable ? 1f : 0f),
                 // Must not see cop (too risky)
                 new BlackboardConsideration<bool>("NoCopForSteal", BBKeys.CanSeeCop,
                     sees => sees ? 0f : 1f, false),
