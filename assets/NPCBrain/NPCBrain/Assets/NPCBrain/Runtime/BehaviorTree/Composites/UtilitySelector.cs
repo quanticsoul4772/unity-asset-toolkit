@@ -417,11 +417,12 @@ namespace NPCBrain.BehaviorTree.Composites
                 return;
                 
             _lastLogTime = currentTime;
+            string previousActionName = _lastLoggedActionName; // Capture before update
             _lastLoggedActionName = selectedActionName;
             
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             
-            if (actionChanged && _lastLoggedActionName != null)
+            if (actionChanged && previousActionName != null)
             {
                 sb.Append($"<color=green>[UtilitySelector]</color> ACTION CHANGED → ");
             }
@@ -482,6 +483,8 @@ namespace NPCBrain.BehaviorTree.Composites
             _currentAction = null;
             _currentActionIndex = -1;
             _lastSelectedActionIndex = -1; // Full reset clears inertia history
+            _lastLoggedActionName = null; // Reset logging state
+            _lastLogTime = 0f;
         }
 
         /// <summary>
@@ -500,6 +503,8 @@ namespace NPCBrain.BehaviorTree.Composites
             _currentAction = null;
             _currentActionIndex = -1;
             _lastSelectedActionIndex = -1; // Full abort clears inertia history
+            _lastLoggedActionName = null; // Reset logging state
+            _lastLogTime = 0f;
             base.Abort(brain);
         }
         
