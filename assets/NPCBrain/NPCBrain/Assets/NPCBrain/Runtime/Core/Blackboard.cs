@@ -85,8 +85,6 @@ namespace NPCBrain
         }
         
         /// <summary>
-        /// Sets a float value without boxing.
-        /// <summary>
         /// Stores a float value under the given key in the blackboard and notifies listeners of the change.
         /// </summary>
         /// <param name="key">The identifier for the value.</param>
@@ -98,12 +96,11 @@ namespace NPCBrain
         }
 
         /// <summary>
-        /// Sets a float value only if it differs from the current value.
-        /// Performance: Avoids unnecessary event invocations.
-        /// </summary>
-        /// <summary>
         /// Updates the float stored under the given key only if the new value differs by at least the specified epsilon.
+        /// Avoids unnecessary event invocations when values are effectively unchanged.
         /// </summary>
+        /// <param name="key">The identifier for the value.</param>
+        /// <param name="value">The new float value to store.</param>
         /// <param name="epsilon">Minimum absolute difference required to treat the new value as changed.</param>
         /// <returns>`true` if the stored value was updated, `false` otherwise.</returns>
         public bool SetFloatIfChanged(string key, float value, float epsilon = 0.0001f)
@@ -125,8 +122,6 @@ namespace NPCBrain
         }
         
         /// <summary>
-        /// Sets an int value without boxing.
-        /// <summary>
         /// Stores an integer value in the blackboard under the given key and notifies subscribers of the change.
         /// </summary>
         /// <param name="key">The identifier under which to store the integer.</param>
@@ -138,11 +133,8 @@ namespace NPCBrain
         }
 
         /// <summary>
-        /// Sets an int value only if it differs from the current value.
-        /// Performance: Avoids unnecessary event invocations.
-        /// </summary>
-        /// <summary>
         /// Sets the integer value for the specified key only when it differs from the current stored value.
+        /// Avoids unnecessary event invocations when values are unchanged.
         /// </summary>
         /// <param name="key">The key identifying the stored integer.</param>
         /// <param name="value">The new integer value to store.</param>

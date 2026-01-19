@@ -116,9 +116,8 @@ namespace NPCBrain
                 {
                     // No previous direction either - this is expected when pursuit starts from alarm
                     // (alarm provides position but not direction). Cops will converge on position.
-                    // Only log at debug level since this is normal for alarm-triggered pursuits.
-                    NPCBrainDebug.Log(NPCBrainDebug.Category.General, 
-                        "[CopAlertSystem] No direction for pursuit - converging on position only", null);
+                    // This is normal for alarm-triggered pursuits, so just log info (not warning).
+                    Debug.Log("<color=cyan>[CopAlertSystem]</color> No direction for pursuit - converging on position only");
                 }
                 
                 string directionStatus = _lastKnownRobberDirection.sqrMagnitude > 0.01f 

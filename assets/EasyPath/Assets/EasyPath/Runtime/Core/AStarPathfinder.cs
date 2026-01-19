@@ -56,8 +56,6 @@ namespace EasyPath
         }
         
         /// <summary>
-        /// Find a path between two nodes.
-        /// <summary>
         /// Computes a path of world positions from a start node to an end node using the A* algorithm.
         /// </summary>
         /// <param name="startNode">The starting grid node for the path search.</param>

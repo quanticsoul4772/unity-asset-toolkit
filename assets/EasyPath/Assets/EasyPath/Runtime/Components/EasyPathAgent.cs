@@ -69,8 +69,6 @@ namespace EasyPath
         }
         
         /// <summary>
-        /// Set the destination and start moving.
-        /// <summary>
         /// Attempts to set the agent's destination and begin path-following toward it.
         /// </summary>
         /// <param name="destination">Target position in world space.</param>

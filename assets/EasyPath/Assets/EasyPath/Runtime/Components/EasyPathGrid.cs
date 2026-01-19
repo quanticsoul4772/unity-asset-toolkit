@@ -50,8 +50,6 @@ namespace EasyPath
         }
         
         /// <summary>
-        /// Build or rebuild the pathfinding grid.
-        /// <summary>
         /// Initializes the internal grid data for the current component configuration and prepares the pathfinder.
         /// </summary>
         /// <remarks>
@@ -156,10 +154,8 @@ namespace EasyPath
         }
         
         /// <summary>
-        /// Increments the path version, effectively invalidating all node states.
-        /// This is O(1) compared to the O(width*height) full reset.
-        /// <summary>
         /// Advance the grid's pathfinding version to invalidate any previously cached per-node path state.
+        /// This is O(1) compared to the O(width*height) full reset.
         /// </summary>
         /// <remarks>
         /// Incrementing the version allows nodes to be lazily reset on next access without iterating the entire grid.
@@ -232,8 +228,6 @@ namespace EasyPath
             return _nodes[x, y];
         }
         
-        /// <summary>
-        /// Get the node at a world position.
         /// <summary>
         /// Gets the grid node that contains the specified world-space position.
         /// </summary>
