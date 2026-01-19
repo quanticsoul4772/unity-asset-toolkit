@@ -38,6 +38,10 @@ namespace NPCBrain.BehaviorTree.Actions
         private const float StuckDistanceThreshold = 0.3f;
         private const int MaxStuckCount = 3;
         
+        // Smart logging - only log when path changes significantly
+        private int _lastLoggedWaypointCount = -1;
+        private bool _hasLoggedInitialPath;
+        
         public MoveTo(Func<Vector3> targetGetter, float arrivalDistance, float moveSpeed, float timeout)
         {
             _targetGetter = targetGetter ?? throw new ArgumentNullException(nameof(targetGetter));
@@ -72,6 +76,8 @@ namespace NPCBrain.BehaviorTree.Actions
             _lastStuckCheckPosition = brain.transform.position;
             _lastStuckCheckTime = Time.time;
             _stuckCounter = 0;
+            _lastLoggedWaypointCount = -1;
+            _hasLoggedInitialPath = false;
             
             if (!_navAgentCached)
             {
@@ -112,6 +118,8 @@ namespace NPCBrain.BehaviorTree.Actions
             _currentPath = null;
             _currentWaypointIndex = 0;
             _stuckCounter = 0;
+            _lastLoggedWaypointCount = -1;
+            _hasLoggedInitialPath = false;
         }
         
         protected override NodeStatus Tick(NPCBrainController brain)
@@ -206,10 +214,21 @@ namespace NPCBrain.BehaviorTree.Actions
                 _lastTargetPosition = target;
                 _lastPathCalcTime = Time.time;
                 
+                // Smart logging: only log when path changes significantly
                 if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
                 {
-                    string pathResult = _currentPath != null ? $"{_currentPath.Count} waypoints" : "FAILED";
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} path calc: {pathResult} | T={temperature:F2} (recalc={recalcInterval:F2}s) | I={inertia:F2} (tol={waypointTolerance:F2}m)");
+                    int newWaypointCount = _currentPath?.Count ?? 0;
+                    bool isFirstPath = !_hasLoggedInitialPath;
+                    bool waypointCountChangedSignificantly = Mathf.Abs(newWaypointCount - _lastLoggedWaypointCount) >= 3;
+                    bool pathFailed = _currentPath == null || _currentPath.Count == 0;
+                    
+                    if (isFirstPath || waypointCountChangedSignificantly || pathFailed)
+                    {
+                        string pathResult = _currentPath != null ? $"{_currentPath.Count} waypoints" : "FAILED";
+                        Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} path calc: {pathResult} | T={temperature:F2} (recalc={recalcInterval:F2}s) | I={inertia:F2} (tol={waypointTolerance:F2}m)");
+                        _lastLoggedWaypointCount = newWaypointCount;
+                        _hasLoggedInitialPath = true;
+                    }
                 }
                 
                 if (_currentPath == null || _currentPath.Count == 0)
