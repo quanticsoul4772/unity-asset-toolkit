@@ -595,7 +595,8 @@ namespace NPCBrain.BehaviorTree.Composites
         
         private bool ShouldLogWarning()
         {
-            return LogWarnings || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility);
+            // Only use the instance-level LogWarnings flag for control
+            return LogWarnings;
         }
         
         /// <summary>

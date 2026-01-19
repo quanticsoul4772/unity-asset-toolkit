@@ -365,7 +365,8 @@ namespace NPCBrain.Perception
         
         private bool ShouldLogWarning()
         {
-            return LogWarnings || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Memory);
+            // Only use the instance-level LogWarnings flag for control
+            return LogWarnings;
         }
     }
 }
