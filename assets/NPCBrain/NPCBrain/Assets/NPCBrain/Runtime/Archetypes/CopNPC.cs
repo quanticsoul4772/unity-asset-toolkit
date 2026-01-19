@@ -44,9 +44,14 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _alarmAlertBoost = 0.9f;
         [SerializeField] private float _footstepAlertBoost = 0.5f;  // Increased from 0.2 - cops now react more to footsteps
         
+        [Header("Pursuit Persistence")]
+        [SerializeField] private float _pursuitPersistenceTime = 4f;  // How long to continue pursuing after losing sight
+        [SerializeField] private float _pursuitPredictionMultiplier = 1.5f;  // How far ahead to predict robber position
+        
         [Header("Utility Weights")]
         [SerializeField] private float _arrestWeight = 2.0f;  // Highest priority - arrest when close
         [SerializeField] private float _chaseWeight = 1.8f;   // Very high - always chase when target visible
+        [SerializeField] private float _pursueLastKnownWeight = 1.6f;  // High - continue pursuit after losing sight
         [SerializeField] private float _trackFootstepsWeight = 1.0f;  // High - follow footsteps aggressively
         [SerializeField] private float _respondToAlertWeight = 0.95f;
         [SerializeField] private float _alarmInvestigateWeight = 0.9f;
@@ -63,6 +68,8 @@ namespace NPCBrain.Archetypes
         private float _lastChaseLogTime;
         private float _lastFootstepLogTime;
         private float _lastTrackLogTime;
+        private float _lastPursueLogTime;
+        private Vector3 _lastTrackedRobberPosition;  // For calculating robber velocity/direction
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
@@ -136,6 +143,11 @@ namespace NPCBrain.Archetypes
             Blackboard.SetBool(BBKeys.CrimeInProgress, false);
             Blackboard.SetVector3(BBKeys.AlarmLocation, Vector3.zero);
             
+            // Initialize pursuit persistence
+            Blackboard.SetFloat(BBKeys.TimeLostSight, -10f);
+            Blackboard.SetVector3(BBKeys.LastKnownRobberPosition, Vector3.zero);
+            Blackboard.SetVector3(BBKeys.LastKnownRobberDirection, Vector3.zero);
+            
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;
             OnTargetLost += HandleTargetLost;
@@ -188,7 +200,17 @@ namespace NPCBrain.Archetypes
             // Single lookup instead of Has + Get
             if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var currentTarget) && currentTarget == target)
             {
-                Debug.Log($"<color=blue>[{name}]</color> <color=red>LOST SIGHT OF ROBBER: {target?.name}</color>");
+                // PURSUIT PERSISTENCE: Save last known position and direction before clearing target
+                Vector3 lastPosition = target.transform.position;
+                Vector3 lastDirection = Blackboard.GetVector3(BBKeys.LastKnownRobberDirection, Vector3.zero);
+                
+                // Store pursuit persistence data
+                Blackboard.SetVector3(BBKeys.LastKnownRobberPosition, lastPosition);
+                Blackboard.SetFloat(BBKeys.TimeLostSight, Time.time);
+                // Direction was already being updated in LateUpdate
+                
+                Debug.Log($"<color=blue>[{name}]</color> <color=red>LOST SIGHT OF ROBBER: {target?.name}</color> | Last pos: {lastPosition} | Direction: {lastDirection} | Will pursue for {_pursuitPersistenceTime}s");
+                
                 Blackboard.Remove(BBKeys.Target);
                 _cachedTargetRobber = null;
             }
@@ -264,6 +286,22 @@ namespace NPCBrain.Archetypes
                 Vector3 robberPosition = target.transform.position;
                 Blackboard.SetVector3(BBKeys.InvestigatePosition, robberPosition);
                 IncreaseAlert(_alertIncreaseRate * Time.deltaTime);
+                
+                // Track robber direction for pursuit persistence
+                // Calculate velocity based on position change
+                if (_lastTrackedRobberPosition != Vector3.zero)
+                {
+                    Vector3 movement = robberPosition - _lastTrackedRobberPosition;
+                    if (movement.sqrMagnitude > 0.01f)  // Only update if significant movement
+                    {
+                        Vector3 direction = movement.normalized;
+                        Blackboard.SetVector3(BBKeys.LastKnownRobberDirection, direction);
+                    }
+                }
+                _lastTrackedRobberPosition = robberPosition;
+                
+                // Also continuously update last known position while tracking
+                Blackboard.SetVector3(BBKeys.LastKnownRobberPosition, robberPosition);
                 
                 // Log every 2 seconds to avoid spam
                 if (Time.time - _lastDebugLogTime > 2f)
@@ -370,7 +408,8 @@ namespace NPCBrain.Archetypes
         {
             var arrestAction = CreateArrestAction();
             var chaseAction = CreateChaseAction();
-            var trackFootstepsAction = CreateTrackFootstepsAction();  // NEW: Aggressively follow footsteps
+            var pursueLastKnownAction = CreatePursueLastKnownAction();  // Continue pursuit after losing sight
+            var trackFootstepsAction = CreateTrackFootstepsAction();  // Aggressively follow footsteps
             var respondToAlertAction = CreateRespondToAlertAction();
             var respondToAlarmAction = CreateRespondToAlarmAction();
             var alarmInvestigateAction = CreateAlarmInvestigateAction();
@@ -381,7 +420,8 @@ namespace NPCBrain.Archetypes
             return new UtilitySelector(
                 arrestAction,
                 chaseAction,
-                trackFootstepsAction,  // High priority - follow footsteps when no visual
+                pursueLastKnownAction,  // High priority - continue pursuit after losing sight
+                trackFootstepsAction,   // Follow footsteps when no visual
                 respondToAlertAction,
                 respondToAlarmAction,
                 alarmInvestigateAction,
@@ -450,6 +490,79 @@ namespace NPCBrain.Archetypes
                 // REMOVED: Distance and Alert considerations that were reducing the score
                 // Chase should ALWAYS win when there's a target to chase
             );
+        }
+        
+        private UtilityAction CreatePursueLastKnownAction()
+        {
+            // This action continues pursuit in the last known direction after losing sight
+            // Cops will pursue for _pursuitPersistenceTime seconds before giving up
+            var pursueBehavior = new Sequence(
+                new SetBlackboard(BBKeys.CurrentState, () => { 
+                    _cachedState = "Pursuing!";
+                    if (Time.time - _lastPursueLogTime > 2f)
+                    {
+                        _lastPursueLogTime = Time.time;
+                        Vector3 predictedPos = GetPredictedRobberPosition();
+                        float timeSinceLost = Time.time - Blackboard.GetFloat(BBKeys.TimeLostSight, 0f);
+                        Debug.Log($"<color=blue>[{name}]</color> <color=magenta>*** PURSUING LAST KNOWN! ***</color> Time since lost: {timeSinceLost:F1}s | Predicted pos: {predictedPos}");
+                    }
+                    return "Pursuing!"; 
+                }),
+                new MoveTo(
+                    () => GetPredictedRobberPosition(),
+                    _arrivalDistance,
+                    _chaseSpeed,  // Move at chase speed - this is active pursuit!
+                    1.0f  // Short timeout to re-evaluate frequently
+                )
+            );
+            pursueBehavior.Name = "PursueLastKnownBehavior";
+            
+            return new UtilityAction(
+                "PursueLastKnown",
+                pursueBehavior,
+                _pursueLastKnownWeight,
+                // Must have crime in progress
+                new BlackboardConsideration<bool>("CrimeActive", BBKeys.CrimeInProgress,
+                    crime => crime ? 1f : 0f, false),
+                // Must NOT have direct visual on target (otherwise Chase takes over)
+                new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
+                    t => t == null ? 1f : 0f, null),
+                // Must have recently lost sight (within _pursuitPersistenceTime seconds)
+                new FunctionalConsideration("RecentlyLostSight",
+                    brain => {
+                        float timeLost = brain.Blackboard.GetFloat(BBKeys.TimeLostSight, -10f);
+                        float timeSinceLost = Time.time - timeLost;
+                        // Score 1.0 immediately after losing sight, decays to 0 over _pursuitPersistenceTime
+                        if (timeSinceLost < _pursuitPersistenceTime)
+                        {
+                            return Mathf.Clamp01(1f - (timeSinceLost / _pursuitPersistenceTime));
+                        }
+                        return 0f;
+                    }),
+                // Must have a valid last known position (not zero)
+                new FunctionalConsideration("HasLastKnownPosition",
+                    brain => {
+                        Vector3 lastPos = brain.Blackboard.GetVector3(BBKeys.LastKnownRobberPosition, Vector3.zero);
+                        return lastPos != Vector3.zero ? 1f : 0f;
+                    })
+            );
+        }
+        
+        /// <summary>
+        /// Gets the predicted position of the robber based on last known position and direction.
+        /// </summary>
+        private Vector3 GetPredictedRobberPosition()
+        {
+            Vector3 lastPos = Blackboard.GetVector3(BBKeys.LastKnownRobberPosition, transform.position);
+            Vector3 direction = Blackboard.GetVector3(BBKeys.LastKnownRobberDirection, Vector3.zero);
+            float timeSinceLost = Time.time - Blackboard.GetFloat(BBKeys.TimeLostSight, Time.time);
+            
+            // Predict where the robber might be based on their last movement direction
+            // Use robber's flee speed (7) as estimated speed
+            float estimatedRobberSpeed = 7f;
+            Vector3 predictedOffset = direction * estimatedRobberSpeed * timeSinceLost * _pursuitPredictionMultiplier;
+            
+            return lastPos + predictedOffset;
         }
         
         private UtilityAction CreateTrackFootstepsAction()

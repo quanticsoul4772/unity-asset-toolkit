@@ -39,6 +39,12 @@ namespace NPCBrain
         public const string LastFootstepPosition = "lastFootstepPosition";
         public const string LastFootstepTime = "lastFootstepTime";
         
+        // Pursuit persistence keys (for continuing chase after losing sight)
+        public const string LastKnownRobberPosition = "lastKnownRobberPosition";
+        public const string LastKnownRobberDirection = "lastKnownRobberDirection";
+        public const string TimeLostSight = "timeLostSight";
+        public const string PreviousRobberPosition = "previousRobberPosition";
+        
         // CopNPC keys
         public const string CanArrest = "canArrest";
         public const string TargetDistance = "targetDistance";
