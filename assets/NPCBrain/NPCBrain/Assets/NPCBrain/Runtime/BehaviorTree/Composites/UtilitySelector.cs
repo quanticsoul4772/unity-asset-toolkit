@@ -130,6 +130,11 @@ namespace NPCBrain.BehaviorTree.Composites
         
         private float _lastInterruptCheckTime;
         
+        /// <summary>
+        /// Selects or maintains a utility-based action for the NPC, executes it, and handles periodic interruption checks and action completion recording.
+        /// </summary>
+        /// <param name="brain">The NPC brain used to evaluate action scores, provide criticality parameters, and execute/abort actions.</param>
+        /// <returns>The current action's <see cref="NodeStatus"/>: `Running` if the action is still executing, otherwise `Success` or `Failure` reflecting the action's outcome.</returns>
         protected override NodeStatus Tick(NPCBrainController brain)
         {
             if (_actions.Count == 0)
@@ -249,7 +254,14 @@ namespace NPCBrain.BehaviorTree.Composites
         /// preventing erratic flip-flopping while still allowing adaptation when scores change significantly.</para>
         /// </remarks>
         /// <param name="brain">The NPCBrainController used to evaluate action scores and obtain criticality parameters.</param>
+        /// <summary>
+        /// Selects a UtilityAction using a softmax distribution over action scores, applying temperature scaling and an optional inertia-based bias toward the previously chosen action.
+        /// </summary>
+        /// <param name="brain">The NPC brain used to evaluate action scores and to obtain temperature and inertia settings; if null, no action is selected.</param>
         /// <returns>The chosen UtilityAction, or null if no action could be selected.</returns>
+        /// <remarks>
+        /// Actions with scores less than or equal to zero are excluded from selection. Temperature controls exploration (higher values flatten probabilities); inertia, if positive, boosts the probability of the previously selected action proportionally to its remaining headroom and renormalizes the distribution. Returns null when the brain is null, when all actions score <= 0, or when numerical conditions prevent a valid probability distribution.
+        /// </remarks>
         private UtilityAction SelectAction(NPCBrainController brain)
         {
             if (brain == null)
@@ -396,6 +408,12 @@ namespace NPCBrain.BehaviorTree.Composites
             _currentActionIndex = -1;
         }
         
+        /// <summary>
+        /// Resets the selector to its initial state, clearing any currently executing action and the inertia history.
+        /// </summary>
+        /// <remarks>
+        /// If an action is currently running, that action's Reset method is invoked before clearing. After this call there will be no current action and the last-selected action index is cleared.
+        /// </remarks>
         public override void Reset()
         {
             base.Reset();
@@ -408,6 +426,10 @@ namespace NPCBrain.BehaviorTree.Composites
             _lastSelectedActionIndex = -1; // Full reset clears inertia history
         }
 
+        /// <summary>
+        /// Aborts the currently executing action (if any), clears selection state and inertia history, and forwards the abort to the base composite.
+        /// </summary>
+        /// <param name="brain">The NPC brain controller on which the abort is performed.</param>
         public override void Abort(NPCBrainController brain)
         {
             if (_currentAction != null)
