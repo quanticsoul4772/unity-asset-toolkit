@@ -45,12 +45,25 @@ namespace EasyPath
         public int CurrentPathVersion => _currentPathVersion;
         
         /// <summary>
-        /// Unity Awake lifecycle hook that initializes the pathfinding grid and related runtime state when the component is loaded.
-        /// Skipped if Configure() was called before Awake() runs.
+        /// Unity Awake lifecycle hook. Does NOT auto-build the grid to avoid double-builds when Configure() is used.
+        /// Call BuildGrid() manually after scene setup, or use Start() for auto-build.
         /// </summary>
         private void Awake()
         {
-            if (!_skipAwakeBuild)
+            // Don't auto-build in Awake - this causes issues when Configure() is called after AddComponent
+            // The grid will be built either:
+            // 1. Manually via BuildGrid() after Configure()
+            // 2. Automatically in Start() if not already built
+        }
+        
+        /// <summary>
+        /// Unity Start lifecycle hook. Auto-builds the grid if it hasn't been built yet.
+        /// This runs after Awake() and after any Configure() calls from other scripts' Awake().
+        /// </summary>
+        private void Start()
+        {
+            // Auto-build if not already built (allows Configure() to be called first)
+            if (_nodes == null)
             {
                 BuildGrid();
             }

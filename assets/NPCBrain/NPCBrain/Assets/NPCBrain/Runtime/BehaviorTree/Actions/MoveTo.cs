@@ -252,12 +252,17 @@ namespace NPCBrain.BehaviorTree.Actions
                     skipPos.y = transform.position.y;
                     
                     // Raycast to check for actual line of sight - don't skip through walls
+                    // Use obstacle layer mask to avoid hitting NPCs or other non-obstacle colliders
                     Vector3 rayOrigin = transform.position + Vector3.up * 0.5f; // Raise to avoid ground
                     Vector3 rayTarget = skipPos + Vector3.up * 0.5f;
                     Vector3 rayDirection = rayTarget - rayOrigin;
                     float rayDistance = rayDirection.magnitude;
                     
-                    if (rayDistance < 5f && !Physics.Raycast(rayOrigin, rayDirection.normalized, rayDistance))
+                    // Get obstacle layer from grid if available, otherwise check all layers
+                    int obstacleMask = _cachedGrid != null ? (1 << LayerMask.NameToLayer("Obstacles")) : ~0;
+                    if (obstacleMask == (1 << -1)) obstacleMask = ~0; // Fallback if layer doesn't exist
+                    
+                    if (rayDistance < 5f && !Physics.Raycast(rayOrigin, rayDirection.normalized, rayDistance, obstacleMask))
                     {
                         // Clear line of sight - safe to skip waypoints
                         _currentWaypointIndex = skipTarget;
