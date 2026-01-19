@@ -78,8 +78,10 @@ namespace NPCBrain.Demo
             GUILayout.Label("Demonstrating Utility AI + Criticality behavior variation");
             GUILayout.Space(10);
             
-            foreach (var npc in _npcs)
+            // Use for loop to avoid enumerator allocation
+            for (int i = 0; i < _npcs.Count; i++)
             {
+                var npc = _npcs[i];
                 if (npc == null) continue;
                 
                 GUILayout.BeginVertical("box");
