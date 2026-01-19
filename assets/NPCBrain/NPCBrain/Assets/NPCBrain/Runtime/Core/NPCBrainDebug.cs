@@ -54,7 +54,7 @@ namespace NPCBrain
         /// Master switch to enable/disable all NPCBrain debug logging.
         /// Must be true for any logging to occur.
         /// </summary>
-        public static bool Enabled { get; set; } = false;
+        public static bool Enabled { get; set; } = true;
         
         /// <summary>Enable general NPCBrain messages.</summary>
         public static bool LogGeneral { get; set; } = true;
