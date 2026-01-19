@@ -130,6 +130,8 @@ namespace NPCBrain.Criticality
         
         /// <summary>
         /// Creates a new CriticalityController with default settings.
+        /// <summary>
+        /// Initializes a CriticalityController with default history size, temperature bounds, adjustment rate, target chaos, and metric weights.
         /// </summary>
         public CriticalityController()
             : this(DefaultHistorySize, DefaultMinTemperature, DefaultMaxTemperature,
@@ -145,7 +147,14 @@ namespace NPCBrain.Criticality
         /// <param name="minTemperature">Minimum temperature, most deterministic (default: 0.5).</param>
         /// <param name="maxTemperature">Maximum temperature, most random (default: 2.0).</param>
         /// <param name="temperatureAdjustRate">How fast temperature adjusts per update (default: 0.1).</param>
-        /// <param name="targetEntropy">Target chaos level, 0.5 = balanced (default: 0.5).</param>
+        /// <summary>
+        /// Initializes a CriticalityController with core configuration and default metric weights.
+        /// </summary>
+        /// <param name="historySize">Number of recent events to track for metrics (clamped to at least 1).</param>
+        /// <param name="minTemperature">Minimum allowed temperature (lower exploration bound).</param>
+        /// <param name="maxTemperature">Maximum allowed temperature (upper exploration bound).</param>
+        /// <param name="temperatureAdjustRate">Amount to change temperature per update when chaos deviates from the target.</param>
+        /// <param name="targetEntropy">Target chaos level used to compare against the composite chaos index; 0.5 represents a balanced regime.</param>
         public CriticalityController(
             int historySize,
             float minTemperature,
@@ -167,7 +176,17 @@ namespace NPCBrain.Criticality
         /// <param name="targetEntropy">Target chaos level, 0.5 = balanced (default: 0.5).</param>
         /// <param name="entropyWeight">Weight for action entropy in chaos index (default: 1.0).</param>
         /// <param name="churnWeight">Weight for plan churn in chaos index (default: 0.8).</param>
-        /// <param name="volatilityWeight">Weight for state volatility in chaos index (default: 0.6).</param>
+        /// <summary>
+        /// Initializes a CriticalityController with explicit configuration for history length, temperature bounds and dynamics, target chaos, and metric weights.
+        /// </summary>
+        /// <param name="historySize">Maximum number of recent events to track; if less than or equal to 0, DefaultHistorySize is used.</param>
+        /// <param name="minTemperature">Minimum allowed temperature; if less than or equal to 0, DefaultMinTemperature is used.</param>
+        /// <param name="maxTemperature">Maximum allowed temperature; if not greater than <paramref name="minTemperature"/>, DefaultMaxTemperature is used.</param>
+        /// <param name="temperatureAdjustRate">Per-update temperature adjustment step; if less than or equal to 0, DefaultTemperatureAdjustRate is used.</param>
+        /// <param name="targetEntropy">Target chaos level (treated as a normalized entropy/chaos target) and clamped to the range [0,1].</param>
+        /// <param name="entropyWeight">Non-negative weight applied to action entropy when computing the composite chaos index.</param>
+        /// <param name="churnWeight">Non-negative weight applied to plan churn when computing the composite chaos index.</param>
+        /// <param name="volatilityWeight">Non-negative weight applied to state volatility when computing the composite chaos index (default: 0.6).</param>
         public CriticalityController(
             int historySize,
             float minTemperature,
@@ -202,6 +221,14 @@ namespace NPCBrain.Criticality
         /// Enqueues the action into the bounded history, updates occurrence counts, and marks
         /// cached metrics as needing recalculation. If the history exceeds the configured
         /// capacity, the oldest action is removed and its count decremented.
+        /// <summary>
+        /// Records an action occurrence, updating the rolling action history and frequency counts.
+        /// </summary>
+        /// <param name="actionId">Identifier of the action to record; negative values are ignored.</param>
+        /// <remarks>
+        /// Marks internal metrics as needing recalculation, increments the occurrence count for the action,
+        /// and trims the stored history to the configured HistorySize by removing oldest entries and
+        /// decrementing/removing their counts as needed.
         /// </remarks>
         public void RecordAction(int actionId)
         {
@@ -247,7 +274,10 @@ namespace NPCBrain.Criticality
         ///   <item><description>When selecting a new UtilityAction (can use action index)</description></item>
         ///   <item><description>When a Selector node picks a different branch</description></item>
         /// </list>
-        /// </remarks>
+        /// <summary>
+        /// Records a plan identifier into the recent plan history and updates internal state for metric recalculation.
+        /// </summary>
+        /// <param name="planId">The plan identifier to record; negative values are ignored.</param>
         public void RecordPlan(int planId)
         {
             if (planId < 0)
@@ -280,7 +310,11 @@ namespace NPCBrain.Criticality
         ///   <item><description>Behavior tree branch switches</description></item>
         ///   <item><description>Goal changes in GOAP systems</description></item>
         /// </list>
-        /// </remarks>
+        /// <summary>
+        /// Records a state transition ID into the controller's state history.
+        /// </summary>
+        /// <param name="stateId">The state identifier to record; negative values are ignored.</param>
+        /// <remarks>Marks metrics as dirty, updates the last recorded state ID, and trims the stored history to the configured history size.</remarks>
         public void RecordStateTransition(int stateId)
         {
             if (stateId < 0)
@@ -310,6 +344,11 @@ namespace NPCBrain.Criticality
         ///   <item><description>Adjust temperature based on chaos vs target</description></item>
         ///   <item><description>Compute inertia as inverse of chaos (more chaos = less commitment)</description></item>
         /// </list>
+        /// <summary>
+        /// Recomputes internal criticality metrics and adapts temperature and inertia based on the composite chaos index.
+        /// </summary>
+        /// <remarks>
+        /// If recent history changed, recomputes action entropy, plan churn, and state volatility; then normalizes and combines them into a weighted chaos index. The method clamps the chaos index to [0,1], adjusts the temperature toward the configured target entropy using configured thresholds and adjust rate, clamps temperature to configured bounds, and updates inertia to be 1 minus the chaos index.
         /// </remarks>
         public void Update()
         {
@@ -367,6 +406,10 @@ namespace NPCBrain.Criticality
             _inertia = Math.Max(0f, Math.Min(1f, _inertia));
         }
         
+        /// <summary>
+        /// Computes the Shannon entropy of the recorded action distribution in the action history using natural logarithm.
+        /// </summary>
+        /// <returns>The entropy of the action distribution in natural units (nats); `0` if there are no actions or only one unique action recorded.</returns>
         private float CalculateEntropy()
         {
             if (_actionHistory.Count == 0 || _actionCounts.Count <= 1)
@@ -396,7 +439,10 @@ namespace NPCBrain.Criticality
         /// <summary>
         /// Calculates plan churn as the rate of plan changes in recent history.
         /// </summary>
-        /// <returns>Value from 0 (no changes) to 1 (constant changes).</returns>
+        /// <summary>
+        /// Calculates the fraction of consecutive plan entries that differ, indicating how frequently plans change.
+        /// </summary>
+        /// <returns>Fraction between 0 (no consecutive changes) and 1 (every consecutive entry is a change).</returns>
         private float CalculatePlanChurn()
         {
             if (_planHistory.Count < 2)
@@ -431,7 +477,10 @@ namespace NPCBrain.Criticality
         /// <summary>
         /// Calculates state volatility as the rate of state transitions in recent history.
         /// </summary>
-        /// <returns>Value from 0 (stable) to 1 (highly volatile).</returns>
+        /// <summary>
+        /// Computes the proportion of transitions in the recorded state history that change value.
+        /// </summary>
+        /// <returns>Value between 0 and 1 representing the fraction of consecutive state entries that differ; returns 0 if fewer than two states are recorded.</returns>
         private float CalculateStateVolatility()
         {
             if (_stateHistory.Count < 2)
@@ -465,7 +514,12 @@ namespace NPCBrain.Criticality
 
         /// <summary>
         /// Resets all state to initial values.
+        /// <summary>
+        /// Clears all recorded histories and resets internal metrics, temperature, inertia, and last IDs to their initial defaults.
         /// </summary>
+        /// <remarks>
+        /// After calling this method, all action, plan, and state histories are empty, metric values (entropy, plan churn, state volatility, chaos index) are reset to zero, temperature and inertia are restored to their defaults, and internal metrics are marked dirty for recalculation.
+        /// </remarks>
         public void Reset()
         {
             _actionHistory.Clear();
