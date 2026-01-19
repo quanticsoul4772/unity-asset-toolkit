@@ -150,7 +150,7 @@ namespace NPCBrain
                 if (Time.time - _lastNoDirectionLogTime > 2f)
                 {
                     _lastNoDirectionLogTime = Time.time;
-                    if (NPCBrainDebug.IsEnabled)
+                    if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
                     {
                         Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=yellow>No direction for prediction - returning last known position</color>");
                     }
