@@ -37,7 +37,7 @@ namespace NPCBrain.Perception
         [SerializeField] private int _maxTargets = 10;
         
         [Tooltip("Maximum raycasts per tick")]
-        [SerializeField] private int _maxRaycastsPerTick = 3;
+        [SerializeField] private int _maxRaycastsPerTick = 5;
         
         [Header("Debug")]
         [Tooltip("Enable debug logging for this specific sensor (also requires NPCBrainDebug.Enabled)")]
@@ -374,5 +374,15 @@ namespace NPCBrain.Perception
         /// Gets the current target tag.
         /// </summary>
         public string TargetTag => _targetTag;
+        
+        /// <summary>
+        /// Sets the maximum number of raycasts per tick for line-of-sight checks.
+        /// Higher values improve accuracy but cost more performance.
+        /// </summary>
+        /// <param name="maxRaycasts">Maximum raycasts per tick (default is 5).</param>
+        public void SetMaxRaycastsPerTick(int maxRaycasts)
+        {
+            _maxRaycastsPerTick = Mathf.Max(1, maxRaycasts);
+        }
     }
 }

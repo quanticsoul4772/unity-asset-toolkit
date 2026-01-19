@@ -286,7 +286,12 @@ namespace NPCBrain.Archetypes
                     // Broadcast alarm to all cops so they ALL converge
                     CopAlertSystem.BroadcastRobberSighting(sound.Position, sound.Source);
                     
-                    Debug.Log($"<color=blue>[{name}]</color> <color=red>*** ALARM HEARD! ***</color> Position: {sound.Position} | CrimeInProgress now TRUE");
+                    // CRITICAL: Start pursuit toward alarm location immediately!
+                    // This ensures HasActivePursuit becomes true even if no cop has visual yet.
+                    // Direction is zero (unknown), but cops will converge on the alarm position.
+                    CopAlertSystem.BroadcastLostSight(sound.Position, Vector3.zero);
+                    
+                    Debug.Log($"<color=blue>[{name}]</color> <color=red>*** ALARM HEARD! ***</color> Position: {sound.Position} | CrimeInProgress now TRUE | Pursuit STARTED");
                     
                     // CRITICAL: Re-evaluate any currently visible targets!
                     // If a cop was already seeing the robber before the crime, the SightSensor
@@ -426,6 +431,12 @@ namespace NPCBrain.Archetypes
                     Blackboard.SetBool(BBKeys.CrimeInProgress, true);
                     Blackboard.SetVector3(BBKeys.AlarmLocation, CopAlertSystem.LastKnownRobberPosition);
                     
+                    // Ensure pursuit is active for all cops learning about the crime
+                    if (!CopAlertSystem.HasActivePursuit)
+                    {
+                        CopAlertSystem.BroadcastLostSight(CopAlertSystem.LastKnownRobberPosition, Vector3.zero);
+                    }
+                    
                     // CRITICAL: Re-evaluate any currently visible targets!
                     // This cop just learned about the crime via shared alert - check if they can already see the robber
                     ReEvaluateVisibleTargets();
@@ -445,7 +456,16 @@ namespace NPCBrain.Archetypes
         /// </summary>
         private void ReEvaluateVisibleTargets()
         {
-            if (_sightSensor == null || !_sightSensor.HasVisibleTargets)
+            if (_sightSensor == null)
+            {
+                return;
+            }
+            
+            // Force the SightSensor to update NOW so we have fresh visible targets
+            // This is critical because the sensor may not have ticked yet this frame
+            _sightSensor.Tick(this);
+            
+            if (!_sightSensor.HasVisibleTargets)
             {
                 return;
             }
@@ -1117,6 +1137,7 @@ namespace NPCBrain.Archetypes
             // Add sight sensor - clear target tag to detect all (tags require manual Unity setup)
             var sightSensor = copObj.AddComponent<SightSensor>();
             sightSensor.SetTargetTag(""); // Detect all targets, not just specific tags
+            sightSensor.SetMaxRaycastsPerTick(8); // Cops need high raycast budget to detect robbers quickly
             
             // Add hearing sensor
             var hearingSensor = copObj.AddComponent<HearingSensor>();
