@@ -42,11 +42,12 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _alertDecayRate = 0.1f;
         [SerializeField] private float _alertIncreaseRate = 0.5f;
         [SerializeField] private float _alarmAlertBoost = 0.9f;
-        [SerializeField] private float _footstepAlertBoost = 0.2f;
+        [SerializeField] private float _footstepAlertBoost = 0.5f;  // Increased from 0.2 - cops now react more to footsteps
         
         [Header("Utility Weights")]
         [SerializeField] private float _arrestWeight = 2.0f;  // Highest priority - arrest when close
         [SerializeField] private float _chaseWeight = 1.8f;   // Very high - always chase when target visible
+        [SerializeField] private float _trackFootstepsWeight = 1.0f;  // High - follow footsteps aggressively
         [SerializeField] private float _respondToAlertWeight = 0.95f;
         [SerializeField] private float _alarmInvestigateWeight = 0.9f;
         [SerializeField] private float _soundInvestigateWeight = 0.5f;
@@ -190,8 +191,28 @@ namespace NPCBrain.Archetypes
             // Don't log losing sight of walls/buildings - too spammy
         }
         
+        private float _lastFootstepLogTime;
+        
         private void HandleSoundHeard(SoundEvent sound)
         {
+            // Always track footstep position for TrackFootsteps action, even if we have a visual target
+            if (sound.Type == SoundType.Footstep)
+            {
+                Blackboard.SetVector3(BBKeys.LastFootstepPosition, sound.Position);
+                Blackboard.SetFloat(BBKeys.LastFootstepTime, Time.time);
+                
+                // Only log if crime is in progress and we don't have visual (avoid spam)
+                if (Blackboard.GetBool(BBKeys.CrimeInProgress, false) && !Blackboard.Has(BBKeys.Target))
+                {
+                    if (Time.time - _lastFootstepLogTime > 2f)
+                    {
+                        _lastFootstepLogTime = Time.time;
+                        float dist = Vector3.Distance(transform.position, sound.Position);
+                        Debug.Log($"<color=blue>[{name}]</color> <color=yellow>FOOTSTEPS HEARD!</color> Distance: {dist:F1}m | Position: {sound.Position}");
+                    }
+                }
+            }
+            
             if (!Blackboard.Has(BBKeys.Target))
             {
                 Blackboard.SetVector3(BBKeys.InvestigatePosition, sound.Position);
@@ -350,6 +371,7 @@ namespace NPCBrain.Archetypes
         {
             var arrestAction = CreateArrestAction();
             var chaseAction = CreateChaseAction();
+            var trackFootstepsAction = CreateTrackFootstepsAction();  // NEW: Aggressively follow footsteps
             var respondToAlertAction = CreateRespondToAlertAction();
             var respondToAlarmAction = CreateRespondToAlarmAction();
             var alarmInvestigateAction = CreateAlarmInvestigateAction();
@@ -360,6 +382,7 @@ namespace NPCBrain.Archetypes
             return new UtilitySelector(
                 arrestAction,
                 chaseAction,
+                trackFootstepsAction,  // High priority - follow footsteps when no visual
                 respondToAlertAction,
                 respondToAlarmAction,
                 alarmInvestigateAction,
@@ -427,6 +450,60 @@ namespace NPCBrain.Archetypes
                     can => can ? 0f : 1f, false)
                 // REMOVED: Distance and Alert considerations that were reducing the score
                 // Chase should ALWAYS win when there's a target to chase
+            );
+        }
+        
+        private float _lastTrackLogTime;
+        
+        private UtilityAction CreateTrackFootstepsAction()
+        {
+            // This action allows cops to aggressively follow footstep sounds even without visual contact
+            var trackBehavior = new Sequence(
+                new SetBlackboard(BBKeys.CurrentState, () => { 
+                    _cachedState = "Tracking!";
+                    if (Time.time - _lastTrackLogTime > 2f)
+                    {
+                        _lastTrackLogTime = Time.time;
+                        Vector3 footstepPos = Blackboard.GetVector3(BBKeys.LastFootstepPosition, transform.position);
+                        float dist = Vector3.Distance(transform.position, footstepPos);
+                        Debug.Log($"<color=blue>[{name}]</color> <color=orange>*** TRACKING FOOTSTEPS! ***</color> Distance: {dist:F1}m");
+                    }
+                    return "Tracking!"; 
+                }),
+                new MoveTo(
+                    () => Blackboard.GetVector3(BBKeys.LastFootstepPosition, transform.position),
+                    _arrivalDistance,
+                    _chaseSpeed,  // Move fast - this is active pursuit!
+                    1.0f  // Short timeout to react quickly to new footsteps
+                )
+            );
+            trackBehavior.Name = "TrackFootstepsBehavior";
+            
+            return new UtilityAction(
+                "TrackFootsteps",
+                trackBehavior,
+                _trackFootstepsWeight,
+                // Must have crime in progress - don't chase footsteps before the alarm
+                new BlackboardConsideration<bool>("CrimeActive", BBKeys.CrimeInProgress,
+                    crime => crime ? 1f : 0f, false),
+                // Must NOT have direct visual on target (otherwise Chase takes over)
+                new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
+                    t => t == null ? 1f : 0f, null),
+                // Must have heard recent footsteps (within 3 seconds)
+                new FunctionalConsideration("RecentFootsteps",
+                    brain => {
+                        float lastTime = brain.Blackboard.GetFloat(BBKeys.LastFootstepTime, -10f);
+                        float timeSince = Time.time - lastTime;
+                        // Score 1.0 if heard in last second, decays to 0 over 3 seconds
+                        return timeSince < 3f ? Mathf.Clamp01(1f - (timeSince / 3f)) : 0f;
+                    }),
+                // Higher score when closer to footstep position
+                new DistanceConsideration(
+                    "FootstepDistance",
+                    brain => brain.Blackboard.GetVector3(BBKeys.LastFootstepPosition, brain.transform.position),
+                    25f,
+                    true  // Invert - closer = higher score
+                )
             );
         }
         

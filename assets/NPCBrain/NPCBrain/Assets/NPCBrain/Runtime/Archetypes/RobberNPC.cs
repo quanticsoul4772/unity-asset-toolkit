@@ -65,6 +65,13 @@ namespace NPCBrain.Archetypes
         private float _copDetectionRangeSqr;
         private bool _hasLootAvailable;  // Cached for performance
         
+        [Header("Sound Settings")]
+        [SerializeField] private float _footstepInterval = 0.4f;
+        [SerializeField] private float _footstepVolume = 0.6f;
+        [SerializeField] private float _sneakFootstepVolume = 0.2f;
+        private float _lastFootstepTime;
+        private Vector3 _lastPosition;
+        
         [Header("Performance")]
         [SerializeField] private int _maxCopRaycastsPerFrame = 2;
         private int _raycastCount;
@@ -181,6 +188,7 @@ namespace NPCBrain.Archetypes
             UpdateCopDetection();
             UpdateFearLevel();
             UpdateLootAvailability();  // Cache loot availability for utility scoring
+            EmitFootstepsIfMoving();  // Emit footstep sounds when moving
             TryEscape();
             
             // Debug log every 2 seconds
@@ -254,6 +262,37 @@ namespace NPCBrain.Archetypes
         {
             // Cache loot availability to avoid repeated FindNearestLoot() calls during utility scoring
             _hasLootAvailable = FindNearestLoot() != null;
+        }
+        
+        private void EmitFootstepsIfMoving()
+        {
+            Vector3 currentPosition = transform.position;
+            float distanceMoved = Vector3.Distance(currentPosition, _lastPosition);
+            
+            // Only emit footsteps if actually moving
+            if (distanceMoved > 0.1f)
+            {
+                // Emit footsteps at regular intervals based on speed
+                float timeSinceLastFootstep = Time.time - _lastFootstepTime;
+                
+                // Faster movement = more frequent footsteps
+                float currentSpeed = distanceMoved / Time.deltaTime;
+                float adjustedInterval = _footstepInterval * (4f / Mathf.Max(currentSpeed, 1f));
+                adjustedInterval = Mathf.Clamp(adjustedInterval, 0.2f, 0.8f);
+                
+                if (timeSinceLastFootstep >= adjustedInterval)
+                {
+                    // Volume depends on movement state - sneaking is quieter
+                    float volume = _cachedState == "Sneaking" ? _sneakFootstepVolume : _footstepVolume;
+                    
+                    // Emit footstep sound that cops can hear
+                    // Use EmitSound directly to pass the source GameObject
+                    SoundManager.EmitSound(currentPosition, SoundType.Footstep, volume, 20f, gameObject);
+                    _lastFootstepTime = Time.time;
+                }
+            }
+            
+            _lastPosition = currentPosition;
         }
         
         private void UpdateFearLevel()
