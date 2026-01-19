@@ -2,8 +2,6 @@
 
 A cheat sheet for common NPCBrain operations.
 
----
-
 ## Namespaces
 
 ```csharp
@@ -18,8 +16,6 @@ using NPCBrain.Perception;
 using NPCBrain.Criticality;
 using NPCBrain.Archetypes;
 ```
-
----
 
 ## Basic NPC Template
 
@@ -45,8 +41,6 @@ public class MyNPC : NPCBrainController
 }
 ```
 
----
-
 ## Behavior Tree Nodes
 
 ### Composites
@@ -57,8 +51,6 @@ public class MyNPC : NPCBrainController
 | `Sequence` | All must succeed | All children succeed | Any child fails |
 | `Parallel` | Run all at once | Based on policy | Based on policy |
 | `UtilitySelector` | Score-based | Selected completes | No valid actions |
-
-### Decorators
 
 | Node | Effect |
 |------|--------|
@@ -87,8 +79,6 @@ public class MyNPC : NPCBrainController
 | `CheckBlackboard<T>(key, predicate)` | string, Func<T, bool> |
 | `CheckDistance(from, to, dist, comparison)` | Func, Func, float, ComparisonType |
 
----
-
 ## Blackboard
 
 ```csharp
@@ -105,8 +95,6 @@ if (Blackboard.Has("key")) { }
 Blackboard.Remove("key");
 Blackboard.Clear();
 ```
-
----
 
 ## Utility AI
 
@@ -127,8 +115,6 @@ return new UtilitySelector(
 | `TimeConsideration` | `(name, key, duration)` |
 | `RangeConsideration` | `(name, Func<float>, min, max, score)` |
 | `SoundConsideration` | `(name, SoundType, score)` |
-
----
 
 ## Perception
 
@@ -157,8 +143,6 @@ Hearing.HasRecentSound(SoundType)   // bool
 SoundManager.EmitSound(position, SoundType.Gunshot, 1f, source);
 ```
 
----
-
 ## Events
 
 ```csharp
@@ -169,8 +153,6 @@ OnStateChanged += (string state) => { };
 OnBrainPaused += () => { };
 OnBrainResumed += () => { };
 ```
-
----
 
 ## Criticality
 
@@ -194,8 +176,6 @@ Criticality = new CriticalityController(
 );
 ```
 
----
-
 ## Built-in Archetypes
 
 | Archetype | Use Case |
@@ -206,8 +186,6 @@ Criticality = new CriticalityController(
 | `UtilityNPC` | General utility AI demo |
 | `CopNPC` | Chase, arrest, investigate |
 | `RobberNPC` | Steal, evade, escape |
-
----
 
 ## NPCRegistry
 
@@ -223,8 +201,6 @@ var all = NPCRegistry<MyNPC>.All;
 var nearest = NPCRegistry<MyNPC>.GetNearest(position);
 var inRange = NPCRegistry<MyNPC>.GetInRange(position, 20f);
 ```
-
----
 
 ## Debug
 
@@ -242,8 +218,6 @@ brain.Resume();
 brain.Tick();  // Manual step
 ```
 
----
-
 ## Component Setup Order
 
 ```
@@ -254,6 +228,4 @@ brain.Tick();  // Manual step
 5. NavMeshAgent (optional, for pathfinding)
 ```
 
----
-
-[← Back to Index](index.md)
+[Back to Index](index.md)

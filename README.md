@@ -5,7 +5,7 @@ A collection of AI and pathfinding tools for the Unity Asset Store.
 **Repository:** https://github.com/quanticsoul4772/unity-asset-toolkit
  
 ## Project Status 
-**All Assets Complete!** (January 2026)
+All Assets Complete (January 2026)
 
 - EasyPath: Complete - A* pathfinding working and tested
 - SwarmAI: Complete - Multi-agent coordination with Jobs/Burst

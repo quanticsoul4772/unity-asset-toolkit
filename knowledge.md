@@ -1,8 +1,6 @@
 # Project Knowledge - Unity Asset Toolkit
 
-**Last Updated:** January 2026 
- 
-Unity Asset Store project for AI/pathfinding tools. C#, Unity 6 (6000.x), Visual Studio 2022, Windows 11. 
+Unity Asset Store project for AI/pathfinding tools. C#, Unity 6 (6000.x), Visual Studio 2022, Windows 11.
  
 ## Quickstart 
 
@@ -31,24 +29,24 @@ Unity Asset Store project for AI/pathfinding tools. C#, Unity 6 (6000.x), Visual
 ## Project Status 
  
 **Phase:** Development (January 2026) 
-**Current Project:** NPCBrain - All-in-One AI Toolkit (4-week MVP)
+**Current Project:** NPCBrain - AI Toolkit (Complete)
 
 ### EasyPath Status
-**Status:** Complete - Ready for Asset Store submission
+**Status:** Complete
 - A* pathfinding working and tested
 - Multi-agent click-to-move support
 - Demo scenes: Basic, Multi-Agent, Stress Test
 - Obstacle layer auto-configuration with "Fix Existing Demo Scenes" menu
 
 ### SwarmAI Status  
-**Status:** Phase 1-4 Complete - All core features implemented.
+**Status:** Complete
 - Phase 1: Core Framework (SwarmManager, SwarmAgent, States, Spatial Hash)
 - Phase 2: Steering Behaviors (Seek, Flee, Arrive, Wander, Flocking, Obstacle Avoidance)
 - Phase 3: Advanced Features (Formations, Resource Gathering, Groups, Messaging)
 - Phase 4: Demo Scenes (Flocking, Formation, Resource Gathering)
 - Phase 5: Combat Formations Demo (in progress)
 
-**Next Step:** Create Combat Formations demo, then prepare for Asset Store submission 
+Combat Formations demo complete.
  
 ## Development Environment 
 
@@ -79,7 +77,7 @@ See `guides/CODEBUFF-UNITY-INTEGRATION.md` for full documentation.
 ``` 
 unity-asset-toolkit/ 
 +-- assets/           # Unity project(s) 
-|   +-- EasyPath/     # A* Pathfinding Asset (COMPILING ✅) 
+|   +-- EasyPath/     # A* Pathfinding Asset
 +-- docs/             # Setup guides, checklists 
 +-- notes/            # Planning, research, learnings 
 +-- prototypes/       # Quick C# experiments 

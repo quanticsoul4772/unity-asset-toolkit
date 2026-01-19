@@ -2,9 +2,7 @@
 
 **Version 1.0** | Unity 2022.3 LTS+ | Full Source Code Included
 
-NPCBrain is a modular AI toolkit that combines **Behavior Trees**, **Utility AI**, and **Perception Systems** to create intelligent, believable NPCs for your Unity games.
-
----
+NPCBrain is a modular AI toolkit that combines Behavior Trees, Utility AI, and Perception Systems for NPC development in Unity.
 
 ## Table of Contents
 
@@ -22,22 +20,18 @@ NPCBrain is a modular AI toolkit that combines **Behavior Trees**, **Utility AI*
 12. [Demo Scenes](#demo-scenes)
 13. [Support](#support)
 
----
-
 ## Features
 
-- **Behavior Trees** - Composable, hierarchical decision making
-- **Utility AI** - Score-based action selection with softmax
-- **Blackboard System** - Key-value data sharing with TTL support
-- **Perception** - Vision cone with line-of-sight checking
-- **Criticality Controller** - Adaptive exploration vs exploitation
-- **Ready-to-Use Archetypes** - GuardNPC and PatrolNPC
-- **Debug Window** - Real-time NPC state inspection
-- **Scene Gizmos** - Vision cones and waypoint visualization
-- **Full Source Code** - Extend and customize everything
-- **100+ Unit Tests** - Production-quality code
-
----
+- Behavior Trees - Composable, hierarchical decision making
+- Utility AI - Score-based action selection with softmax
+- Blackboard System - Key-value data sharing with TTL support
+- Perception - Vision cone with line-of-sight checking
+- Criticality Controller - Adaptive exploration vs exploitation
+- Archetypes - GuardNPC, PatrolNPC, CopNPC, RobberNPC
+- Debug Window - Real-time NPC state inspection
+- Scene Gizmos - Vision cones and waypoint visualization
+- Full Source Code - Extend and customize
+- Unit Tests - 100+ tests included
 
 ## Quick Start
 
@@ -83,8 +77,6 @@ public class MyPatroller : PatrolNPC { }
 // GuardNPC includes chase, investigate, and patrol behaviors
 public class MyGuard : GuardNPC { }
 ```
-
----
 
 ## Core Concepts
 
@@ -170,8 +162,6 @@ if (Blackboard.TryGet<Vector3>("position", out var pos))
 // Remove
 Blackboard.Remove("target");
 ```
-
----
 
 ## Built-in Nodes
 
@@ -270,11 +260,9 @@ new Repeater(new Wait(1f), 3)  // Wait 1 second, 3 times
 new Cooldown(attackAction, 2f)  // Can only attack every 2 seconds
 ```
 
----
-
 ## Archetypes
 
-NPCBrain includes ready-to-use NPC archetypes.
+Included NPC archetypes:
 
 ### PatrolNPC
 
@@ -324,8 +312,6 @@ Advanced guard with chase, investigate, and patrol behaviors.
 4. Make sure targets have the "Player" tag
 5. Play
 
----
-
 ## Perception System
 
 ### SightSensor
@@ -371,9 +357,7 @@ OnTargetLost += (target) => {
 };
 ```
 
-**Important:** Add `SightSensor` **before** `NPCBrainController` components so it's detected in Awake().
-
----
+Note: Add `SightSensor` before `NPCBrainController` components so it's detected in Awake().
 
 ## Utility AI
 
@@ -441,8 +425,6 @@ new ExponentialCurve(consideration, 2f)     // Exponential falloff
 new StepCurve(consideration, 0.5f)          // Binary threshold
 ```
 
----
-
 ## Criticality System
 
 The `CriticalityController` automatically adjusts exploration vs exploitation based on action history.
@@ -476,8 +458,6 @@ protected override void Awake()
     );
 }
 ```
-
----
 
 ## Debug Tools
 
@@ -517,8 +497,6 @@ myNPC.Tick();
 // Resume normal execution
 myNPC.Resume();
 ```
-
----
 
 ## API Reference
 
@@ -614,8 +592,6 @@ public class Blackboard
 }
 ```
 
----
-
 ## Best Practices
 
 ### 1. Component Order Matters
@@ -681,8 +657,6 @@ var chase = new Sequence(...);
 chase.Name = "ChaseSequence";  // Shows in Debug Window
 ```
 
----
-
 ## Demo Scenes
 
 Create demo scenes via the Unity menu:
@@ -705,17 +679,11 @@ Demonstrates PatrolNPC with multiple patrol patterns:
 - Color-coded NPCs and waypoints
 - Random timing variation
 
----
-
 ## Support
 
-**Documentation:** See the `Demo/README.md` for demo-specific documentation.
+Documentation: See the `Demo/README.md` for demo-specific documentation.
 
-**Issues:** If you encounter bugs or have feature requests, please contact support.
-
-**Updates:** Check the Asset Store for the latest version.
-
----
+Issues: Contact support through the Asset Store.
 
 ## Changelog
 
@@ -728,7 +696,3 @@ Demonstrates PatrolNPC with multiple patrol patterns:
 - GuardNPC and PatrolNPC archetypes
 - Debug Window and Scene Gizmos
 - 100+ unit tests
-
----
-
-© 2025 - All Rights Reserved

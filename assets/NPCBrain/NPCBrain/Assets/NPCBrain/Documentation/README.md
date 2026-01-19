@@ -1,6 +1,6 @@
 # NPCBrain - Unity AI Toolkit
 
-A comprehensive AI toolkit for Unity combining **Behavior Trees**, **Utility AI**, **Perception**, and a unique **Criticality System** for adaptive NPC behavior.
+AI toolkit for Unity combining Behavior Trees, Utility AI, Perception, and a Criticality System for adaptive NPC behavior.
 
 ## Features
 
@@ -116,11 +116,3 @@ NPCBrainController
 
 - [Getting Started Guide](getting-started.md)
 - [API Reference](API.md)
-
-## Support
-
-For issues and feature requests, please contact the developer through the Unity Asset Store.
-
-## License
-
-This asset is licensed for use according to the Unity Asset Store EULA.

@@ -1,22 +1,22 @@
 # NPCBrain Demo Scenes
 
-This folder contains polished demo scenes showcasing NPCBrain's archetype NPCs.
+Demo scenes for NPCBrain archetypes.
 
-## Cops and Robbers Demo (NEW!)
+## Cops and Robbers Demo
 
 **File:** `Scenes/CopsAndRobbersDemo.unity`
 
-A unified demo showcasing ALL NPC archetypes working together in an interactive heist scenario.
+Demo showcasing NPC archetypes working together in a heist scenario.
 
 ### Features
-- **CopNPC** - Police officers that patrol, investigate sounds/alarms, chase and arrest robbers
-- **RobberNPC** - Thieves that steal loot, evade cops, hide, and escape
-- **LootPoints** - Stealable objectives that trigger alarms when stolen
-- **EscapeZone** - Victory condition for robbers carrying loot
-- **CoverPoints** - Hiding spots for robbers
-- Full Utility AI with Criticality system for all NPCs
-- Scoring system tracking arrests vs escapes
-- Real-time UI showing all NPC states and Criticality values
+- CopNPC - Patrol, investigate, chase, arrest
+- RobberNPC - Steal, evade, hide, escape
+- LootPoints - Stealable objectives that trigger alarms
+- EscapeZone - Victory condition for robbers
+- CoverPoints - Hiding spots
+- Utility AI with Criticality system
+- Scoring system (arrests vs escapes)
+- Real-time UI showing NPC states
 
 ### How It Works
 1. Robbers spawn near the escape zone and seek out loot
@@ -27,23 +27,11 @@ A unified demo showcasing ALL NPC archetypes working together in an interactive 
 
 ### Behaviors
 
-**Cops (CopNPC)**
-- Arrest - Capture robbers when very close
-- Chase - Pursue visible robbers
-- InvestigateAlarm - Rush to alarm locations
-- InvestigateSound - Check suspicious footsteps
-- Return - Go back to patrol area
-- Patrol - Follow waypoints
+Cops (CopNPC):
+- Arrest, Chase, InvestigateAlarm, InvestigateSound, Return, Patrol
 
-**Robbers (RobberNPC)**
-- Flee - Run away from visible cops
-- CarryToEscape - Head to escape zone with loot
-- StealLoot - Pick up loot when safe
-- Hide - Take cover when pursued
-- Sneak - Move carefully when cops are nearby
-- Scout - Look for loot opportunities
-
----
+Robbers (RobberNPC):
+- Flee, CarryToEscape, StealLoot, Hide, Sneak, Scout
 
 ## Creating Demo Scenes
 
@@ -58,21 +46,17 @@ Use the Unity menu to create demo scenes:
 - **NPCBrain → Open Guard Demo** - Opens the Guard demo (creates if needed)
 - **NPCBrain → Open Patrol Demo** - Opens the Patrol demo (creates if needed)
 
----
-
 ## Guard Demo
 
 **File:** `Scenes/GuardDemo.unity`
 
-Demonstrates the **GuardNPC** archetype with chase, investigate, and patrol behaviors.
+Demonstrates GuardNPC with chase, investigate, and patrol behaviors.
 
 ### Features
 - Player-controlled character (WASD + Shift to sprint)
-- Multiple guards with sight sensors
-- Chase behavior when player is spotted
-- Investigation of last known position
+- Guards with sight sensors
+- Chase when spotted, investigate last known position
 - Return to post after losing target
-- Normal patrol when idle
 
 ### Controls
 | Key | Action |
@@ -89,28 +73,16 @@ Demonstrates the **GuardNPC** archetype with chase, investigate, and patrol beha
 3. **Return** - Return to patrol area if far from home
 4. **Patrol** - Walk between waypoints when idle
 
----
-
 ## Patrol Demo
 
 **File:** `Scenes/PatrolDemo.unity`
 
-Demonstrates the **PatrolNPC** archetype with simple waypoint following.
+Demonstrates PatrolNPC with waypoint following.
 
 ### Features
 - Multiple patrol NPCs with different routes
 - Color-coded patrollers and waypoints
-- Different patrol patterns (square, diamond, circle, line)
-- Random variation in wait times and speed
-- Visual waypoint markers
-
-### Patrol Patterns
-- **Square** - 4 waypoints in a square pattern
-- **Diamond** - 4 waypoints in a rotated square
-- **Circle** - 6 waypoints in a circular pattern
-- **Line** - 2 waypoints for back-and-forth patrol
-
----
+- Patterns: Square, Diamond, Circle, Line
 
 ## Debug Tools
 
@@ -125,26 +97,14 @@ While running any demo, you can use NPCBrain's debug tools:
 - Blackboard key viewer
 - Criticality stats (Temperature, Entropy, Inertia)
 
-**Note:** To see Criticality values change, use the **Utility Demo** scene which uses `UtilitySelector`. The Guard and Patrol demos use regular BT nodes which don't record actions to the Criticality system.
-- Pause/Step/Resume controls
-
----
+Note: To see Criticality values change, use the Utility Demo scene which uses UtilitySelector. The Guard and Patrol demos use regular BT nodes which don't record actions to the Criticality system.
 
 ## Customization
 
-Both demo setups are MonoBehaviour scripts with serialized fields you can tweak:
+Demo setups have serialized fields:
 
-### GuardDemoSetup
-- `_guardCount` - Number of guards (1-4)
-- `_arenaSize` - Size of the play area
-- `_groundColor`, `_guardColor`, etc. - Visual customization
-
-### PatrolDemoSetup
-- `_patrollerCount` - Number of patrol NPCs (1-4)
-- `_arenaSize` - Size of the play area
-- `_patrollerColors` - Colors for each patroller
-
----
+- GuardDemoSetup: `_guardCount`, `_arenaSize`, colors
+- PatrolDemoSetup: `_patrollerCount`, `_arenaSize`, `_patrollerColors`
 
 ## Creating Your Own NPCs
 

@@ -2,8 +2,6 @@
 
 This guide will walk you through setting up NPCBrain and creating your first intelligent NPC.
 
----
-
 ## Table of Contents
 
 1. [Installation](#installation)
@@ -12,8 +10,6 @@ This guide will walk you through setting up NPCBrain and creating your first int
 4. [Using Built-in Archetypes](#using-built-in-archetypes)
 5. [Adding Perception](#adding-perception)
 6. [Next Steps](#next-steps)
-
----
 
 ## Installation
 
@@ -43,8 +39,6 @@ Assets/
     └── Documentation/     # This documentation
 ```
 
----
-
 ## Project Setup
 
 ### Required Settings
@@ -58,7 +52,7 @@ NPCBrain's perception system uses Unity tags for target detection:
 3. Add a tag named `Player`
 4. Apply this tag to any GameObjects you want NPCs to detect
 
-> **Note:** You can use any tag name, but "Player" is the default for all built-in archetypes.
+You can use any tag name, but "Player" is the default for all built-in archetypes.
 
 #### 2. NavMesh Setup (Optional but Recommended)
 
@@ -70,9 +64,7 @@ For NPCs that navigate around obstacles:
 4. Click **Bake**
 5. Add `NavMeshAgent` component to your NPCs
 
-> **Tip:** MoveTo automatically uses NavMeshAgent when present. Without it, NPCs move in straight lines.
-
----
+MoveTo automatically uses NavMeshAgent when present. Without it, NPCs move in straight lines.
 
 ## Your First NPC
 
@@ -147,15 +139,13 @@ PatrolNPC (Capsule)
 └── Waypoint4 (Empty GameObject)
 ```
 
----
-
 ## Using Built-in Archetypes
 
-NPCBrain includes several ready-to-use NPC types that require no coding.
+Included NPC types that require no coding:
 
 ### PatrolNPC - Simple Patrol
 
-Best for: Background NPCs, civilian patrols, ambient movement
+Use for: Background NPCs, civilian patrols, ambient movement
 
 ```csharp
 // Just add the PatrolNPC component - that's it!
@@ -173,9 +163,9 @@ Best for: Background NPCs, civilian patrols, ambient movement
 
 ### GuardNPC - Sight-Based Guard
 
-Best for: Guards, enemies, lookouts
+Use for: Guards, enemies, lookouts
 
-**Behaviors:**
+Behaviors:
 - Patrols waypoints when idle
 - Chases visible targets
 - Investigates last known position
@@ -197,9 +187,9 @@ Best for: Guards, enemies, lookouts
 
 ### HearingGuardNPC - Sound-Responsive Guard
 
-Best for: Stealth games, alert systems
+Use for: Stealth games, alert systems
 
-**Additional Behaviors:**
+Additional Behaviors:
 - Investigates gunshots (high priority)
 - Investigates footsteps (lower priority)
 - Uses both sight AND hearing
@@ -209,8 +199,6 @@ Best for: Stealth games, alert systems
 2. Add `HearingSensor` component
 3. Add `HearingGuardNPC` component
 4. Add `WaypointPath` component
-
----
 
 ## Adding Perception
 
@@ -281,24 +269,20 @@ SoundManager.EmitSound(
 );
 ```
 
----
-
 ## Next Steps
 
-Now that you have a basic NPC working, explore these topics:
-
 ### Learn More
-- **[Behavior Trees Tutorial](tutorials/behavior-trees.md)** - Deep dive into BT nodes
-- **[Utility AI Tutorial](tutorials/utility-ai.md)** - Score-based decisions
-- **[Perception Tutorial](tutorials/perception.md)** - Advanced sensor usage
-- **[Criticality Tutorial](tutorials/criticality.md)** - Adaptive behavior
+- [Behavior Trees Tutorial](tutorials/behavior-trees.md) - BT nodes
+- [Utility AI Tutorial](tutorials/utility-ai.md) - Score-based decisions
+- [Perception Tutorial](tutorials/perception.md) - Sensor usage
+- [Criticality Tutorial](tutorials/criticality.md) - Adaptive behavior
 
 ### Try the Demos
-- **Window → NPCBrain → Create Guard Demo** - See GuardNPC in action
-- **Window → NPCBrain → Create Patrol Demo** - Multiple patrol patterns
+- Window > NPCBrain > Create Guard Demo
+- Window > NPCBrain > Create Patrol Demo
 
 ### Debug Your NPCs
-- **Window → NPCBrain → Debug Window** - Inspect NPC state in real-time
+- Window > NPCBrain > Debug Window - Inspect NPC state
 - Enable gizmos to see vision cones in Scene view
 
 ### Common Issues
@@ -310,8 +294,6 @@ Now that you have a basic NPC working, explore these topics:
 | Errors about missing tag | Create tag in Project Settings → Tags and Layers |
 | NPC gets stuck | Add NavMesh and NavMeshAgent, or reduce obstacles |
 | Behavior tree not running | Ensure `CreateBehaviorTree()` returns a non-null node |
-
----
 
 ## Example: Complete Guard NPC
 
@@ -423,6 +405,4 @@ public class MyGuard : NPCBrainController
 }
 ```
 
----
-
-[← Back to Index](index.md) | [Behavior Trees →](tutorials/behavior-trees.md)
+[Back to Index](index.md) | [Behavior Trees](tutorials/behavior-trees.md)
