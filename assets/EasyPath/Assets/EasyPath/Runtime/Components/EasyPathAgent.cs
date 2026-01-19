@@ -70,7 +70,11 @@ namespace EasyPath
         
         /// <summary>
         /// Set the destination and start moving.
+        /// <summary>
+        /// Attempts to set the agent's destination and begin path-following toward it.
         /// </summary>
+        /// <param name="destination">Target position in world space.</param>
+        /// <returns>`true` if a valid path was found, stored, and movement started; `false` if no grid is assigned or no path could be found (in which case <c>OnPathFailed</c> is invoked).</returns>
         public bool SetDestination(Vector3 destination)
         {
             if (_grid == null)
@@ -99,6 +103,8 @@ namespace EasyPath
         
         /// <summary>
         /// Stop moving and clear the current path.
+        /// <summary>
+        /// Stops the agent's movement, clears the current path, resets waypoint tracking, and invalidates the cached remaining distance.
         /// </summary>
         public void Stop()
         {
@@ -147,6 +153,15 @@ namespace EasyPath
             }
         }
         
+        /// <summary>
+        /// Advances the agent along its current path toward the active waypoint for this frame.
+        /// </summary>
+        /// <remarks>
+        /// If the agent has reached the final waypoint within the stopping distance, this method invokes OnReachedDestination.
+        /// If the agent is within the waypoint tolerance of the current waypoint, it advances to the next waypoint and marks the remaining-distance cache as dirty.
+        /// Otherwise it rotates the agent toward the movement direction and moves it toward the current waypoint without overshooting.
+        /// The method updates the agent's transform.position and transform.rotation as part of movement.
+        /// </remarks>
         private void FollowPath()
         {
             if (_currentWaypointIndex >= _currentPath.Count)
@@ -209,6 +224,9 @@ namespace EasyPath
             _remainingDistanceDirty = true;
         }
         
+        /// <summary>
+        /// Stops the agent's movement and signals that the current path has been completed.
+        /// </summary>
         private void OnReachedDestination()
         {
             _isMoving = false;

@@ -111,6 +111,13 @@ namespace NPCBrain.BehaviorTree.Actions
             return NodeStatus.Running;
         }
         
+        /// <summary>
+        /// Moves the given transform a single step toward the target position and orients it to face the movement direction.
+        /// </summary>
+        /// <param name="transform">The transform to move and rotate.</param>
+        /// <param name="target">The destination position to approach.</param>
+        /// <param name="debugName">Optional label used for debugging or tracing.</param>
+        /// <returns>`NodeStatus.Running` while the node drives the transform toward the target.</returns>
         private NodeStatus MoveDirectly(Transform transform, Vector3 target, string debugName = "")
         {
             // Performance: Cache position to reduce property access overhead

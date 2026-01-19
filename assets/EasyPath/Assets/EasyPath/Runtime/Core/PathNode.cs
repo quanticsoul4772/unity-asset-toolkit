@@ -28,6 +28,13 @@ namespace EasyPath
         // Performance: Version-based reset to avoid O(width*height) reset per pathfind
         internal int LastUsedVersion { get; set; }
         
+        /// <summary>
+        /// Initializes a new PathNode with the given grid coordinates, walkability, and world-space position.
+        /// </summary>
+        /// <param name="x">The node's X coordinate in grid space.</param>
+        /// <param name="y">The node's Y coordinate in grid space.</param>
+        /// <param name="isWalkable">Whether the node can be traversed.</param>
+        /// <param name="worldPosition">The node's position in world space.</param>
         public PathNode(int x, int y, bool isWalkable, Vector3 worldPosition)
         {
             X = x;

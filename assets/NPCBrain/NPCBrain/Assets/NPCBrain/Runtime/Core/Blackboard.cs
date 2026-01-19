@@ -86,7 +86,11 @@ namespace NPCBrain
         
         /// <summary>
         /// Sets a float value without boxing.
+        /// <summary>
+        /// Stores a float value under the given key in the blackboard and notifies listeners of the change.
         /// </summary>
+        /// <param name="key">The identifier for the value.</param>
+        /// <param name="value">The float value to store.</param>
         public void SetFloat(string key, float value)
         {
             _floatData[key] = value;
@@ -97,7 +101,11 @@ namespace NPCBrain
         /// Sets a float value only if it differs from the current value.
         /// Performance: Avoids unnecessary event invocations.
         /// </summary>
-        /// <returns>True if the value was changed.</returns>
+        /// <summary>
+        /// Updates the float stored under the given key only if the new value differs by at least the specified epsilon.
+        /// </summary>
+        /// <param name="epsilon">Minimum absolute difference required to treat the new value as changed.</param>
+        /// <returns>`true` if the stored value was updated, `false` otherwise.</returns>
         public bool SetFloatIfChanged(string key, float value, float epsilon = 0.0001f)
         {
             if (_floatData.TryGetValue(key, out float existing) && Math.Abs(existing - value) < epsilon)
@@ -118,7 +126,11 @@ namespace NPCBrain
         
         /// <summary>
         /// Sets an int value without boxing.
+        /// <summary>
+        /// Stores an integer value in the blackboard under the given key and notifies subscribers of the change.
         /// </summary>
+        /// <param name="key">The identifier under which to store the integer.</param>
+        /// <param name="value">The integer value to store.</param>
         public void SetInt(string key, int value)
         {
             _intData[key] = value;
@@ -129,7 +141,12 @@ namespace NPCBrain
         /// Sets an int value only if it differs from the current value.
         /// Performance: Avoids unnecessary event invocations.
         /// </summary>
-        /// <returns>True if the value was changed.</returns>
+        /// <summary>
+        /// Sets the integer value for the specified key only when it differs from the current stored value.
+        /// </summary>
+        /// <param name="key">The key identifying the stored integer.</param>
+        /// <param name="value">The new integer value to store.</param>
+        /// <returns>`true` if the stored value was changed, `false` if the existing value was equal and no update was performed.</returns>
         public bool SetIntIfChanged(string key, int value)
         {
             if (_intData.TryGetValue(key, out int existing) && existing == value)
@@ -150,7 +167,12 @@ namespace NPCBrain
         
         /// <summary>
         /// Sets a bool value without boxing.
+        /// <summary>
+        /// Stores a boolean value in the blackboard under the given key.
         /// </summary>
+        /// <param name="key">The identifier under which to store the value.</param>
+        /// <param name="value">The boolean value to store.</param>
+        /// <remarks>Invokes <c>OnValueChanged</c> for the key after storing the value.</remarks>
         public void SetBool(string key, bool value)
         {
             _boolData[key] = value;
@@ -161,7 +183,12 @@ namespace NPCBrain
         /// Sets a bool value only if it differs from the current value.
         /// Performance: Avoids unnecessary event invocations.
         /// </summary>
-        /// <returns>True if the value was changed.</returns>
+        /// <summary>
+        /// Sets the boolean value for the given key only when the new value differs from the existing value.
+        /// </summary>
+        /// <param name="key">The key identifying the stored boolean.</param>
+        /// <param name="value">The boolean value to store.</param>
+        /// <returns>`true` if the stored value was changed, `false` if the existing value was already equal to the provided value.</returns>
         public bool SetBoolIfChanged(string key, bool value)
         {
             if (_boolData.TryGetValue(key, out bool existing) && existing == value)
@@ -182,7 +209,11 @@ namespace NPCBrain
         
         /// <summary>
         /// Sets a Vector3 value without boxing.
+        /// <summary>
+        /// Stores the Vector3 value for the specified key and raises the OnValueChanged event.
         /// </summary>
+        /// <param name="key">The identifier under which to store the value.</param>
+        /// <param name="value">The Vector3 value to store.</param>
         public void SetVector3(string key, Vector3 value)
         {
             _vectorData[key] = value;
@@ -193,7 +224,13 @@ namespace NPCBrain
         /// Sets a Vector3 value only if it differs from the current value.
         /// Performance: Avoids unnecessary event invocations.
         /// </summary>
-        /// <returns>True if the value was changed.</returns>
+        /// <summary>
+        /// Sets the Vector3 for the specified key only if any component differs by at least the given epsilon.
+        /// </summary>
+        /// <param name="key">The key identifying the stored Vector3.</param>
+        /// <param name="value">The new Vector3 value to store.</param>
+        /// <param name="epsilon">The minimum absolute difference per component required to treat the values as different.</param>
+        /// <returns>`true` if the stored value was updated, `false` otherwise.</returns>
         public bool SetVector3IfChanged(string key, Vector3 value, float epsilon = 0.0001f)
         {
             if (_vectorData.TryGetValue(key, out Vector3 existing) &&
