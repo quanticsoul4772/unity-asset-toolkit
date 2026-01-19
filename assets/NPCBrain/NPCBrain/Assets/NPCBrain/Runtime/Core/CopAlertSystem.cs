@@ -65,7 +65,10 @@ namespace NPCBrain
             _lastSightingTime = Time.time;
             _lastSeenRobber = robber;
             _hasActiveAlert = true;
-            _hasActivePursuit = false;  // Cancel pursuit when we have visual again
+            // NOTE: Do NOT cancel pursuit here! When one cop has visual, other cops without visual
+            // should continue pursuing using the coordinated pursuit system. The cop WITH visual
+            // will use the Chase action (which has higher priority due to HasTarget consideration).
+            // Pursuit will naturally expire after PursuitValidDuration or when robber is arrested.
             
             if (isNewAlert)
             {
