@@ -46,8 +46,8 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _footstepAlertBoost = 0.2f;
         
         [Header("Utility Weights")]
-        [SerializeField] private float _arrestWeight = 1.1f;
-        [SerializeField] private float _chaseWeight = 1.0f;
+        [SerializeField] private float _arrestWeight = 2.0f;  // Highest priority - arrest when close
+        [SerializeField] private float _chaseWeight = 1.8f;   // Very high - always chase when target visible
         [SerializeField] private float _respondToAlertWeight = 0.95f;
         [SerializeField] private float _alarmInvestigateWeight = 0.9f;
         [SerializeField] private float _soundInvestigateWeight = 0.5f;
@@ -398,12 +398,16 @@ namespace NPCBrain.Archetypes
         {
             var chaseBehavior = new Sequence(
                 new SetBlackboard(BBKeys.LastChaseTime, () => Time.time),
-                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Chase!"; return "Chase!"; }),
+                new SetBlackboard(BBKeys.CurrentState, () => { 
+                    _cachedState = "Chase!"; 
+                    Debug.Log($"<color=blue>[{name}]</color> <color=lime>*** CHASE ACTION STARTED! ***</color>");
+                    return "Chase!"; 
+                }),
                 new MoveTo(
                     () => GetTargetPosition(),
                     _arrestDistance * 0.8f, // Get very close for arrest
                     _chaseSpeed,
-                    5f
+                    0.5f // Very short timeout - re-evaluate quickly to keep chasing
                 )
             );
             chaseBehavior.Name = "ChaseBehavior";
@@ -412,22 +416,15 @@ namespace NPCBrain.Archetypes
                 "Chase",
                 chaseBehavior,
                 _chaseWeight,
-                // Must have a visible target
+                // Must have a visible target - this is the ONLY hard requirement
+                // Score 1.0 if target exists, 0.0 if not
                 new BlackboardConsideration<GameObject>("HasTarget", BBKeys.Target,
                     t => t != null ? 1f : 0f, null),
-                // Not close enough to arrest
+                // Not close enough to arrest (if close, Arrest action takes over)
                 new BlackboardConsideration<bool>("CantArrestYet", BBKeys.CanArrest,
-                    can => can ? 0f : 1f, false),
-                // Higher score when target is close
-                new DistanceConsideration(
-                    "TargetDistance",
-                    brain => GetTargetPositionForCheck(brain),
-                    _maxChaseDistance,
-                    true
-                ),
-                // Higher score when alert
-                new BlackboardConsideration<float>("AlertForChase", BBKeys.AlertLevel,
-                    a => 0.5f + a * 0.5f, 0f)
+                    can => can ? 0f : 1f, false)
+                // REMOVED: Distance and Alert considerations that were reducing the score
+                // Chase should ALWAYS win when there's a target to chase
             );
         }
         
