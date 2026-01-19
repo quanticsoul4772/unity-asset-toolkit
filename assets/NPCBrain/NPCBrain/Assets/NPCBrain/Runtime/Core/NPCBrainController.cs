@@ -39,6 +39,16 @@ namespace NPCBrain
         [SerializeField] private bool _warnOnMissingComponents = true;
         
         /// <summary>
+        /// When true, logs warnings if SightSensor or HearingSensor are not attached.
+        /// Set to false in tests or when sensors are intentionally not used.
+        /// </summary>
+        public bool WarnOnMissingComponents
+        {
+            get => _warnOnMissingComponents;
+            set => _warnOnMissingComponents = value;
+        }
+        
+        /// <summary>
         /// Shared data storage for the behavior tree. Store and retrieve values by key.
         /// </summary>
         public Blackboard Blackboard { get; protected set; }

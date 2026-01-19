@@ -19,6 +19,9 @@ namespace NPCBrain.Tests
         
         public void InitializeForTests()
         {
+            // Disable warnings about missing sensors - tests typically don't need them
+            WarnOnMissingComponents = false;
+            
             // Protected setters are accessible from derived classes
             Blackboard = new Blackboard();
             Criticality = new CriticalityController();
