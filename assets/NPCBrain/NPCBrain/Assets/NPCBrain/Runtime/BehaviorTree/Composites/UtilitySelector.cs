@@ -55,6 +55,7 @@ namespace NPCBrain.BehaviorTree.Composites
         private readonly List<float> _probabilitiesList;
         private UtilityAction _currentAction;
         private int _currentActionIndex = -1;
+        private int _lastSelectedActionIndex = -1; // Tracks previous selection for inertia
         private float[] _scores;
         private float[] _probabilities;
         private readonly System.Random _random;
@@ -220,14 +221,16 @@ namespace NPCBrain.BehaviorTree.Composites
             }
             
             NodeStatus status = _currentAction.Action.Execute(brain);
-            
+
             if (status != NodeStatus.Running)
             {
+                // Record both the action completion and the plan (for entropy and churn metrics)
                 brain.Criticality?.RecordAction(_currentActionIndex);
+                brain.Criticality?.RecordPlan(_currentActionIndex);
                 _currentAction = null;
                 _currentActionIndex = -1;
             }
-            
+
             return status;
         }
         
@@ -235,9 +238,17 @@ namespace NPCBrain.BehaviorTree.Composites
         /// Selects a UtilityAction using a softmax distribution over actions with positive scores.
         /// </summary>
         /// <remarks>
-        /// Populates internal score and probability arrays for the last selection, sets the selected action index, and respects the temperature provided by brain.Criticality (defaults to 1). Actions with scores less than or equal to zero are excluded from selection. Logs warnings when selection cannot proceed (e.g., null brain, all scores <= 0, or numerical issues).
+        /// <para>Selection process:</para>
+        /// <list type="number">
+        ///   <item><description>Score all actions and filter out non-positive scores</description></item>
+        ///   <item><description>Apply softmax with temperature from CriticalityController</description></item>
+        ///   <item><description>Apply inertia boost to previous action (encourages commitment)</description></item>
+        ///   <item><description>Sample from the resulting probability distribution</description></item>
+        /// </list>
+        /// <para>Inertia creates "stickiness" - NPCs are more likely to continue their current action,
+        /// preventing erratic flip-flopping while still allowing adaptation when scores change significantly.</para>
         /// </remarks>
-        /// <param name="brain">The NPCBrainController used to evaluate action scores and obtain the criticality temperature.</param>
+        /// <param name="brain">The NPCBrainController used to evaluate action scores and obtain criticality parameters.</param>
         /// <returns>The chosen UtilityAction, or null if no action could be selected.</returns>
         private UtilityAction SelectAction(NPCBrainController brain)
         {
@@ -245,14 +256,15 @@ namespace NPCBrain.BehaviorTree.Composites
             {
                 if (ShouldLogWarning())
                 {
-                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility, 
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility,
                         "Brain is null. Cannot select action.");
                 }
                 return null;
             }
-            
+
             float temperature = brain.Criticality?.Temperature ?? 1f;
-            
+            float inertia = brain.Criticality?.Inertia ?? 0f;
+
             float maxScore = float.MinValue;
             for (int i = 0; i < _actions.Count; i++)
             {
@@ -262,18 +274,18 @@ namespace NPCBrain.BehaviorTree.Composites
                     maxScore = _scores[i];
                 }
             }
-            
+
             if (maxScore <= 0f)
             {
                 if (ShouldLogWarning())
                 {
-                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility, 
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility,
                         $"All {_actions.Count} action(s) scored <= 0. No action selected. " +
                         $"Check that considerations return positive values.");
                 }
                 return null;
             }
-            
+
             float sumExp = 0f;
             for (int i = 0; i < _actions.Count; i++)
             {
@@ -289,48 +301,86 @@ namespace NPCBrain.BehaviorTree.Composites
                 _probabilities[i] = FastExp(scaledScore);
                 sumExp += _probabilities[i];
             }
-            
+
             if (sumExp <= 0f)
             {
                 if (ShouldLogWarning())
                 {
-                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility, 
+                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility,
                         "Softmax sum is zero after filtering. This shouldn't happen if maxScore > 0.");
                 }
                 return null;
             }
-            
+
+            // Normalize to get initial probabilities
             for (int i = 0; i < _actions.Count; i++)
             {
                 _probabilities[i] /= sumExp;
             }
-            
-            // Debug: Log all action scores
+
+            // Apply inertia: boost probability of previous action to encourage commitment
+            // This creates "stickiness" - NPCs don't flip-flop between similar-scoring actions
+            // Formula: p[prev] += inertia * (1 - p[prev]) — proportional boost based on headroom
+            if (inertia > 0f && _lastSelectedActionIndex >= 0 && _lastSelectedActionIndex < _actions.Count)
+            {
+                // Only apply inertia if the previous action is still viable (positive score)
+                if (_scores[_lastSelectedActionIndex] > 0f)
+                {
+                    float currentProb = _probabilities[_lastSelectedActionIndex];
+                    float boost = inertia * (1f - currentProb);
+                    _probabilities[_lastSelectedActionIndex] = currentProb + boost;
+
+                    // Renormalize probabilities after inertia boost
+                    float newSum = 0f;
+                    for (int i = 0; i < _actions.Count; i++)
+                    {
+                        newSum += _probabilities[i];
+                    }
+                    if (newSum > 0f)
+                    {
+                        for (int i = 0; i < _actions.Count; i++)
+                        {
+                            _probabilities[i] /= newSum;
+                        }
+                    }
+
+                    if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+                    {
+                        Debug.Log($"[UtilitySelector] Inertia applied: {_actions[_lastSelectedActionIndex].Name} " +
+                                  $"boosted from {currentProb:P0} to {_probabilities[_lastSelectedActionIndex]:P0} " +
+                                  $"(inertia={inertia:F2})");
+                    }
+                }
+            }
+
+            // Debug: Log all action scores and probabilities
             if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
             {
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                sb.Append($"[UtilitySelector] Scores: ");
+                sb.Append($"[UtilitySelector] T={temperature:F2} I={inertia:F2} | ");
                 for (int i = 0; i < _actions.Count; i++)
                 {
-                    sb.Append($"{_actions[i].Name}={_scores[i]:F2} ");
+                    sb.Append($"{_actions[i].Name}={_scores[i]:F2}({_probabilities[i]:P0}) ");
                 }
                 Debug.Log(sb.ToString());
             }
-            
+
             float randomValue = (float)_random.NextDouble();
             float cumulative = 0f;
-            
+
             for (int i = 0; i < _actions.Count; i++)
             {
                 cumulative += _probabilities[i];
                 if (randomValue <= cumulative)
                 {
                     _currentActionIndex = i;
+                    _lastSelectedActionIndex = i;
                     return _actions[i];
                 }
             }
-            
+
             _currentActionIndex = _actions.Count - 1;
+            _lastSelectedActionIndex = _actions.Count - 1;
             return _actions[_actions.Count - 1];
         }
         
@@ -355,8 +405,9 @@ namespace NPCBrain.BehaviorTree.Composites
             }
             _currentAction = null;
             _currentActionIndex = -1;
+            _lastSelectedActionIndex = -1; // Full reset clears inertia history
         }
-        
+
         public override void Abort(NPCBrainController brain)
         {
             if (_currentAction != null)
@@ -365,6 +416,7 @@ namespace NPCBrain.BehaviorTree.Composites
             }
             _currentAction = null;
             _currentActionIndex = -1;
+            _lastSelectedActionIndex = -1; // Full abort clears inertia history
             base.Abort(brain);
         }
         

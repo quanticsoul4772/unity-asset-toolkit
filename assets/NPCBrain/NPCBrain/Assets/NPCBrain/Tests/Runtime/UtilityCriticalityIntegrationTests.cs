@@ -227,8 +227,183 @@ namespace NPCBrain.Tests.Runtime
         
         #endregion
         
+        #region Inertia Integration Tests
+
+        [UnityTest]
+        public IEnumerator Inertia_HighInertia_FavorsPreviousAction()
+        {
+            // Force high inertia by making the criticality state ordered (repetitive)
+            for (int i = 0; i < 20; i++)
+            {
+                _brain.Criticality.RecordAction(0);
+            }
+            _brain.Criticality.Update();
+
+            // Verify high inertia was achieved
+            Assert.Greater(_brain.Criticality.Inertia, 0.8f,
+                "Repetitive actions should create high inertia");
+
+            // Create two similar-scoring actions
+            var actionA = new UtilityAction("A", new Wait(0.01f), new ConstantConsideration(0.5f));
+            var actionB = new UtilityAction("B", new Wait(0.01f), new ConstantConsideration(0.5f));
+
+            var selector = new UtilitySelector(111, actionA, actionB);
+
+            // Execute once to establish a "previous" action
+            selector.Execute(_brain);
+            string firstAction = selector.CurrentAction?.Name;
+            Assert.IsNotNull(firstAction, "First action should be selected");
+
+            // Complete the action so inertia can apply on next selection
+            yield return new WaitForSeconds(0.02f);
+
+            // Count how often the same action is selected with high inertia
+            int sameActionCount = 0;
+            int totalRuns = 20;
+
+            for (int i = 0; i < totalRuns; i++)
+            {
+                selector.Reset();
+                selector.Execute(_brain);
+
+                if (selector.CurrentAction?.Name == firstAction)
+                {
+                    sameActionCount++;
+                }
+                yield return null;
+            }
+
+            // High inertia should favor the previous action
+            // With equal scores and high inertia, we expect > 50% same action
+            Assert.Greater(sameActionCount, totalRuns * 0.4f,
+                $"High inertia should favor previous action. Same action selected {sameActionCount}/{totalRuns} times");
+        }
+
+        [UnityTest]
+        public IEnumerator Inertia_LowInertia_AllowsMoreVariation()
+        {
+            // Force low inertia by making the criticality state chaotic (varied)
+            for (int i = 0; i < 20; i++)
+            {
+                _brain.Criticality.RecordAction(i % 10);
+                _brain.Criticality.RecordPlan(i % 5);
+                _brain.Criticality.RecordStateTransition(i % 2);
+            }
+            _brain.Criticality.Update();
+
+            // Verify low inertia was achieved
+            Assert.Less(_brain.Criticality.Inertia, 0.5f,
+                "Varied behavior should create low inertia");
+
+            // Create three similar-scoring actions
+            var actionA = new UtilityAction("A", new Wait(0.01f), new ConstantConsideration(0.5f));
+            var actionB = new UtilityAction("B", new Wait(0.01f), new ConstantConsideration(0.5f));
+            var actionC = new UtilityAction("C", new Wait(0.01f), new ConstantConsideration(0.5f));
+
+            var selector = new UtilitySelector(222, actionA, actionB, actionC);
+
+            int aCount = 0, bCount = 0, cCount = 0;
+            int totalRuns = 30;
+
+            for (int i = 0; i < totalRuns; i++)
+            {
+                selector.Reset();
+                selector.Execute(_brain);
+
+                switch (selector.CurrentAction?.Name)
+                {
+                    case "A": aCount++; break;
+                    case "B": bCount++; break;
+                    case "C": cCount++; break;
+                }
+                yield return null;
+            }
+
+            // With low inertia and equal scores, all actions should have some selection
+            int actionsSelected = (aCount > 0 ? 1 : 0) + (bCount > 0 ? 1 : 0) + (cCount > 0 ? 1 : 0);
+            Assert.GreaterOrEqual(actionsSelected, 2,
+                $"Low inertia should allow variation. A={aCount}, B={bCount}, C={cCount}");
+        }
+
+        [UnityTest]
+        public IEnumerator Inertia_OnlyBoostsViableActions()
+        {
+            // Set high inertia
+            for (int i = 0; i < 20; i++)
+            {
+                _brain.Criticality.RecordAction(0);
+            }
+            _brain.Criticality.Update();
+
+            // Create one action that will become zero-score after first selection
+            var dynamicConsideration = new DynamicConsideration(0.5f);
+            var dynamicAction = new UtilityAction("Dynamic", new Wait(0.01f), dynamicConsideration);
+            var normalAction = new UtilityAction("Normal", new Wait(0.01f), new ConstantConsideration(0.5f));
+
+            var selector = new UtilitySelector(333, dynamicAction, normalAction);
+
+            // Execute once - may select dynamic action
+            selector.Execute(_brain);
+            yield return new WaitForSeconds(0.02f);
+
+            // Now set dynamic action score to zero
+            dynamicConsideration.SetScore(0f);
+
+            // Execute again - should NOT select dynamic even with inertia
+            selector.Reset();
+            NodeStatus result = selector.Execute(_brain);
+
+            Assert.AreEqual(NodeStatus.Running, result, "Should still execute");
+            Assert.AreEqual("Normal", selector.CurrentAction?.Name,
+                "Inertia should not boost zero-score actions");
+            yield return null;
+        }
+
+        #endregion
+
+        #region Chaos Index Integration Tests
+
+        [UnityTest]
+        public IEnumerator ChaosIndex_AffectsTemperatureAndInertia()
+        {
+            // Record varied behavior in all categories (high chaos)
+            for (int i = 0; i < 20; i++)
+            {
+                _brain.Criticality.RecordAction(i % 5);
+                _brain.Criticality.RecordPlan(i % 3);
+                _brain.Criticality.RecordStateTransition(i % 2);
+            }
+            _brain.Criticality.Update();
+
+            float highChaosIndex = _brain.Criticality.ChaosIndex;
+            float highChaosInertia = _brain.Criticality.Inertia;
+
+            // Reset and record repetitive behavior (low chaos)
+            _brain.Criticality.Reset();
+            for (int i = 0; i < 20; i++)
+            {
+                _brain.Criticality.RecordAction(0);
+                _brain.Criticality.RecordPlan(0);
+                _brain.Criticality.RecordStateTransition(0);
+            }
+            _brain.Criticality.Update();
+
+            float lowChaosIndex = _brain.Criticality.ChaosIndex;
+            float lowChaosInertia = _brain.Criticality.Inertia;
+
+            // Verify chaos index affects inertia inversely
+            Assert.Greater(highChaosIndex, lowChaosIndex,
+                "Varied behavior should have higher chaos index");
+            Assert.Less(highChaosInertia, lowChaosInertia,
+                "Higher chaos should result in lower inertia");
+
+            yield return null;
+        }
+
+        #endregion
+
         #region Edge Cases
-        
+
         [UnityTest]
         public IEnumerator UtilitySelector_ZeroScoreAction_NeverSelected()
         {

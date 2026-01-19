@@ -1,6 +1,7 @@
 using UnityEngine;
 using NPCBrain.BehaviorTree;
 using NPCBrain.Criticality;
+using NPCBrain.UtilityAI;
 
 namespace NPCBrain.Tests
 {
@@ -62,6 +63,30 @@ namespace NPCBrain.Tests
             TickCount = 0;
             OnEnterCount = 0;
             OnExitCount = 0;
+        }
+    }
+
+    /// <summary>
+    /// Test consideration that allows changing the score at runtime.
+    /// Useful for testing dynamic behavior changes.
+    /// </summary>
+    public class DynamicConsideration : Consideration
+    {
+        private float _score;
+
+        public DynamicConsideration(float initialScore)
+        {
+            _score = initialScore;
+        }
+
+        public override float Score(NPCBrainController brain)
+        {
+            return _score;
+        }
+
+        public void SetScore(float score)
+        {
+            _score = score;
         }
     }
 }
