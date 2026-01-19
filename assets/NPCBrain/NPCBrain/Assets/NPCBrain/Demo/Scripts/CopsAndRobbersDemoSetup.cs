@@ -24,6 +24,10 @@ namespace NPCBrain.Demo
         [SerializeField] private int _robberCount = 1;
         [SerializeField] private int _lootCount = 6;
         
+        [Header("Time Limit")]
+        [SerializeField] private float _heistTimeLimit = 120f;  // 2 minutes to complete the heist
+        [SerializeField] private bool _enableTimeLimit = true;
+        
         [Header("Colors")]
         [SerializeField] private Color _groundColor = new Color(0.2f, 0.22f, 0.25f);
         [SerializeField] private Color _copColor = new Color(0.2f, 0.4f, 0.8f);
@@ -58,6 +62,31 @@ namespace NPCBrain.Demo
         private bool _gameEnded;
         private string _winner;
         
+        // Time limit - static for robber access
+        private static float _staticHeistTimeLimit;
+        private static float _staticHeistStartTime;
+        private static bool _staticTimeLimitEnabled;
+        private static bool _staticGameActive;
+        
+        /// <summary>Total time allowed for the heist in seconds.</summary>
+        public static float HeistTimeLimit => _staticHeistTimeLimit;
+        
+        /// <summary>Time remaining in the heist in seconds.</summary>
+        public static float HeistTimeRemaining => _staticTimeLimitEnabled && _staticGameActive 
+            ? Mathf.Max(0f, _staticHeistTimeLimit - (Time.time - _staticHeistStartTime)) 
+            : float.MaxValue;
+        
+        /// <summary>Time remaining normalized (1.0 = full time, 0.0 = no time left).</summary>
+        public static float HeistTimeRemainingNormalized => _staticTimeLimitEnabled && _staticGameActive && _staticHeistTimeLimit > 0f
+            ? Mathf.Clamp01(HeistTimeRemaining / _staticHeistTimeLimit)
+            : 1f;
+        
+        /// <summary>Whether the time limit is enabled.</summary>
+        public static bool IsTimeLimitEnabled => _staticTimeLimitEnabled;
+        
+        /// <summary>Whether the heist is currently active.</summary>
+        public static bool IsHeistActive => _staticGameActive;
+        
         private void Start()
         {
             Debug.Log("<color=lime>[CopsAndRobbersDemoSetup] START - Scripts are loaded and running!</color>");
@@ -78,6 +107,27 @@ namespace NPCBrain.Demo
         
         private void CheckGameEnd()
         {
+            // Check if time has expired
+            if (_enableTimeLimit && HeistTimeRemaining <= 0f)
+            {
+                _gameEnded = true;
+                _staticGameActive = false;
+                _winner = "COPS WIN! (Time expired)";
+                
+                // Arrest any remaining active robbers
+                for (int i = 0; i < _robbers.Count; i++)
+                {
+                    var robber = _robbers[i];
+                    if (robber != null && robber.gameObject.activeSelf && !robber.HasEscaped)
+                    {
+                        robber.OnTimeExpired();
+                    }
+                }
+                
+                Debug.Log($"<color=yellow>[CopsAndRobbers] Game Over! {_winner}</color>");
+                return;
+            }
+            
             // Check if all robbers are captured or escaped
             // Use for loop to avoid enumerator allocation
             int activeRobbers = 0;
@@ -93,6 +143,7 @@ namespace NPCBrain.Demo
             if (activeRobbers == 0)
             {
                 _gameEnded = true;
+                _staticGameActive = false;
                 _winner = _robberScore > _copScore ? "ROBBERS WIN!" : "COPS WIN!";
                 Debug.Log($"<color=yellow>[CopsAndRobbers] Game Over! {_winner}</color>");
             }
@@ -118,8 +169,15 @@ namespace NPCBrain.Demo
             CreateRobbers();
             CreatePathVisualizer();  // Create visualizer for path debug
             
-            Debug.Log("<color=cyan>Cops and Robbers Demo generated!</color>\n" +
-                "Watch the AI battle it out! Robbers steal loot and escape, Cops patrol and arrest.");
+            // Initialize time limit system
+            _staticHeistTimeLimit = _heistTimeLimit;
+            _staticHeistStartTime = Time.time;
+            _staticTimeLimitEnabled = _enableTimeLimit;
+            _staticGameActive = true;
+            
+            string timeLimitInfo = _enableTimeLimit ? $" Time limit: {_heistTimeLimit}s" : " No time limit";
+            Debug.Log($"<color=cyan>Cops and Robbers Demo generated!</color>\n" +
+                $"Watch the AI battle it out! Robbers steal loot and escape, Cops patrol and arrest.{timeLimitInfo}");
         }
         
         /// <summary>
@@ -133,6 +191,12 @@ namespace NPCBrain.Demo
             _gameTime = 0f;
             _gameEnded = false;
             _winner = "";
+            
+            // Reset time limit statics
+            _staticHeistTimeLimit = _heistTimeLimit;
+            _staticHeistStartTime = Time.time;
+            _staticTimeLimitEnabled = _enableTimeLimit;
+            _staticGameActive = true;
             
             GenerateScene();
         }
@@ -829,7 +893,17 @@ namespace NPCBrain.Demo
             GUILayout.Space(5);
             
             string timeStr = System.TimeSpan.FromSeconds(_gameTime).ToString(@"mm\:ss");
-            GUILayout.Label($"<b>Time:</b> {timeStr}");
+            GUILayout.Label($"<b>Elapsed:</b> {timeStr}");
+            
+            // Show time remaining if time limit is enabled
+            if (_enableTimeLimit && !_gameEnded)
+            {
+                float remaining = HeistTimeRemaining;
+                string remainingStr = System.TimeSpan.FromSeconds(remaining).ToString(@"mm\:ss");
+                string timeColor = remaining > 30f ? "white" : (remaining > 10f ? "yellow" : "red");
+                string urgencyIndicator = remaining <= 30f ? (remaining <= 10f ? " ⚠️ CRITICAL!" : " ⏰ HURRY!") : "";
+                GUILayout.Label($"<b>Remaining:</b> <color={timeColor}>{remainingStr}{urgencyIndicator}</color>");
+            }
             
             GUILayout.BeginHorizontal();
             GUILayout.Label($"<color=#4488FF><b>COPS: ${_copScore}</b></color>", GUILayout.Width(150));
@@ -1002,7 +1076,7 @@ namespace NPCBrain.Demo
             GUILayout.Label($"      <size=10><color=#888888>Goal: {robber.Goal}</color></size>");
             GUILayout.Label($"      Action: <color={stateColor}>{actionName}</color>{critInfo}");
             GUILayout.Label($"      <color=#FFDDAA>→ {robber.CurrentReason}</color>");
-            GUILayout.Label($"      Fear: {robber.FearLevel:F2} | CanSeeCop: {robber.CanSeeCop}");
+            GUILayout.Label($"      Fear: {robber.FearLevel:F2} | CanSeeCop: {robber.CanSeeCop} | Urgency: {robber.Urgency:F2}");
         }
         
         private string GetStateColor(string state)

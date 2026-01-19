@@ -5,6 +5,7 @@ using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;
 using NPCBrain.Components;
+using NPCBrain.Demo;
 using NPCBrain.Perception;
 using NPCBrain.UtilityAI;
 
@@ -102,6 +103,12 @@ namespace NPCBrain.Archetypes
                 if (_cachedState == "Scouting") return "Looking for opportunities...";
                 if (_cachedState == "Arrested!") return "Busted!";
                 if (_cachedState == "Escaped!") return "Got away with the loot!";
+                if (_cachedState == "Time's Up!") return "Ran out of time!";
+                
+                // Add urgency context to default reason
+                float urgency = Urgency;
+                if (urgency > 0.7f) return "No time left - MOVE!";
+                if (urgency > 0.4f) return "Running low on time...";
                 return "Planning the heist...";
             }
         }
@@ -126,6 +133,36 @@ namespace NPCBrain.Archetypes
         
         /// <summary>Current fear level (0-1) based on cop proximity.</summary>
         public float FearLevel => Blackboard.GetFloat(BBKeys.FearLevel, 0f);
+        
+        /// <summary>
+        /// Urgency level (0-1) based on time remaining. Higher = more urgent.
+        /// At 0.0 = plenty of time, at 1.0 = no time left!
+        /// </summary>
+        public float Urgency => CalculateUrgency();
+        
+        /// <summary>
+        /// Calculates urgency based on time remaining in the heist.
+        /// Uses exponential curve so urgency increases dramatically as time runs out.
+        /// </summary>
+        private float CalculateUrgency()
+        {
+            // Access time from CopsAndRobbersDemoSetup static properties
+            float timeNormalized = NPCBrain.Demo.CopsAndRobbersDemoSetup.HeistTimeRemainingNormalized;
+            
+            // Invert so 0 time = 1 urgency, full time = 0 urgency
+            // Use exponential curve: urgency rises slowly at first, then dramatically
+            // Formula: urgency = (1 - timeNormalized)^2 for gentle curve
+            // Or use a threshold-based approach for more dramatic effect
+            float rawUrgency = 1f - timeNormalized;
+            
+            // Apply curve: low urgency until 50% time used, then rises quickly
+            // At 100% time remaining: urgency = 0
+            // At 50% time remaining: urgency = 0.25
+            // At 25% time remaining: urgency = 0.56
+            // At 10% time remaining: urgency = 0.81
+            // At 0% time remaining: urgency = 1.0
+            return rawUrgency * rawUrgency;
+        }
         
         protected override void Awake()
         {
@@ -199,7 +236,9 @@ namespace NPCBrain.Archetypes
                 var nearestLoot = FindNearestLoot();
                 string lootInfo = nearestLoot != null ? $"{nearestLoot.name} at {Vector3.Distance(transform.position, nearestLoot.transform.position):F1}m" : "NO LOOT FOUND";
                 float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 999f);
-                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | CanSeeCop: {CanSeeCop} | CopDist: {copDist:F1}m | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | NearestLoot: {lootInfo}");
+                float timeRemaining = CopsAndRobbersDemoSetup.HeistTimeRemaining;
+                string timeInfo = CopsAndRobbersDemoSetup.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s | Urgency: {Urgency:F2}" : "No time limit";
+                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot}");
             }
         }
         
@@ -351,6 +390,24 @@ namespace NPCBrain.Archetypes
         }
         
         /// <summary>
+        /// Called when the heist time expires. Robber loses!
+        /// </summary>
+        public void OnTimeExpired()
+        {
+            _carriedLootValue = 0;
+            _isCarryingLoot = false;
+            Blackboard.SetBool(BBKeys.HasLoot, false);
+            Blackboard.SetInt(BBKeys.LootValue, 0);
+            _cachedState = "Time's Up!";
+            Blackboard.Set(BBKeys.CurrentState, "Time's Up!");
+            
+            NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} ran out of time!", this);
+            
+            // Disable the robber
+            gameObject.SetActive(false);
+        }
+        
+        /// <summary>
         /// Picks up loot from a loot point.
         /// </summary>
         public void PickupLoot(LootPoint loot)
@@ -421,22 +478,34 @@ namespace NPCBrain.Archetypes
                 "Flee",
                 fleeBehavior,
                 _fleeWeight,
-                // Must see a cop - critical gate
+                // Must see a cop - BUT when urgency is high, lower this threshold
+                // At high urgency, even fleeing feels less necessary - need to take risks!
                 new BlackboardConsideration<bool>("SeesCop", BBKeys.CanSeeCop,
                     sees => sees ? 1f : 0f, false),
                 // Higher score when cop is close
                 new BlackboardConsideration<float>("CopProximity", BBKeys.ClosestCopDistance,
                     dist => Mathf.Clamp01(1f - (dist / _copDetectionRange)), 100f),
-                // Higher score when fear is high
-                new BlackboardConsideration<float>("FearForFlee", BBKeys.FearLevel,
-                    f => 0.5f + f * 0.5f, 0f)
+                // Higher score when fear is high, but urgency reduces fear response
+                // When time is running out, we care less about fear!
+                new FunctionalConsideration("FearVsUrgency",
+                    _ => {
+                        float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
+                        float urgency = Urgency;
+                        // At high urgency, reduce fear's influence (take more risks)
+                        float fearInfluence = 1f - urgency * 0.5f; // At max urgency, fear only 50% effective
+                        return 0.5f + fear * 0.5f * fearInfluence;
+                    })
             );
         }
         
         private UtilityAction CreateCarryToEscapeAction()
         {
             var carryBehavior = new Sequence(
-                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Escaping"; return "Escaping"; }),
+                new SetBlackboard(BBKeys.CurrentState, () => { 
+                    float urgency = Urgency;
+                    _cachedState = urgency > 0.5f ? "Escaping (RUSH!)" : "Escaping"; 
+                    return _cachedState; 
+                }),
                 new MoveTo(
                     () => GetEscapePosition(),
                     _arrivalDistance,
@@ -453,10 +522,25 @@ namespace NPCBrain.Archetypes
                 // Must have loot - critical gate (returns 1.0 when has loot)
                 new BlackboardConsideration<bool>("HasLoot", BBKeys.HasLoot,
                     has => has ? 1f : 0f, false),
-                // Always want to escape when carrying loot - cop visibility only slightly reduces priority
-                new BlackboardConsideration<bool>("NoCopForEscape", BBKeys.CanSeeCop,
-                    sees => sees ? 0.8f : 1f, false)  // Changed from 0.3 to 0.8 - still escape even if cop visible!
-                // Removed DistanceConsideration - always prioritize escape regardless of distance
+                // Cop visibility matters less when time is running out!
+                // At high urgency, ignore cops and just RUN for the exit
+                new FunctionalConsideration("CopVisibilityVsUrgency",
+                    _ => {
+                        bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
+                        float urgency = Urgency;
+                        // Base: 0.8 if sees cop, 1.0 if not
+                        // At high urgency: always 1.0 (ignore cop, just escape!)
+                        float basePriority = seesCop ? 0.8f : 1f;
+                        return Mathf.Lerp(basePriority, 1f, urgency);
+                    }),
+                // URGENCY BOOST: Dramatically increase escape priority as time runs out!
+                new FunctionalConsideration("UrgencyBoost",
+                    _ => {
+                        float urgency = Urgency;
+                        // At 0 urgency: 1.0 (no boost)
+                        // At max urgency: 1.5 (50% boost to escape priority!)
+                        return 1f + urgency * 0.5f;
+                    })
             );
         }
         
@@ -515,9 +599,17 @@ namespace NPCBrain.Archetypes
                 "Hide",
                 hideBehavior,
                 _hideWeight,
-                // Higher score when fear is high
-                new BlackboardConsideration<float>("FearForHide", BBKeys.FearLevel,
-                    f => f > 0.3f ? 0.5f + f * 0.5f : 0.2f, 0f),
+                // Fear consideration - but hiding is less attractive when urgent!
+                // No time to hide when the clock is ticking!
+                new FunctionalConsideration("FearVsUrgencyForHide",
+                    _ => {
+                        float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
+                        float urgency = Urgency;
+                        float baseFearScore = fear > 0.3f ? 0.5f + fear * 0.5f : 0.2f;
+                        // At high urgency, hiding becomes much less attractive
+                        // Multiply by inverse urgency: at 0 urgency = 100%, at max urgency = 20%
+                        return baseFearScore * (1f - urgency * 0.8f);
+                    }),
                 // Not seeing cop but was recently
                 new BlackboardConsideration<bool>("NoCopNow", BBKeys.CanSeeCop,
                     sees => sees ? 0.3f : 1f, false),
@@ -534,7 +626,7 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetSneakPosition(),
                     _arrivalDistance,
-                    _sneakSpeed,
+                    _sneakSpeed,  // Keep sneak speed - urgency makes sneaking less likely to be selected
                     5f
                 )
             );
@@ -544,14 +636,32 @@ namespace NPCBrain.Archetypes
                 "Sneak",
                 sneakBehavior,
                 _sneakWeight,
-                // Not seeing cop
-                new BlackboardConsideration<bool>("NoCopForSneak", BBKeys.CanSeeCop,
-                    sees => sees ? 0f : 1f, false),
-                // Moderate fear (cautious)
-                new BlackboardConsideration<float>("ModerateFear", BBKeys.FearLevel,
-                    f => f > 0.1f && f < 0.6f ? 0.8f : 0.3f, 0f),
-                // Cooldown
-                new TimeConsideration("SneakCooldown", BBKeys.LastSneakTime, 4f)
+                // Not seeing cop - but at high urgency, we're more willing to risk being seen
+                new FunctionalConsideration("CopVisibilityForSneak",
+                    _ => {
+                        bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
+                        float urgency = Urgency;
+                        // Normal: 0 if sees cop. High urgency: 0.3 even if sees cop
+                        if (!seesCop) return 1f;
+                        return urgency > 0.6f ? 0.3f : 0f;
+                    }),
+                // Moderate fear (cautious) - but less important when urgent
+                new FunctionalConsideration("FearForSneak",
+                    _ => {
+                        float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
+                        float urgency = Urgency;
+                        float baseFearScore = fear > 0.1f && fear < 0.6f ? 0.8f : 0.3f;
+                        // At high urgency, sneaking is less attractive (no time for caution!)
+                        return baseFearScore * (1f - urgency * 0.6f);
+                    }),
+                // Cooldown - reduced at high urgency
+                new FunctionalConsideration("SneakCooldown",
+                    _ => {
+                        float lastSneak = Blackboard.GetFloat(BBKeys.LastSneakTime, -10f);
+                        float cooldown = Mathf.Lerp(4f, 2f, Urgency); // 4s normal, 2s at max urgency
+                        float elapsed = Time.time - lastSneak;
+                        return elapsed >= cooldown ? 1f : elapsed / cooldown;
+                    })
             );
         }
         
@@ -563,7 +673,7 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetScoutPosition(),
                     _arrivalDistance,
-                    _normalSpeed,
+                    _normalSpeed,  // Normal speed - urgency makes scouting less likely to be selected
                     6f
                 )
             );
@@ -573,13 +683,20 @@ namespace NPCBrain.Archetypes
                 "Scout",
                 scoutBehavior,
                 _scoutWeight,
-                // Baseline behavior
-                new ConstantConsideration(0.7f),
+                // Baseline behavior - reduced when urgent (no time for leisurely scouting!)
+                new FunctionalConsideration("BaseScoutScore",
+                    _ => 0.7f * (1f - Urgency * 0.5f)), // 0.7 base, down to 0.35 at max urgency
                 // Lower when fear is high
                 new BlackboardConsideration<float>("LowFearForScout", BBKeys.FearLevel,
                     f => 1f - f * 0.8f, 0f),
-                // Cooldown
-                new TimeConsideration("ScoutCooldown", BBKeys.LastScoutTime, 3f)
+                // Cooldown - but shorter at high urgency
+                new FunctionalConsideration("ScoutCooldown",
+                    _ => {
+                        float lastScout = Blackboard.GetFloat(BBKeys.LastScoutTime, -10f);
+                        float cooldown = Mathf.Lerp(3f, 1.5f, Urgency); // 3s normal, 1.5s at max urgency
+                        float elapsed = Time.time - lastScout;
+                        return elapsed >= cooldown ? 1f : elapsed / cooldown;
+                    })
             );
         }
         
