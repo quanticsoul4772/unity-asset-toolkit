@@ -80,7 +80,22 @@ namespace EasyPath
             HeapifyUp(index);
             HeapifyDown(index);
         }
-        
+
+        /// <summary>
+        /// Restores the min-heap property by moving an element upward toward the root.
+        /// </summary>
+        /// <param name="index">The index of the element to heapify upward.</param>
+        /// <remarks>
+        /// Algorithm:
+        /// 1. Compare element with its parent (at (index-1)/2)
+        /// 2. If element is smaller than parent, swap them
+        /// 3. Repeat until element >= parent or reaches root
+        ///
+        /// Complexity: O(log n) worst case (height of heap)
+        ///
+        /// Used after Enqueue to maintain heap invariant when adding new minimum element.
+        /// Also used in UpdatePriority when an item's priority decreases.
+        /// </remarks>
         private void HeapifyUp(int index)
         {
             while (index > 0)
@@ -96,7 +111,24 @@ namespace EasyPath
                 index = parentIndex;
             }
         }
-        
+
+        /// <summary>
+        /// Restores the min-heap property by moving an element downward toward the leaves.
+        /// </summary>
+        /// <param name="index">The index of the element to heapify downward.</param>
+        /// <remarks>
+        /// Algorithm:
+        /// 1. Find the smallest of: current element, left child (2*index+1), right child (2*index+2)
+        /// 2. If smallest is a child, swap current with smallest child
+        /// 3. Repeat until current element is smaller than both children or is a leaf
+        ///
+        /// Complexity: O(log n) worst case (height of heap)
+        ///
+        /// Used after Dequeue to restore heap property after replacing root with last element.
+        /// Also used in UpdatePriority when an item's priority increases.
+        ///
+        /// Invariant: After heapify-down, all descendants satisfy min-heap property.
+        /// </remarks>
         private void HeapifyDown(int index)
         {
             while (true)
@@ -124,7 +156,18 @@ namespace EasyPath
                 index = smallest;
             }
         }
-        
+
+        /// <summary>
+        /// Swaps two elements in the heap and updates their index mappings.
+        /// </summary>
+        /// <param name="a">First element index.</param>
+        /// <param name="b">Second element index.</param>
+        /// <remarks>
+        /// Critical: Must update _itemIndices dictionary after swapping heap elements
+        /// to maintain O(1) Contains() and UpdatePriority() operations.
+        ///
+        /// Complexity: O(1) - constant time swap with dictionary updates
+        /// </remarks>
         private void Swap(int a, int b)
         {
             T temp = _heap[a];

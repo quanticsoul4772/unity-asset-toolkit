@@ -5,6 +5,19 @@ namespace NPCBrain.BehaviorTree.Actions
     /// <summary>
     /// Action that sets a value in the NPC's blackboard.
     /// </summary>
+    /// <remarks>
+    /// Always returns Success after setting the value.
+    /// Supports both static values and dynamic value getters.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Static value
+    /// new SetBlackboard("alert_level", 5)
+    ///
+    /// // Dynamic value
+    /// new SetBlackboard("player_distance", () => Vector3.Distance(brain.transform.position, player.position))
+    /// </code>
+    /// </example>
     public class SetBlackboard : BTNode
     {
         private readonly string _key;
@@ -33,7 +46,12 @@ namespace NPCBrain.BehaviorTree.Actions
             _valueGetter = () => value;
             Name = $"SetBlackboard({key})";
         }
-        
+
+        /// <summary>
+        /// Evaluates the value getter and sets the blackboard key.
+        /// </summary>
+        /// <param name="brain">The NPCBrainController providing the blackboard.</param>
+        /// <returns>Always returns Success.</returns>
         protected override NodeStatus Tick(NPCBrainController brain)
         {
             object value = _valueGetter();

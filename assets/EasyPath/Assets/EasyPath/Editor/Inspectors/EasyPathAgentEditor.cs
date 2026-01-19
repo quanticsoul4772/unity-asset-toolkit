@@ -4,6 +4,18 @@ using EasyPath;
 
 namespace EasyPath.Editor
 {
+    /// <summary>
+    /// Custom inspector for EasyPathAgent component with runtime debugging and control features.
+    /// </summary>
+    /// <remarks>
+    /// Features:
+    /// - Organized movement parameter editing (speed, rotation, distances)
+    /// - Debug path visualization toggles with color customization
+    /// - Real-time runtime info display (IsMoving, HasPath, RemainingDistance)
+    /// - Play mode controls (Pause, Resume, Stop, Recalculate)
+    /// - Scene view visualization (stopping distance, destination marker, direction line)
+    /// - Auto-refresh during play mode for live updates
+    /// </remarks>
     [CustomEditor(typeof(EasyPathAgent))]
     public class EasyPathAgentEditor : UnityEditor.Editor
     {
@@ -13,7 +25,10 @@ namespace EasyPath.Editor
         private SerializedProperty _waypointTolerance;
         private SerializedProperty _showDebugPath;
         private SerializedProperty _pathColor;
-        
+
+        /// <summary>
+        /// Caches serialized properties on inspector enable.
+        /// </summary>
         private void OnEnable()
         {
             _speed = serializedObject.FindProperty("_speed");
@@ -23,7 +38,19 @@ namespace EasyPath.Editor
             _showDebugPath = serializedObject.FindProperty("_showDebugPath");
             _pathColor = serializedObject.FindProperty("_pathColor");
         }
-        
+
+        /// <summary>
+        /// Renders the custom inspector GUI with movement settings, debug options, and runtime controls.
+        /// </summary>
+        /// <remarks>
+        /// Layout:
+        /// 1. Movement - Speed, rotation speed, stopping distance, waypoint tolerance
+        /// 2. Debug - Path visualization toggle and color picker
+        /// 3. Runtime Info - Read-only status (IsMoving, HasPath, RemainingDistance)
+        /// 4. Buttons (Play mode only) - Pause/Resume, Stop, Recalculate path
+        ///
+        /// Auto-repaints during play mode to show live agent state updates.
+        /// </remarks>
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -106,7 +133,18 @@ namespace EasyPath.Editor
                 Repaint();
             }
         }
-        
+
+        /// <summary>
+        /// Renders Scene view visualization for agent debugging.
+        /// </summary>
+        /// <remarks>
+        /// Draws:
+        /// - Yellow wire disc showing stopping distance radius
+        /// - Green wire disc at destination point (if path exists)
+        /// - Green line from agent to destination (if path exists)
+        ///
+        /// Useful for visualizing agent reach and target location at a glance.
+        /// </remarks>
         private void OnSceneGUI()
         {
             EasyPathAgent agent = (EasyPathAgent)target;

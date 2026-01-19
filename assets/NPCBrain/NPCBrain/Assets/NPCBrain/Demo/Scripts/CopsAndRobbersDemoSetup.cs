@@ -543,11 +543,16 @@ namespace NPCBrain.Demo
             float halfSize = _arenaSize / 2f;
             
             // Escape zone in the south
+            Vector3 escapePosition = new Vector3(0f, 0.1f, -halfSize + 5f);
             _escapeZone = EscapeZone.Create(
-                new Vector3(0f, 0.1f, -halfSize + 5f),
+                escapePosition,
                 5f,
                 transform
             );
+            
+            // COORDINATED PURSUIT: Tell CopAlertSystem where the escape zone is
+            // This enables the "closest cop chases, others intercept" strategy
+            CopAlertSystem.EscapeZonePosition = escapePosition;
             
             // Subscribe to escape events
             _escapeZone.OnRobberEscaped += OnRobberEscaped;

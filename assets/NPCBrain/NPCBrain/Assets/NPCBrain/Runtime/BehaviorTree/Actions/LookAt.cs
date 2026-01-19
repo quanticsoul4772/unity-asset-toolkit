@@ -64,7 +64,20 @@ namespace NPCBrain.BehaviorTree.Actions
             _angleTolerance = angleTolerance;
             Name = "LookAt";
         }
-        
+
+        /// <summary>
+        /// Rotates the NPC toward the target position.
+        /// </summary>
+        /// <param name="brain">The NPCBrainController to rotate.</param>
+        /// <returns>
+        /// - Success: When facing the target within angle tolerance
+        /// - Running: While rotating toward target
+        /// - Failure: If brain is null
+        /// </returns>
+        /// <remarks>
+        /// Rotation is locked to horizontal plane (y-axis rotation only).
+        /// Set rotation speed to 0 for instant snap rotation.
+        /// </remarks>
         protected override NodeStatus Tick(NPCBrainController brain)
         {
             if (brain == null)

@@ -724,12 +724,60 @@ namespace NPCBrain.Archetypes
         
         /// <summary>
         /// Gets the predicted position of the robber based on SHARED intel from CopAlertSystem.
-        /// This allows ALL cops to pursue in the same direction as a coordinated team.
+        /// Uses coordinated pursuit strategy: closest cop chases, others intercept at escape zone.
         /// </summary>
         private Vector3 GetPredictedRobberPosition()
         {
-            // Use shared intel from CopAlertSystem for coordinated team pursuit
+            // COORDINATED PURSUIT STRATEGY:
+            // - Closest cop to robber: Chase directly (predicted position)
+            // - Other cops: Intercept at escape zone (robber MUST go there to win)
+            
+            if (CopAlertSystem.HasEscapeZone && CopAlertSystem.HasActivePursuit)
+            {
+                if (IsClosestCopToRobber())
+                {
+                    // I'm closest - chase directly!
+                    return CopAlertSystem.GetPredictedRobberPosition(_pursuitPredictionMultiplier);
+                }
+                else
+                {
+                    // I'm not closest - intercept at escape zone!
+                    // This blocks the robber's only escape route
+                    return CopAlertSystem.EscapeZonePosition;
+                }
+            }
+            
+            // Fallback: use standard pursuit (all chase to same position)
             return CopAlertSystem.GetPredictedRobberPosition(_pursuitPredictionMultiplier);
+        }
+        
+        /// <summary>
+        /// Determines if this cop is the closest to the last known robber position.
+        /// Used for coordinated pursuit - closest cop chases while others intercept.
+        /// </summary>
+        private bool IsClosestCopToRobber()
+        {
+            Vector3 robberPos = CopAlertSystem.LastKnownRobberPosition;
+            if (robberPos == Vector3.zero) return true; // No data, assume closest
+            
+            float myDistanceSqr = (transform.position - robberPos).sqrMagnitude;
+            
+            // Check all other cops
+            var allCops = NPCRegistry<CopNPC>.Instances;
+            for (int i = 0; i < allCops.Count; i++)
+            {
+                var otherCop = allCops[i];
+                if (otherCop == this || otherCop == null || !otherCop.gameObject.activeSelf)
+                    continue;
+                
+                float otherDistanceSqr = (otherCop.transform.position - robberPos).sqrMagnitude;
+                if (otherDistanceSqr < myDistanceSqr)
+                {
+                    return false; // Another cop is closer
+                }
+            }
+            
+            return true; // I'm the closest!
         }
         
         private UtilityAction CreateTrackFootstepsAction()

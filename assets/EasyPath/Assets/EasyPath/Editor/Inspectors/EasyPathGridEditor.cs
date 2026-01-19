@@ -4,6 +4,17 @@ using EasyPath;
 
 namespace EasyPath.Editor
 {
+    /// <summary>
+    /// Custom inspector for EasyPathGrid component providing enhanced editing capabilities.
+    /// </summary>
+    /// <remarks>
+    /// Features:
+    /// - Organized property sections (Grid Settings, Obstacle Detection, Debug Visualization)
+    /// - Real-time grid statistics (total cells, walkable count, grid dimensions)
+    /// - One-click grid rebuilding
+    /// - Interactive edit mode for toggling cell walkability in Scene view
+    /// - Visual feedback with colored wire cubes highlighting cells under cursor
+    /// </remarks>
     [CustomEditor(typeof(EasyPathGrid))]
     public class EasyPathGridEditor : UnityEditor.Editor
     {
@@ -16,8 +27,14 @@ namespace EasyPath.Editor
         private SerializedProperty _walkableColor;
         private SerializedProperty _blockedColor;
         
+        /// <summary>
+        /// Tracks whether edit mode is active for cell walkability editing.
+        /// </summary>
         private bool _editMode = false;
-        
+
+        /// <summary>
+        /// Caches serialized properties on inspector enable.
+        /// </summary>
         private void OnEnable()
         {
             _width = serializedObject.FindProperty("_width");
@@ -29,7 +46,20 @@ namespace EasyPath.Editor
             _walkableColor = serializedObject.FindProperty("_walkableColor");
             _blockedColor = serializedObject.FindProperty("_blockedColor");
         }
-        
+
+        /// <summary>
+        /// Renders the custom inspector GUI with organized sections and runtime controls.
+        /// </summary>
+        /// <remarks>
+        /// Layout:
+        /// 1. Grid Settings - Width, height, cell size configuration
+        /// 2. Obstacle Detection - Layer mask and check radius
+        /// 3. Debug Visualization - Gizmo toggles and color settings
+        /// 4. Info - Read-only statistics (total/walkable cells, grid dimensions)
+        /// 5. Buttons - Rebuild Grid and Edit Mode toggle
+        ///
+        /// Edit Mode allows Ctrl+Click in Scene view to toggle individual cell walkability.
+        /// </remarks>
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -105,7 +135,14 @@ namespace EasyPath.Editor
             
             serializedObject.ApplyModifiedProperties();
         }
-        
+
+        /// <summary>
+        /// Handles Scene view rendering and input for edit mode.
+        /// </summary>
+        /// <remarks>
+        /// When edit mode is active, draws a yellow wire cube under the cursor
+        /// and processes Ctrl+Click events to toggle cell walkability.
+        /// </remarks>
         private void OnSceneGUI()
         {
             EasyPathGrid grid = (EasyPathGrid)target;
@@ -117,7 +154,20 @@ namespace EasyPath.Editor
             
             HandleCellEditing(grid);
         }
-        
+
+        /// <summary>
+        /// Processes mouse input for cell walkability editing in Scene view.
+        /// </summary>
+        /// <param name="grid">The EasyPathGrid component being edited.</param>
+        /// <remarks>
+        /// Input:
+        /// - Ctrl+Click: Toggles walkability of the clicked cell
+        ///
+        /// Raycasts against a ground plane at grid position to determine which cell
+        /// was clicked. Changes are recorded with Undo support.
+        ///
+        /// Draws a yellow wire cube under the cursor for visual feedback.
+        /// </remarks>
         private void HandleCellEditing(EasyPathGrid grid)
         {
             Event e = Event.current;

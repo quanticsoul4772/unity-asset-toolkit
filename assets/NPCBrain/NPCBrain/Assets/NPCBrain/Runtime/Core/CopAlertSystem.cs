@@ -5,6 +5,7 @@ namespace NPCBrain
     /// <summary>
     /// Static alert system for cops to share robber sightings.
     /// When one cop sees a robber, all cops can access the shared intel.
+    /// Supports coordinated pursuit where closest cop chases while others intercept at escape zone.
     /// </summary>
     public static class CopAlertSystem
     {
@@ -17,6 +18,9 @@ namespace NPCBrain
         private static bool _hasActivePursuit;
         private static float _lastNoDirectionLogTime = -100f;  // Throttle for "no direction" debug log
         
+        // Coordinated pursuit: escape zone interception
+        private static Vector3 _escapeZonePosition = Vector3.zero;
+        
         /// <summary>How long shared intel remains valid (seconds).</summary>
         public const float AlertValidDuration = 8f;
         
@@ -25,6 +29,16 @@ namespace NPCBrain
         
         /// <summary>Position where robber was last seen by any cop.</summary>
         public static Vector3 LastKnownRobberPosition => _lastKnownRobberPosition;
+        
+        /// <summary>Position of the escape zone. Non-closest cops will intercept here during pursuit.</summary>
+        public static Vector3 EscapeZonePosition
+        {
+            get => _escapeZonePosition;
+            set => _escapeZonePosition = value;
+        }
+        
+        /// <summary>Whether the escape zone position has been set.</summary>
+        public static bool HasEscapeZone => _escapeZonePosition != Vector3.zero;
         
         /// <summary>Direction the robber was moving when last seen.</summary>
         public static Vector3 LastKnownRobberDirection => _lastKnownRobberDirection;
@@ -230,6 +244,7 @@ namespace NPCBrain
             _hasActiveAlert = false;
             _hasActivePursuit = false;
             _lastNoDirectionLogTime = -100f;
+            _escapeZonePosition = Vector3.zero;
         }
     }
 }
