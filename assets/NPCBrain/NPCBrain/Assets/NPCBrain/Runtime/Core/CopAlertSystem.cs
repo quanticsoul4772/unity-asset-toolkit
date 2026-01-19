@@ -15,6 +15,7 @@ namespace NPCBrain
         private static GameObject _lastSeenRobber;
         private static bool _hasActiveAlert;
         private static bool _hasActivePursuit;
+        private static float _lastNoDirectionLogTime = -100f;  // Throttle for "no direction" debug log
         
         /// <summary>How long shared intel remains valid (seconds).</summary>
         public const float AlertValidDuration = 8f;
@@ -145,7 +146,15 @@ namespace NPCBrain
             // If no direction, just return last known position (cops will converge there)
             if (_lastKnownRobberDirection.sqrMagnitude < 0.01f)
             {
-                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=yellow>No direction for prediction - returning last known position</color>");
+                // Throttle this log to avoid spam (every 2 seconds max)
+                if (Time.time - _lastNoDirectionLogTime > 2f)
+                {
+                    _lastNoDirectionLogTime = Time.time;
+                    if (NPCBrainDebug.IsEnabled)
+                    {
+                        Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=yellow>No direction for prediction - returning last known position</color>");
+                    }
+                }
                 return _lastKnownRobberPosition;
             }
             
@@ -215,6 +224,7 @@ namespace NPCBrain
             _lastSeenRobber = null;
             _hasActiveAlert = false;
             _hasActivePursuit = false;
+            _lastNoDirectionLogTime = -100f;
         }
     }
 }

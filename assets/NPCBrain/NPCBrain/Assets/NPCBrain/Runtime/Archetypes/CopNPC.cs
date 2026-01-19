@@ -607,14 +607,7 @@ namespace NPCBrain.Archetypes
                 _pursueLastKnownWeight,
                 // Must have crime in progress
                 new FunctionalConsideration("CrimeActive",
-                    brain => {
-                        bool crime = brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false);
-                        if (!crime && Time.time - _lastPursueLogTime > 5f)
-                        {
-                            Debug.Log($"<color=blue>[{name}]</color> <color=gray>PursueLastKnown: CrimeActive=0 (no crime)</color>");
-                        }
-                        return crime ? 1f : 0f;
-                    }),
+                    brain => brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false) ? 1f : 0f),
                 // Must NOT have direct visual on target (otherwise Chase takes over)
                 new FunctionalConsideration("NoDirectVisual",
                     brain => {
@@ -635,12 +628,9 @@ namespace NPCBrain.Archetypes
                         return Mathf.Clamp01(decay);  // Decays from 1.0 to 0.5 over 5 seconds
                     }),
                 // Direction consideration - with ultimate fallbacks, always returns positive score during pursuit
+                // Note: HasActivePursuit is already checked by the previous consideration, so no need to check again here
                 new FunctionalConsideration("HasPursuitData",
                     _ => {
-                        // If active pursuit, ALWAYS return positive score
-                        // Direction should always be valid now with ultimate fallback in HandleTargetLost
-                        if (!CopAlertSystem.HasActivePursuit) return 0f;
-                        
                         // Check if we have good direction data
                         if (CopAlertSystem.LastKnownRobberDirection.sqrMagnitude > 0.01f) return 1f;
                         
@@ -648,7 +638,9 @@ namespace NPCBrain.Archetypes
                         if (CopAlertSystem.LastKnownRobberPosition != Vector3.zero) return 0.9f;
                         
                         // Ultimate fallback: still pursue with lower confidence
-                        Debug.LogWarning($"<color=blue>[{name}]</color> <color=red>PursueLastKnown: No direction or position! This shouldn't happen.</color>");
+                        // Use NPCBrainDebug for consistency with rest of codebase
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.General, 
+                            $"[{name}] PursueLastKnown: No direction or position! This shouldn't happen.", null);
                         return 0.5f;  // Still positive so pursuit can happen
                     })
             );
