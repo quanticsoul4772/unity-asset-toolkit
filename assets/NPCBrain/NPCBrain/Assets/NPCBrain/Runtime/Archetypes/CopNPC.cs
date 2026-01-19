@@ -130,6 +130,7 @@ namespace NPCBrain.Archetypes
             Blackboard.SetFloat(BBKeys.LastArrestTime, -10f);
             Blackboard.SetBool(BBKeys.RespondingToAlert, false);
             Blackboard.SetBool(BBKeys.CrimeInProgress, false);
+            Blackboard.SetVector3(BBKeys.AlarmLocation, Vector3.zero);
             
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;
@@ -256,6 +257,15 @@ namespace NPCBrain.Archetypes
             {
                 Blackboard.SetBool(BBKeys.RespondingToAlert, true);
                 Blackboard.SetVector3(BBKeys.AlertPosition, CopAlertSystem.LastKnownRobberPosition);
+                
+                // IMPORTANT: If there's an active alert, a crime is in progress for ALL cops
+                // This ensures cops who didn't directly hear the alarm can still chase the robber
+                if (!Blackboard.GetBool(BBKeys.CrimeInProgress, false))
+                {
+                    Blackboard.SetBool(BBKeys.CrimeInProgress, true);
+                    Blackboard.SetVector3(BBKeys.AlarmLocation, CopAlertSystem.LastKnownRobberPosition);
+                }
+                
                 IncreaseAlert(0.3f * Time.deltaTime); // Stay alert while responding
             }
             else
