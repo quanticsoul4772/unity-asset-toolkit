@@ -171,6 +171,8 @@ namespace NPCBrain.Archetypes
             _knownCoverPoints.AddRange(Object.FindObjectsByType<CoverPoint>(FindObjectsSortMode.None));
         }
         
+        private float _lastRobberDebugTime;
+        
         private void LateUpdate()
         {
             if (_hasEscaped) return;
@@ -178,6 +180,16 @@ namespace NPCBrain.Archetypes
             UpdateCopDetection();
             UpdateFearLevel();
             TryEscape();
+            
+            // Debug log every 2 seconds
+            if (Time.time - _lastRobberDebugTime > 2f)
+            {
+                _lastRobberDebugTime = Time.time;
+                var nearestLoot = FindNearestLoot();
+                string lootInfo = nearestLoot != null ? $"{nearestLoot.name} at {Vector3.Distance(transform.position, nearestLoot.transform.position):F1}m" : "NO LOOT FOUND";
+                float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 999f);
+                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | CanSeeCop: {CanSeeCop} | CopDist: {copDist:F1}m | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | NearestLoot: {lootInfo}");
+            }
         }
         
         private void UpdateCopDetection()
@@ -294,7 +306,13 @@ namespace NPCBrain.Archetypes
         /// </summary>
         public void PickupLoot(LootPoint loot)
         {
-            if (loot == null || loot.IsStolen) return;
+            if (loot == null || loot.IsStolen)
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> <color=red>PickupLoot FAILED - loot null or already stolen</color>");
+                return;
+            }
+            
+            Debug.Log($"<color=magenta>[{name}]</color> <color=green>*** STEALING LOOT: {loot.name} worth ${loot.Value}! ***</color>");
             
             if (loot.TrySteal(gameObject))
             {
@@ -308,7 +326,11 @@ namespace NPCBrain.Archetypes
                 var bag = transform.Find("LootBag");
                 if (bag != null) bag.gameObject.SetActive(true);
                 
-                NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} stole loot worth ${loot.Value}!", this);
+                Debug.Log($"<color=magenta>[{name}]</color> <color=green>*** LOOT STOLEN SUCCESSFULLY! Now carrying ${_carriedLootValue} ***</color>");
+            }
+            else
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> <color=red>TrySteal returned false!</color>");
             }
         }
         
@@ -546,6 +568,10 @@ namespace NPCBrain.Archetypes
             if (_targetLoot == null || _targetLoot.IsStolen)
             {
                 _targetLoot = FindNearestLoot();
+                if (_targetLoot != null)
+                {
+                    Debug.Log($"<color=magenta>[{name}]</color> Found new target loot: {_targetLoot.name} at {_targetLoot.transform.position}");
+                }
             }
             
             if (_targetLoot != null)
@@ -553,6 +579,7 @@ namespace NPCBrain.Archetypes
                 return _targetLoot.transform.position;
             }
             
+            Debug.Log($"<color=magenta>[{name}]</color> <color=red>GetTargetLootPosition: No loot found!</color>");
             return transform.position;
         }
         
@@ -588,10 +615,20 @@ namespace NPCBrain.Archetypes
                 // Use sqrMagnitude for distance check
                 float distSqr = (transform.position - _targetLoot.transform.position).sqrMagnitude;
                 float stealRadiusSqr = _targetLoot.StealRadius * _targetLoot.StealRadius;
+                float dist = Mathf.Sqrt(distSqr);
+                Debug.Log($"<color=magenta>[{name}]</color> TryStealTargetLoot: Distance to {_targetLoot.name} = {dist:F1}m (need < {_targetLoot.StealRadius}m)");
                 if (distSqr <= stealRadiusSqr)
                 {
                     PickupLoot(_targetLoot);
                 }
+                else
+                {
+                    Debug.Log($"<color=magenta>[{name}]</color> <color=orange>Too far to steal!</color>");
+                }
+            }
+            else
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> <color=red>TryStealTargetLoot: No target or already stolen</color>");
             }
         }
         
