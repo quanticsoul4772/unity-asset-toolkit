@@ -279,8 +279,8 @@ namespace NPCBrain.Archetypes
                     Blackboard.SetBool(BBKeys.CanArrest, false);
                     _cachedTargetRobber = null;
                     
-                    // Clear the shared alert since robber is caught
-                    CopAlertSystem.ClearAlert();
+                    // Clear the shared alert for this specific robber
+                    CopAlertSystem.ClearAlertForRobber(target);
                     
                     OnArrest?.Invoke(this, robber);
                     

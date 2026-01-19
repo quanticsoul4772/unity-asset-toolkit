@@ -67,6 +67,19 @@ namespace NPCBrain
         }
         
         /// <summary>
+        /// Clears the alert only if it matches the specified robber.
+        /// Use this when arresting to avoid clearing alerts for other robbers.
+        /// </summary>
+        /// <param name="robber">The robber to clear the alert for.</param>
+        public static void ClearAlertForRobber(GameObject robber)
+        {
+            if (_lastSeenRobber == robber)
+            {
+                ClearAlert();
+            }
+        }
+        
+        /// <summary>
         /// Checks if a position is near the last known robber position.
         /// </summary>
         /// <param name="position">Position to check.</param>
