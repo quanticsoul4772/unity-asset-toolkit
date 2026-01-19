@@ -44,7 +44,7 @@ namespace NPCBrain.Archetypes
         
         [Header("Utility Weights")]
         [SerializeField] private float _fleeWeight = 1.0f;
-        [SerializeField] private float _carryToEscapeWeight = 0.9f;
+        [SerializeField] private float _carryToEscapeWeight = 1.5f;  // High priority - escape with loot!
         [SerializeField] private float _stealWeight = 0.85f;
         [SerializeField] private float _hideWeight = 0.7f;
         [SerializeField] private float _sneakWeight = 0.5f;
@@ -391,8 +391,8 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetEscapePosition(),
                     _arrivalDistance,
-                    _normalSpeed * 1.2f,
-                    8f
+                    _fleeSpeed,  // Use flee speed - urgency!
+                    2f  // Short timeout to re-evaluate quickly
                 )
             );
             carryBehavior.Name = "CarryToEscapeBehavior";
@@ -401,19 +401,13 @@ namespace NPCBrain.Archetypes
                 "CarryToEscape",
                 carryBehavior,
                 _carryToEscapeWeight,
-                // Must have loot - critical gate
+                // Must have loot - critical gate (returns 1.0 when has loot)
                 new BlackboardConsideration<bool>("HasLoot", BBKeys.HasLoot,
                     has => has ? 1f : 0f, false),
-                // Higher score when no cop visible
+                // Always want to escape when carrying loot - cop visibility only slightly reduces priority
                 new BlackboardConsideration<bool>("NoCopForEscape", BBKeys.CanSeeCop,
-                    sees => sees ? 0.3f : 1f, false),
-                // Higher score when closer to escape
-                new DistanceConsideration(
-                    "EscapeDistance",
-                    brain => GetEscapePosition(),
-                    30f,
-                    true
-                )
+                    sees => sees ? 0.8f : 1f, false)  // Changed from 0.3 to 0.8 - still escape even if cop visible!
+                // Removed DistanceConsideration - always prioritize escape regardless of distance
             );
         }
         
@@ -438,6 +432,9 @@ namespace NPCBrain.Archetypes
                 // Must not have loot already
                 new BlackboardConsideration<bool>("NoLootYet", BBKeys.HasLoot,
                     has => has ? 0f : 1f, false),
+                // Must have loot available to steal - critical gate!
+                new FunctionalConsideration("LootAvailable", 
+                    brain => FindNearestLoot() != null ? 1f : 0f),
                 // Must not see cop (too risky)
                 new BlackboardConsideration<bool>("NoCopForSteal", BBKeys.CanSeeCop,
                     sees => sees ? 0f : 1f, false),
