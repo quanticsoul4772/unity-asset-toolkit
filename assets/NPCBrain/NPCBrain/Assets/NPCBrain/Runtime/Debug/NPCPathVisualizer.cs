@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace NPCBrain.Debug
+namespace NPCBrain.Debugging
 {
     /// <summary>
     /// Visualizes NPC pathfinding data in the Scene view using Gizmos.

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using NPCBrain.Debug;
+using NPCBrain.Debugging;
 using NPCBrain.Settings;
 
 namespace NPCBrain.BehaviorTree.Actions

@@ -4,7 +4,7 @@ using NPCBrain.Archetypes;
 using NPCBrain.Components;
 using NPCBrain.Perception;
 using NPCBrain.BehaviorTree.Composites;
-using NPCBrain.Debug;
+using NPCBrain.Debugging;
 using EasyPath;
 
 namespace NPCBrain.Demo
