@@ -55,6 +55,7 @@ namespace NPCBrain.BehaviorTree.Composites
         private readonly List<float> _probabilitiesList;
         private UtilityAction _currentAction;
         private int _currentActionIndex = -1;
+        private int _lastCompletedActionIndex = -1;  // Track last action for inertia
         private float[] _scores;
         private float[] _probabilities;
         private readonly System.Random _random;
@@ -224,6 +225,7 @@ namespace NPCBrain.BehaviorTree.Composites
             if (status != NodeStatus.Running)
             {
                 brain.Criticality?.RecordAction(_currentActionIndex);
+                _lastCompletedActionIndex = _currentActionIndex;  // Remember for inertia
                 _currentAction = null;
                 _currentActionIndex = -1;
             }
@@ -305,6 +307,39 @@ namespace NPCBrain.BehaviorTree.Composites
                 _probabilities[i] /= sumExp;
             }
             
+            // Apply inertia: boost probability of last completed action
+            float inertia = brain.Criticality?.Inertia ?? 0f;
+            if (inertia > 0f && _lastCompletedActionIndex >= 0 && _lastCompletedActionIndex < _actions.Count)
+            {
+                // Only apply inertia if the last action has a positive score
+                if (_scores[_lastCompletedActionIndex] > 0f)
+                {
+                    // Inertia formula: boost current probability toward 1.0
+                    // p' = p + inertia * (1 - p)
+                    float oldProb = _probabilities[_lastCompletedActionIndex];
+                    _probabilities[_lastCompletedActionIndex] += inertia * (1f - oldProb);
+                    
+                    // Re-normalize all probabilities to sum to 1
+                    float newSum = 0f;
+                    for (int i = 0; i < _actions.Count; i++)
+                    {
+                        newSum += _probabilities[i];
+                    }
+                    if (newSum > 0f)
+                    {
+                        for (int i = 0; i < _actions.Count; i++)
+                        {
+                            _probabilities[i] /= newSum;
+                        }
+                    }
+                    
+                    if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+                    {
+                        Debug.Log($"<color=yellow>[UtilitySelector]</color> Applied inertia {inertia:F2}: {_actions[_lastCompletedActionIndex].Name} prob {oldProb:F2} -> {_probabilities[_lastCompletedActionIndex]:F2}");
+                    }
+                }
+            }
+            
             // Debug: Log all action scores
             if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
             {
@@ -355,6 +390,7 @@ namespace NPCBrain.BehaviorTree.Composites
             }
             _currentAction = null;
             _currentActionIndex = -1;
+            _lastCompletedActionIndex = -1;
         }
         
         public override void Abort(NPCBrainController brain)
@@ -365,6 +401,7 @@ namespace NPCBrain.BehaviorTree.Composites
             }
             _currentAction = null;
             _currentActionIndex = -1;
+            // Don't reset _lastCompletedActionIndex on abort - inertia should still apply
             base.Abort(brain);
         }
         
