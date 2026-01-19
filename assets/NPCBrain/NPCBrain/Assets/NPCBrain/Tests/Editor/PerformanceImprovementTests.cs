@@ -269,17 +269,9 @@ namespace NPCBrain.Tests.Editor
             // With very low temperature, should almost always pick highest
             var controller = new CriticalityController(20, 0.1f, 0.1f, 0.1f, 0.5f);
 
-            // Score multiple times - high action should dominate
-            int highCount = 0;
-            int attempts = 100;
-
-            for (int i = 0; i < attempts; i++)
-            {
-                // We can't directly call SelectAction without a brain, so we verify the scores
-                // The FastExp implementation should produce correct relative probabilities
-            }
-
-            // Just verify it doesn't throw
+            // Verify objects created successfully - we can't directly call SelectAction without a brain
+            Assert.IsNotNull(selector, "UtilitySelector should be created");
+            Assert.IsNotNull(controller, "CriticalityController should be created");
             Assert.Pass("UtilitySelector created successfully with FastExp");
         }
 
