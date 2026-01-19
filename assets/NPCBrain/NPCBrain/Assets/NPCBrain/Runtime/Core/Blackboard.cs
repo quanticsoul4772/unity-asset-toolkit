@@ -311,7 +311,8 @@ namespace NPCBrain
             }
             
             // Type mismatch - value exists but is wrong type
-            if (LogTypeMismatches || NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Blackboard))
+            // Only log if LogTypeMismatches is explicitly enabled on this Blackboard instance
+            if (LogTypeMismatches)
             {
                 string actualType = entry.Value?.GetType().Name ?? "null";
                 string requestedType = typeof(T).Name;
