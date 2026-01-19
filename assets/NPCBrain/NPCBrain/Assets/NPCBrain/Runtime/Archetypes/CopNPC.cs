@@ -55,6 +55,7 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _respondToAlertWeight = 0.95f;
         [SerializeField] private float _alarmInvestigateWeight = 0.9f;
         [SerializeField] private float _soundInvestigateWeight = 0.5f;
+        [SerializeField] private float _searchWeight = 0.85f;  // Active searching when crime in progress but no specific lead
         [SerializeField] private float _returnWeight = 0.4f;
         [SerializeField] private float _patrolWeight = 0.3f;
         
@@ -476,6 +477,7 @@ namespace NPCBrain.Archetypes
             var respondToAlarmAction = CreateRespondToAlarmAction();
             var alarmInvestigateAction = CreateAlarmInvestigateAction();
             var soundInvestigateAction = CreateSoundInvestigateAction();
+            var searchAction = CreateSearchAction();  // Active searching when crime in progress
             var returnAction = CreateReturnAction();
             var patrolAction = CreatePatrolAction();
             
@@ -488,6 +490,7 @@ namespace NPCBrain.Archetypes
                 respondToAlarmAction,
                 alarmInvestigateAction,
                 soundInvestigateAction,
+                searchAction,           // Active searching when crime in progress but no specific lead
                 returnAction,
                 patrolAction
             );
@@ -825,6 +828,10 @@ namespace NPCBrain.Archetypes
                 "Return",
                 returnBehavior,
                 _returnWeight,
+                // IMPORTANT: Don't return to home base when crime is in progress!
+                // Cops should be actively searching, not casually going home
+                new BlackboardConsideration<bool>("NoCrimeInProgress", BBKeys.CrimeInProgress,
+                    crime => crime ? 0f : 1f, false),
                 // No target
                 new BlackboardConsideration<GameObject>("NoTarget", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
@@ -841,6 +848,66 @@ namespace NPCBrain.Archetypes
                 // Cooldown
                 new TimeConsideration("ReturnCooldown", BBKeys.LastReturnTime, 5f)
             );
+        }
+        
+        private UtilityAction CreateSearchAction()
+        {
+            // This action makes cops actively search when crime is in progress but there's no specific lead
+            // (no visual target, no pursuit, no footsteps to track)
+            var searchBehavior = new Sequence(
+                new SetBlackboard(BBKeys.CurrentState, () => { _cachedState = "Searching!"; return "Searching!"; }),
+                new MoveTo(
+                    () => GetSearchPosition(),
+                    _arrivalDistance,
+                    _investigateSpeed,  // Move at investigation speed - actively searching
+                    3f  // Re-evaluate every 3 seconds to pick new search targets
+                )
+            );
+            searchBehavior.Name = "SearchBehavior";
+            
+            return new UtilityAction(
+                "Search",
+                searchBehavior,
+                _searchWeight,
+                // MUST have crime in progress - this is the active search behavior
+                new BlackboardConsideration<bool>("CrimeActive", BBKeys.CrimeInProgress,
+                    crime => crime ? 1f : 0f, false),
+                // Must NOT have direct visual on target (otherwise Chase takes over)
+                new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
+                    t => t == null ? 1f : 0f, null),
+                // Less priority when there's an active pursuit
+                new FunctionalConsideration("NoActivePursuit",
+                    _ => CopAlertSystem.HasActivePursuit ? 0.3f : 1f),
+                // Less priority when there are recent footsteps to track
+                new FunctionalConsideration("NoRecentFootsteps",
+                    brain => {
+                        float lastTime = brain.Blackboard.GetFloat(BBKeys.LastFootstepTime, -10f);
+                        float timeSince = Time.time - lastTime;
+                        return timeSince > 3f ? 1f : 0.3f;  // Only high score if no recent footsteps
+                    })
+            );
+        }
+        
+        /// <summary>
+        /// Gets a position to search - moves toward the last known alarm location or a random patrol point.
+        /// </summary>
+        private Vector3 GetSearchPosition()
+        {
+            // First priority: move toward the last alarm location
+            Vector3 alarmLocation = Blackboard.GetVector3(BBKeys.AlarmLocation, Vector3.zero);
+            if (alarmLocation != Vector3.zero)
+            {
+                // Add some randomness to spread cops out
+                Vector3 offset = new Vector3(
+                    UnityEngine.Random.Range(-8f, 8f),
+                    0f,
+                    UnityEngine.Random.Range(-8f, 8f)
+                );
+                return alarmLocation + offset;
+            }
+            
+            // Fallback: move to a random waypoint at faster pace
+            return GetCurrentWaypoint();
         }
         
         private UtilityAction CreatePatrolAction()
@@ -862,7 +929,11 @@ namespace NPCBrain.Archetypes
                 "Patrol",
                 patrolBehavior,
                 _patrolWeight,
-                // Always available as baseline
+                // IMPORTANT: Don't casually patrol when crime is in progress!
+                // Cops should be actively searching, not casually patrolling
+                new BlackboardConsideration<bool>("NoCrimeInProgress", BBKeys.CrimeInProgress,
+                    crime => crime ? 0f : 1f, false),
+                // Always available as baseline (when no crime)
                 new ConstantConsideration(0.8f),
                 // Less likely when alert
                 new BlackboardConsideration<float>("LowAlert", BBKeys.AlertLevel,
