@@ -9,18 +9,30 @@ namespace NPCBrain
     public static class CopAlertSystem
     {
         private static Vector3 _lastKnownRobberPosition;
+        private static Vector3 _lastKnownRobberDirection;
         private static float _lastSightingTime = -100f;
+        private static float _timeLostSight = -100f;
         private static GameObject _lastSeenRobber;
         private static bool _hasActiveAlert;
+        private static bool _hasActivePursuit;
         
         /// <summary>How long shared intel remains valid (seconds).</summary>
         public const float AlertValidDuration = 8f;
         
+        /// <summary>How long coordinated pursuit remains active (seconds).</summary>
+        public const float PursuitValidDuration = 5f;
+        
         /// <summary>Position where robber was last seen by any cop.</summary>
         public static Vector3 LastKnownRobberPosition => _lastKnownRobberPosition;
         
+        /// <summary>Direction the robber was moving when last seen.</summary>
+        public static Vector3 LastKnownRobberDirection => _lastKnownRobberDirection;
+        
         /// <summary>Time when robber was last seen.</summary>
         public static float LastSightingTime => _lastSightingTime;
+        
+        /// <summary>Time when sight was lost and pursuit began.</summary>
+        public static float TimeLostSight => _timeLostSight;
         
         /// <summary>The robber that was last seen.</summary>
         public static GameObject LastSeenRobber => _lastSeenRobber;
@@ -28,8 +40,14 @@ namespace NPCBrain
         /// <summary>Whether there is an active alert (recent sighting).</summary>
         public static bool HasActiveAlert => _hasActiveAlert && (Time.time - _lastSightingTime) < AlertValidDuration;
         
+        /// <summary>Whether there is an active coordinated pursuit (recently lost sight).</summary>
+        public static bool HasActivePursuit => _hasActivePursuit && (Time.time - _timeLostSight) < PursuitValidDuration;
+        
         /// <summary>Time since last sighting.</summary>
         public static float TimeSinceLastSighting => Time.time - _lastSightingTime;
+        
+        /// <summary>Time since sight was lost.</summary>
+        public static float TimeSinceLostSight => Time.time - _timeLostSight;
         
         /// <summary>
         /// Broadcasts a robber sighting to all cops.
@@ -46,6 +64,7 @@ namespace NPCBrain
             _lastSightingTime = Time.time;
             _lastSeenRobber = robber;
             _hasActiveAlert = true;
+            _hasActivePursuit = false;  // Cancel pursuit when we have visual again
             
             if (isNewAlert)
             {
@@ -55,11 +74,66 @@ namespace NPCBrain
         }
         
         /// <summary>
+        /// Updates the robber's movement direction (call while tracking).
+        /// </summary>
+        /// <param name="direction">Normalized direction the robber is moving.</param>
+        public static void UpdateRobberDirection(Vector3 direction)
+        {
+            if (direction.sqrMagnitude > 0.01f)
+            {
+                _lastKnownRobberDirection = direction.normalized;
+            }
+        }
+        
+        /// <summary>
+        /// Broadcasts that a cop has lost sight of the robber.
+        /// This starts a coordinated pursuit where all cops pursue in the predicted direction.
+        /// </summary>
+        /// <param name="lastPosition">Last known position of the robber.</param>
+        /// <param name="lastDirection">Direction the robber was moving.</param>
+        public static void BroadcastLostSight(Vector3 lastPosition, Vector3 lastDirection)
+        {
+            // Only start pursuit if we don't already have an active one
+            // or if this provides newer information
+            if (!_hasActivePursuit || (Time.time - _timeLostSight) > 0.5f)
+            {
+                _lastKnownRobberPosition = lastPosition;
+                _lastKnownRobberDirection = lastDirection;
+                _timeLostSight = Time.time;
+                _hasActivePursuit = true;
+                
+                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=magenta>COORDINATED PURSUIT!</color> All cops pursuing from {lastPosition} in direction {lastDirection}");
+            }
+        }
+        
+        /// <summary>
+        /// Gets the predicted position of the robber based on shared intel.
+        /// </summary>
+        /// <param name="predictionMultiplier">How aggressively to predict ahead (1.0 = normal, 1.5 = aggressive).</param>
+        /// <returns>Predicted position of the robber.</returns>
+        public static Vector3 GetPredictedRobberPosition(float predictionMultiplier = 1.5f)
+        {
+            if (!HasActivePursuit)
+            {
+                return _lastKnownRobberPosition;
+            }
+            
+            float timeSinceLost = Time.time - _timeLostSight;
+            
+            // Estimate robber speed (flee speed is 7)
+            float estimatedRobberSpeed = 7f;
+            Vector3 predictedOffset = _lastKnownRobberDirection * estimatedRobberSpeed * timeSinceLost * predictionMultiplier;
+            
+            return _lastKnownRobberPosition + predictedOffset;
+        }
+        
+        /// <summary>
         /// Clears the current alert (e.g., when robber is arrested).
         /// </summary>
         public static void ClearAlert()
         {
             _hasActiveAlert = false;
+            _hasActivePursuit = false;
             _lastSeenRobber = null;
             
             NPCBrainDebug.Log(NPCBrainDebug.Category.General, 
@@ -106,9 +180,12 @@ namespace NPCBrain
         private static void ResetStatics()
         {
             _lastKnownRobberPosition = Vector3.zero;
+            _lastKnownRobberDirection = Vector3.zero;
             _lastSightingTime = -100f;
+            _timeLostSight = -100f;
             _lastSeenRobber = null;
             _hasActiveAlert = false;
+            _hasActivePursuit = false;
         }
     }
 }

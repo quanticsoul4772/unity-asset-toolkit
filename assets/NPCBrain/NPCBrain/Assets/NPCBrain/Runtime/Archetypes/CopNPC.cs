@@ -205,12 +205,14 @@ namespace NPCBrain.Archetypes
                 Vector3 lastPosition = target.transform.position;
                 Vector3 lastDirection = Blackboard.GetVector3(BBKeys.LastKnownRobberDirection, Vector3.zero);
                 
-                // Store pursuit persistence data
+                // Store pursuit persistence data locally
                 Blackboard.SetVector3(BBKeys.LastKnownRobberPosition, lastPosition);
                 Blackboard.SetFloat(BBKeys.TimeLostSight, Time.time);
-                // Direction was already being updated in LateUpdate
                 
-                Debug.Log($"<color=blue>[{name}]</color> <color=red>LOST SIGHT OF ROBBER: {target?.name}</color> | Last pos: {lastPosition} | Direction: {lastDirection} | Will pursue for {_pursuitPersistenceTime}s");
+                // COORDINATED PURSUIT: Broadcast lost sight to ALL cops so they all pursue together!
+                CopAlertSystem.BroadcastLostSight(lastPosition, lastDirection);
+                
+                Debug.Log($"<color=blue>[{name}]</color> <color=red>LOST SIGHT OF ROBBER: {target?.name}</color> | Last pos: {lastPosition} | Direction: {lastDirection} | ALL COPS pursuing for {_pursuitPersistenceTime}s");
                 
                 Blackboard.Remove(BBKeys.Target);
                 _cachedTargetRobber = null;
@@ -297,6 +299,9 @@ namespace NPCBrain.Archetypes
                     {
                         Vector3 direction = movement.normalized;
                         Blackboard.SetVector3(BBKeys.LastKnownRobberDirection, direction);
+                        
+                        // Share direction with all cops via CopAlertSystem
+                        CopAlertSystem.UpdateRobberDirection(direction);
                     }
                 }
                 _lastTrackedRobberPosition = robberPosition;
@@ -496,7 +501,7 @@ namespace NPCBrain.Archetypes
         private UtilityAction CreatePursueLastKnownAction()
         {
             // This action continues pursuit in the last known direction after losing sight
-            // Cops will pursue for _pursuitPersistenceTime seconds before giving up
+            // ALL cops pursue together using shared intel from CopAlertSystem
             var pursueBehavior = new Sequence(
                 new SetBlackboard(BBKeys.CurrentState, () => { 
                     _cachedState = "Pursuing!";
@@ -504,8 +509,7 @@ namespace NPCBrain.Archetypes
                     {
                         _lastPursueLogTime = Time.time;
                         Vector3 predictedPos = GetPredictedRobberPosition();
-                        float timeSinceLost = Time.time - Blackboard.GetFloat(BBKeys.TimeLostSight, 0f);
-                        Debug.Log($"<color=blue>[{name}]</color> <color=magenta>*** PURSUING LAST KNOWN! ***</color> Time since lost: {timeSinceLost:F1}s | Predicted pos: {predictedPos}");
+                        Debug.Log($"<color=blue>[{name}]</color> <color=magenta>*** COORDINATED PURSUIT! ***</color> Time since lost: {CopAlertSystem.TimeSinceLostSight:F1}s | Predicted pos: {predictedPos} | Direction: {CopAlertSystem.LastKnownRobberDirection}");
                     }
                     return "Pursuing!"; 
                 }),
@@ -528,42 +532,28 @@ namespace NPCBrain.Archetypes
                 // Must NOT have direct visual on target (otherwise Chase takes over)
                 new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
-                // Must have recently lost sight (within _pursuitPersistenceTime seconds)
-                new FunctionalConsideration("RecentlyLostSight",
-                    brain => {
-                        float timeLost = brain.Blackboard.GetFloat(BBKeys.TimeLostSight, -10f);
-                        float timeSinceLost = Time.time - timeLost;
-                        // Score 1.0 immediately after losing sight, decays to 0 over _pursuitPersistenceTime
-                        if (timeSinceLost < _pursuitPersistenceTime)
-                        {
-                            return Mathf.Clamp01(1f - (timeSinceLost / _pursuitPersistenceTime));
-                        }
-                        return 0f;
+                // Must have active coordinated pursuit from CopAlertSystem (ANY cop lost sight recently)
+                new FunctionalConsideration("HasActivePursuit",
+                    _ => {
+                        if (!CopAlertSystem.HasActivePursuit) return 0f;
+                        // Score 1.0 immediately after losing sight, decays to 0 over pursuit duration
+                        float timeSinceLost = CopAlertSystem.TimeSinceLostSight;
+                        return Mathf.Clamp01(1f - (timeSinceLost / CopAlertSystem.PursuitValidDuration));
                     }),
-                // Must have a valid last known position (not zero)
-                new FunctionalConsideration("HasLastKnownPosition",
-                    brain => {
-                        Vector3 lastPos = brain.Blackboard.GetVector3(BBKeys.LastKnownRobberPosition, Vector3.zero);
-                        return lastPos != Vector3.zero ? 1f : 0f;
-                    })
+                // Must have a valid shared direction (not zero)
+                new FunctionalConsideration("HasSharedDirection",
+                    _ => CopAlertSystem.LastKnownRobberDirection.sqrMagnitude > 0.01f ? 1f : 0f)
             );
         }
         
         /// <summary>
-        /// Gets the predicted position of the robber based on last known position and direction.
+        /// Gets the predicted position of the robber based on SHARED intel from CopAlertSystem.
+        /// This allows ALL cops to pursue in the same direction as a coordinated team.
         /// </summary>
         private Vector3 GetPredictedRobberPosition()
         {
-            Vector3 lastPos = Blackboard.GetVector3(BBKeys.LastKnownRobberPosition, transform.position);
-            Vector3 direction = Blackboard.GetVector3(BBKeys.LastKnownRobberDirection, Vector3.zero);
-            float timeSinceLost = Time.time - Blackboard.GetFloat(BBKeys.TimeLostSight, Time.time);
-            
-            // Predict where the robber might be based on their last movement direction
-            // Use robber's flee speed (7) as estimated speed
-            float estimatedRobberSpeed = 7f;
-            Vector3 predictedOffset = direction * estimatedRobberSpeed * timeSinceLost * _pursuitPredictionMultiplier;
-            
-            return lastPos + predictedOffset;
+            // Use shared intel from CopAlertSystem for coordinated team pursuit
+            return CopAlertSystem.GetPredictedRobberPosition(_pursuitPredictionMultiplier);
         }
         
         private UtilityAction CreateTrackFootstepsAction()
