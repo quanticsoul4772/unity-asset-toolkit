@@ -142,18 +142,6 @@ namespace NPCBrain
         }
         
         /// <summary>
-        /// Logs the current status of the alert system (for debugging).
-        /// </summary>
-        public static void LogStatus()
-        {
-            string alertStatus = HasActiveAlert ? $"ACTIVE ({TimeSinceLastSighting:F1}s ago)" : "inactive";
-            string pursuitStatus = HasActivePursuit ? $"ACTIVE ({TimeSinceLostSight:F1}s ago)" : "inactive";
-            string directionStatus = _lastKnownRobberDirection.sqrMagnitude > 0.01f ? $"{_lastKnownRobberDirection}" : "NONE";
-            
-            Debug.Log($"<color=cyan>[CopAlertSystem]</color> Alert: {alertStatus} | Pursuit: {pursuitStatus} | LastPos: {_lastKnownRobberPosition} | Direction: {directionStatus}");
-        }
-        
-        /// <summary>
         /// Clears the current alert (e.g., when robber is arrested).
         /// </summary>
         public static void ClearAlert()

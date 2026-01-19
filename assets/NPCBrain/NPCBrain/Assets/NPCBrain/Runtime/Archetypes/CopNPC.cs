@@ -368,21 +368,22 @@ namespace NPCBrain.Archetypes
             bool crimeActive = Blackboard.GetBool(BBKeys.CrimeInProgress, false);
             bool hasActivePursuit = CopAlertSystem.HasActivePursuit;
             bool hasActiveAlert = CopAlertSystem.HasActiveAlert;
-            float timeSinceLostSight = CopAlertSystem.TimeSinceLostSight;
             Vector3 pursuitDirection = CopAlertSystem.LastKnownRobberDirection;
             bool hasValidDirection = pursuitDirection.sqrMagnitude > 0.01f;
             
             string pursuitStatus = "N/A";
             if (hasActivePursuit)
             {
+                float timeSinceLostSight = CopAlertSystem.TimeSinceLostSight;
                 if (hasValidDirection)
                     pursuitStatus = $"ACTIVE ({timeSinceLostSight:F1}s ago, dir: {pursuitDirection})";
                 else
                     pursuitStatus = $"BLOCKED (no direction!)";
             }
-            else if (crimeActive)
+            else if (crimeActive && CopAlertSystem.TimeLostSight > 0f)
             {
-                pursuitStatus = $"EXPIRED ({timeSinceLostSight:F1}s > {CopAlertSystem.PursuitValidDuration}s)";
+                // Only show expired if there was a previous pursuit
+                pursuitStatus = "EXPIRED";
             }
             
             Debug.Log($"<color=blue>[{name}]</color> ACTION: <color=white>{_cachedState}</color> | Crime: {crimeActive} | Alert: {hasActiveAlert} | Pursuit: {pursuitStatus} | AlertLevel: {AlertLevel:F2}");
@@ -583,42 +584,25 @@ namespace NPCBrain.Archetypes
                 _pursueLastKnownWeight,
                 // Must have crime in progress
                 new BlackboardConsideration<bool>("CrimeActive", BBKeys.CrimeInProgress,
-                    crime => {
-                        float score = crime ? 1f : 0f;
-                        return score;
-                    }, false),
+                    crime => crime ? 1f : 0f, false),
                 // Must NOT have direct visual on target (otherwise Chase takes over)
                 new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
-                    t => {
-                        float score = t == null ? 1f : 0f;
-                        return score;
-                    }, null),
+                    t => t == null ? 1f : 0f, null),
                 // Must have active coordinated pursuit from CopAlertSystem (ANY cop lost sight recently)
                 new FunctionalConsideration("HasActivePursuit",
                     _ => {
-                        if (!CopAlertSystem.HasActivePursuit)
-                        {
-                            return 0f;
-                        }
+                        if (!CopAlertSystem.HasActivePursuit) return 0f;
                         // Score 1.0 immediately after losing sight, decays to 0 over pursuit duration
                         float timeSinceLost = CopAlertSystem.TimeSinceLostSight;
-                        float score = Mathf.Clamp01(1f - (timeSinceLost / CopAlertSystem.PursuitValidDuration));
-                        return score;
+                        return Mathf.Clamp01(1f - (timeSinceLost / CopAlertSystem.PursuitValidDuration));
                     }),
                 // Must have a valid shared direction (not zero) - or fallback to position-based pursuit
                 new FunctionalConsideration("HasSharedDirection",
                     _ => {
-                        float dirMagnitude = CopAlertSystem.LastKnownRobberDirection.sqrMagnitude;
-                        if (dirMagnitude > 0.01f)
-                        {
-                            return 1f;
-                        }
-                        // Fallback: still pursue if we have a last known position even without direction
-                        // This allows pursuing to last known position even if robber was stationary
-                        if (CopAlertSystem.HasActivePursuit && CopAlertSystem.LastKnownRobberPosition != Vector3.zero)
-                        {
-                            return 0.7f;  // Lower score but still allow pursuit
-                        }
+                        // With fallback direction in HandleTargetLost, direction should rarely be zero
+                        // But allow position-based pursuit as ultimate fallback
+                        if (CopAlertSystem.LastKnownRobberDirection.sqrMagnitude > 0.01f) return 1f;
+                        if (CopAlertSystem.HasActivePursuit && CopAlertSystem.LastKnownRobberPosition != Vector3.zero) return 0.7f;
                         return 0f;
                     })
             );
