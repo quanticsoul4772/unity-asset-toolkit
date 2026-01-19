@@ -255,12 +255,10 @@ namespace NPCBrain.Demo
             // Left click to create interest point at mouse position
             if (mouse.leftButton.wasPressedThisFrame && _cachedCamera != null)
             {
+                Ray ray = _cachedCamera.ScreenPointToRay(mouse.position.ReadValue());
+                if (Physics.Raycast(ray, out RaycastHit hit))
                 {
-                    Ray ray = _cachedCamera.ScreenPointToRay(mouse.position.ReadValue());
-                    if (Physics.Raycast(ray, out RaycastHit hit))
-                    {
-                        SpawnInterestPoint(hit.point);
-                    }
+                    SpawnInterestPoint(hit.point);
                 }
             }
             
