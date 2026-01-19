@@ -4,6 +4,7 @@ using NPCBrain.Archetypes;
 using NPCBrain.Components;
 using NPCBrain.Perception;
 using NPCBrain.BehaviorTree.Composites;
+using EasyPath;
 
 namespace NPCBrain.Demo
 {
@@ -30,11 +31,19 @@ namespace NPCBrain.Demo
         [SerializeField] private Color _bankColor = new Color(0.5f, 0.4f, 0.3f);
         [SerializeField] private Color _escapeColor = new Color(0.2f, 0.8f, 0.2f);
         
+        [Header("Pathfinding")]
+        [SerializeField] private float _gridCellSize = 1f;
+        [SerializeField] private bool _showPathfindingDebug = false;
+        
         [Header("References (auto-populated)")]
         [SerializeField] private List<CopNPC> _cops = new List<CopNPC>();
         [SerializeField] private List<RobberNPC> _robbers = new List<RobberNPC>();
         [SerializeField] private List<LootPoint> _lootPoints = new List<LootPoint>();
         [SerializeField] private EscapeZone _escapeZone;
+        private EasyPathGrid _pathfindingGrid;
+        
+        // Layer for obstacles (used by pathfinding)
+        private const int ObstacleLayer = 8; // "Obstacles" layer
         
         // Scoring
         private int _copScore;
@@ -97,6 +106,7 @@ namespace NPCBrain.Demo
             CreateEscapeZone();
             CreateLootPoints();
             CreateCoverPoints();
+            CreatePathfindingGrid();  // Create grid AFTER all obstacles
             CreateCops();
             CreateRobbers();
             
@@ -152,6 +162,7 @@ namespace NPCBrain.Demo
             _robbers.Clear();
             _lootPoints.Clear();
             _escapeZone = null;
+            _pathfindingGrid = null;
         }
         
         private void OnDestroy()
@@ -232,6 +243,7 @@ namespace NPCBrain.Demo
             pillar.transform.position = position + Vector3.up * 3f;
             pillar.transform.localScale = new Vector3(3f, 3f, 3f);
             pillar.GetComponent<Renderer>().material.color = _wallColor * 0.8f;
+            pillar.layer = ObstacleLayer;  // Set layer for pathfinding
             pillar.isStatic = true;
         }
         
@@ -243,6 +255,7 @@ namespace NPCBrain.Demo
             wall.transform.position = position;
             wall.transform.localScale = scale;
             wall.GetComponent<Renderer>().material.color = _wallColor;
+            wall.layer = ObstacleLayer;  // Set layer for pathfinding
             wall.isStatic = true;
         }
         
@@ -263,6 +276,7 @@ namespace NPCBrain.Demo
             bankMain.transform.localScale = new Vector3(10f, 4f, 8f);
             bankMain.GetComponent<Renderer>().material.color = _bankColor;
             bankMain.transform.position += Vector3.up * 2f;
+            bankMain.layer = ObstacleLayer;  // Set layer for pathfinding
             bankMain.isStatic = true;
             
             // Bank sign
@@ -281,6 +295,7 @@ namespace NPCBrain.Demo
             vault.transform.localPosition = new Vector3(0f, 0.5f, 2f);
             vault.transform.localScale = new Vector3(4f, 1f, 3f);
             vault.GetComponent<Renderer>().material.color = new Color(0.3f, 0.3f, 0.35f);
+            vault.layer = ObstacleLayer;  // Set layer for pathfinding
             vault.isStatic = true;
         }
         
@@ -359,6 +374,7 @@ namespace NPCBrain.Demo
             crate.transform.position = position + Vector3.up * (size.y / 2f);
             crate.transform.localScale = size;
             crate.GetComponent<Renderer>().material.color = new Color(0.55f, 0.4f, 0.25f); // Brown wooden color
+            crate.layer = ObstacleLayer;  // Set layer for pathfinding
             crate.isStatic = true;
         }
         
@@ -370,6 +386,7 @@ namespace NPCBrain.Demo
             barrel.transform.position = position + Vector3.up * 0.75f;
             barrel.transform.localScale = new Vector3(1f, 0.75f, 1f);
             barrel.GetComponent<Renderer>().material.color = new Color(0.3f, 0.35f, 0.4f); // Metal gray
+            barrel.layer = ObstacleLayer;  // Set layer for pathfinding
             barrel.isStatic = true;
         }
         
@@ -386,6 +403,7 @@ namespace NPCBrain.Demo
             body.transform.localPosition = new Vector3(0f, 0.75f, 0f);
             body.transform.localScale = new Vector3(2.2f, 1.5f, 4.2f);  // Slightly larger for collision
             body.GetComponent<Renderer>().material.color = new Color(0.6f, 0.1f, 0.1f); // Red car
+            body.layer = ObstacleLayer;  // Set layer for pathfinding
             body.isStatic = true;
             
             // Car roof
@@ -406,6 +424,7 @@ namespace NPCBrain.Demo
             bench.transform.position = position + Vector3.up * 0.4f;
             bench.transform.localScale = new Vector3(3f, 0.8f, 1f);
             bench.GetComponent<Renderer>().material.color = new Color(0.4f, 0.3f, 0.2f); // Wood color
+            bench.layer = ObstacleLayer;  // Set layer for pathfinding
             bench.isStatic = true;
         }
         
@@ -422,6 +441,7 @@ namespace NPCBrain.Demo
             baseObj.transform.localPosition = new Vector3(0f, 0.5f, 0f);
             baseObj.transform.localScale = new Vector3(6f, 0.5f, 6f);  // Thicker base
             baseObj.GetComponent<Renderer>().material.color = new Color(0.5f, 0.5f, 0.55f); // Stone gray
+            baseObj.layer = ObstacleLayer;  // Set layer for pathfinding
             baseObj.isStatic = true;
             
             // Fountain center pillar
@@ -431,6 +451,7 @@ namespace NPCBrain.Demo
             center.transform.localPosition = new Vector3(0f, 1.5f, 0f);
             center.transform.localScale = new Vector3(1.5f, 1.2f, 1.5f);
             center.GetComponent<Renderer>().material.color = new Color(0.45f, 0.45f, 0.5f);
+            center.layer = ObstacleLayer;  // Set layer for pathfinding
             center.isStatic = true;
         }
         
@@ -442,6 +463,7 @@ namespace NPCBrain.Demo
             barrier.transform.position = position + Vector3.up * 0.5f;
             barrier.transform.localScale = new Vector3(2f, 1f, 0.3f);
             barrier.GetComponent<Renderer>().material.color = new Color(1f, 0.5f, 0f); // Orange construction barrier
+            barrier.layer = ObstacleLayer;  // Set layer for pathfinding
             barrier.isStatic = true;
         }
         
@@ -453,6 +475,7 @@ namespace NPCBrain.Demo
             dumpster.transform.position = position + Vector3.up * 0.9f;
             dumpster.transform.localScale = new Vector3(2.5f, 1.8f, 1.5f);
             dumpster.GetComponent<Renderer>().material.color = new Color(0.15f, 0.35f, 0.15f); // Dark green
+            dumpster.layer = ObstacleLayer;  // Set layer for pathfinding
             dumpster.isStatic = true;
         }
         
@@ -464,6 +487,7 @@ namespace NPCBrain.Demo
             building.transform.position = position + Vector3.up * (size.y / 2f);
             building.transform.localScale = size;
             building.GetComponent<Renderer>().material.color = _wallColor * 0.9f;
+            building.layer = ObstacleLayer;  // Set layer for pathfinding
             building.isStatic = true;
         }
         
@@ -475,6 +499,7 @@ namespace NPCBrain.Demo
             pillar.transform.position = position;
             pillar.transform.localScale = new Vector3(0.5f, 1.5f, 0.5f);
             pillar.GetComponent<Renderer>().material.color = _wallColor;
+            pillar.layer = ObstacleLayer;  // Set layer for pathfinding
             pillar.isStatic = true;
         }
         
@@ -539,6 +564,67 @@ namespace NPCBrain.Demo
         private void OnLootStolen(LootPoint loot, GameObject thief)
         {
             // Alarm is automatically emitted by LootPoint
+        }
+        
+        /// <summary>
+        /// Creates an EasyPathGrid for A* pathfinding after all obstacles have been placed.
+        /// </summary>
+        private void CreatePathfindingGrid()
+        {
+            float halfSize = _arenaSize / 2f;
+            
+            // Create grid GameObject
+            var gridObject = new GameObject("PathfindingGrid");
+            gridObject.transform.SetParent(transform);
+            
+            // Position grid at corner of arena (grid extends in +X and +Z)
+            gridObject.transform.position = new Vector3(-halfSize, 0f, -halfSize);
+            
+            // Add EasyPathGrid component
+            _pathfindingGrid = gridObject.AddComponent<EasyPathGrid>();
+            
+            // Configure via serialized fields using reflection (since EasyPathGrid uses SerializeField)
+            var gridType = typeof(EasyPathGrid);
+            
+            // Set width and height to cover the arena
+            int gridSize = Mathf.CeilToInt(_arenaSize / _gridCellSize);
+            SetPrivateField(gridType, _pathfindingGrid, "_width", gridSize);
+            SetPrivateField(gridType, _pathfindingGrid, "_height", gridSize);
+            SetPrivateField(gridType, _pathfindingGrid, "_cellSize", _gridCellSize);
+            
+            // Set obstacle layer (layer 8 = "Obstacles")
+            // LayerMask needs to be a bitmask: 1 << layerNumber
+            LayerMask obstacleLayerMask = 1 << ObstacleLayer;
+            SetPrivateField(gridType, _pathfindingGrid, "_obstacleLayer", obstacleLayerMask);
+            
+            // Set check radius and height
+            SetPrivateField(gridType, _pathfindingGrid, "_obstacleCheckRadius", _gridCellSize * 0.4f);
+            SetPrivateField(gridType, _pathfindingGrid, "_obstacleCheckHeight", 0.5f);
+            
+            // Debug visualization
+            SetPrivateField(gridType, _pathfindingGrid, "_showDebugGizmos", _showPathfindingDebug);
+            
+            // Build the grid now that all obstacles exist
+            _pathfindingGrid.BuildGrid();
+            
+            Debug.Log($"<color=cyan>[Pathfinding]</color> Grid created: {gridSize}x{gridSize} cells, " +
+                $"{_pathfindingGrid.WalkableCount} walkable ({(_pathfindingGrid.WalkableCount * 100f / (gridSize * gridSize)):F1}%)");
+        }
+        
+        /// <summary>
+        /// Helper to set private serialized fields via reflection.
+        /// </summary>
+        private void SetPrivateField(System.Type type, object obj, string fieldName, object value)
+        {
+            var field = type.GetField(fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                field.SetValue(obj, value);
+            }
+            else
+            {
+                Debug.LogWarning($"[CopsAndRobbersDemoSetup] Could not find field '{fieldName}' on {type.Name}");
+            }
         }
         
         private void CreateCoverPoints()
@@ -766,10 +852,23 @@ namespace NPCBrain.Demo
             GUILayout.BeginVertical("box");
             GUILayout.Label("<b>📊 CRITICALITY SYSTEM</b>");
             GUILayout.Label("  <b>T</b> = Temperature (exploration vs exploitation)");
-            GUILayout.Label("    <color=green>Low</color> = Deterministic, picks best action");
-            GUILayout.Label("    <color=red>High</color> = Random, explores alternatives");
+            GUILayout.Label("    <color=green>Low</color> = Deterministic, optimal paths");
+            GUILayout.Label("    <color=red>High</color> = Random, commits to paths");
             GUILayout.Label("  <b>I</b> = Inertia (tendency to repeat actions)");
+            GUILayout.Label("    <color=green>High</color> = Precise path following");
+            GUILayout.Label("    <color=yellow>Low</color> = Cuts corners, shortcuts");
             GUILayout.EndVertical();
+            
+            // Pathfinding info
+            if (_pathfindingGrid != null)
+            {
+                GUILayout.BeginVertical("box");
+                GUILayout.Label("<b>🗺️ A* PATHFINDING</b>");
+                GUILayout.Label($"  Grid: {_pathfindingGrid.Width}x{_pathfindingGrid.Height} cells");
+                GUILayout.Label($"  Walkable: {_pathfindingGrid.WalkableCount} cells");
+                GUILayout.Label("  Integrated with Criticality!");
+                GUILayout.EndVertical();
+            }
             
             GUILayout.Space(5);
             

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -14,8 +15,20 @@ namespace NPCBrain.BehaviorTree.Actions
         private float _startTime;
         private NavMeshAgent _cachedNavAgent;
         private CharacterController _cachedCharController;
+        private EasyPath.EasyPathGrid _cachedGrid;
         private bool _navAgentCached;
         private bool _charControllerCached;
+        private bool _gridCached;
+        
+        // EasyPath state
+        private List<Vector3> _currentPath;
+        private int _currentWaypointIndex;
+        private Vector3 _lastTargetPosition;
+        private float _lastPathCalcTime;
+        
+        // Criticality-adaptive settings
+        private const float BaseRecalcInterval = 0.5f;  // Base interval between path recalculations
+        private const float BaseWaypointTolerance = 0.5f;  // Base tolerance for reaching waypoints
         
         public MoveTo(Func<Vector3> targetGetter, float arrivalDistance, float moveSpeed, float timeout)
         {
@@ -44,6 +57,10 @@ namespace NPCBrain.BehaviorTree.Actions
         protected override void OnEnter(NPCBrainController brain)
         {
             _startTime = Time.time;
+            _currentPath = null;
+            _currentWaypointIndex = 0;
+            _lastTargetPosition = Vector3.zero;
+            _lastPathCalcTime = 0f;
             
             if (!_navAgentCached)
             {
@@ -55,6 +72,12 @@ namespace NPCBrain.BehaviorTree.Actions
             {
                 _cachedCharController = brain.GetComponent<CharacterController>();
                 _charControllerCached = true;
+            }
+            
+            if (!_gridCached)
+            {
+                _cachedGrid = UnityEngine.Object.FindFirstObjectByType<EasyPath.EasyPathGrid>();
+                _gridCached = true;
             }
         }
         
@@ -73,6 +96,10 @@ namespace NPCBrain.BehaviorTree.Actions
             _cachedNavAgent = null;
             _charControllerCached = false;
             _cachedCharController = null;
+            _gridCached = false;
+            _cachedGrid = null;
+            _currentPath = null;
+            _currentWaypointIndex = 0;
         }
         
         protected override NodeStatus Tick(NPCBrainController brain)
@@ -96,7 +123,13 @@ namespace NPCBrain.BehaviorTree.Actions
                 return MoveViaNavMesh(_cachedNavAgent, target);
             }
             
-            // Use CharacterController if available (handles collision detection)
+            // Use EasyPath A* + CharacterController if grid exists (smart navigation + collision)
+            if (_cachedGrid != null && _cachedCharController != null)
+            {
+                return MoveViaEasyPath(brain, _cachedCharController, brain.transform, target);
+            }
+            
+            // Use CharacterController alone if available (handles collision detection but no pathfinding)
             if (_cachedCharController != null)
             {
                 return MoveViaCharacterController(_cachedCharController, brain.transform, target);
@@ -122,6 +155,122 @@ namespace NPCBrain.BehaviorTree.Actions
             if (agent.remainingDistance * agent.remainingDistance <= _arrivalDistanceSqr && !agent.pathPending)
             {
                 return NodeStatus.Success;
+            }
+            
+            return NodeStatus.Running;
+        }
+        
+        /// <summary>
+        /// Moves the NPC using EasyPath A* pathfinding combined with CharacterController for collision.
+        /// Integrates with Criticality system:
+        /// - Temperature affects path recalculation frequency (low temp = frequent recalc = optimal paths)
+        /// - Inertia affects waypoint tolerance (high inertia = tight tolerance = precise following)
+        /// </summary>
+        private NodeStatus MoveViaEasyPath(NPCBrainController brain, CharacterController controller, Transform transform, Vector3 target)
+        {
+            // Get criticality values for adaptive behavior
+            float temperature = brain.Criticality?.Temperature ?? 1f;
+            float inertia = brain.Criticality?.Inertia ?? 0.5f;
+            
+            // Temperature-based path recalculation interval:
+            // Low temp (0.5) = recalc every 0.25s → always seeking optimal path
+            // High temp (2.0) = recalc every 1.0s → commits to suboptimal paths
+            float recalcInterval = BaseRecalcInterval * temperature;
+            
+            // Inertia-based waypoint tolerance:
+            // High inertia (1.0) = tight 0.5m tolerance → precise path following
+            // Low inertia (0.0) = loose 2.0m tolerance → cuts corners, more direct
+            float waypointTolerance = BaseWaypointTolerance + (1f - inertia) * 1.5f;
+            
+            // Check if we need to recalculate path
+            bool needsNewPath = _currentPath == null || _currentPath.Count == 0;
+            bool targetMoved = Vector3.Distance(target, _lastTargetPosition) > 2f;
+            bool timeForRecalc = Time.time - _lastPathCalcTime > recalcInterval;
+            
+            if (needsNewPath || (targetMoved && timeForRecalc))
+            {
+                _currentPath = _cachedGrid.FindPath(transform.position, target);
+                _currentWaypointIndex = 0;
+                _lastTargetPosition = target;
+                _lastPathCalcTime = Time.time;
+                
+                if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
+                {
+                    string pathResult = _currentPath != null ? $"{_currentPath.Count} waypoints" : "FAILED";
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} path calc: {pathResult} | T={temperature:F2} (recalc={recalcInterval:F2}s) | I={inertia:F2} (tol={waypointTolerance:F2}m)");
+                }
+                
+                if (_currentPath == null || _currentPath.Count == 0)
+                {
+                    // Path failed - fall back to direct movement toward target
+                    return MoveViaCharacterController(controller, transform, target);
+                }
+            }
+            
+            // Follow the current path
+            if (_currentWaypointIndex >= _currentPath.Count)
+            {
+                // Reached end of path
+                _currentPath = null;
+                return NodeStatus.Running;
+            }
+            
+            Vector3 currentWaypoint = _currentPath[_currentWaypointIndex];
+            currentWaypoint.y = transform.position.y; // Keep on same Y level
+            
+            Vector3 toWaypoint = currentWaypoint - transform.position;
+            float distanceToWaypoint = toWaypoint.magnitude;
+            
+            // Check if we've reached the current waypoint (using criticality-adjusted tolerance)
+            if (distanceToWaypoint <= waypointTolerance)
+            {
+                _currentWaypointIndex++;
+                
+                // Skip waypoints if low inertia (more aggressive corner cutting)
+                if (inertia < 0.3f && _currentWaypointIndex < _currentPath.Count - 1)
+                {
+                    // Try to skip to a further waypoint if we have line of sight
+                    int skipTarget = Mathf.Min(_currentWaypointIndex + 2, _currentPath.Count - 1);
+                    Vector3 skipPos = _currentPath[skipTarget];
+                    skipPos.y = transform.position.y;
+                    
+                    // Simple check: if we're close enough, skip ahead
+                    if (Vector3.Distance(transform.position, skipPos) < 5f)
+                    {
+                        _currentWaypointIndex = skipTarget;
+                    }
+                }
+                
+                if (_currentWaypointIndex >= _currentPath.Count)
+                {
+                    _currentPath = null;
+                    return NodeStatus.Running;
+                }
+                
+                currentWaypoint = _currentPath[_currentWaypointIndex];
+                currentWaypoint.y = transform.position.y;
+                toWaypoint = currentWaypoint - transform.position;
+                distanceToWaypoint = toWaypoint.magnitude;
+            }
+            
+            // Move toward current waypoint using CharacterController
+            if (distanceToWaypoint > 0.01f)
+            {
+                Vector3 direction = toWaypoint / distanceToWaypoint;
+                Vector3 movement = direction * _moveSpeed * Time.deltaTime;
+                
+                // Add gravity
+                if (!controller.isGrounded)
+                {
+                    movement.y = -9.81f * Time.deltaTime;
+                }
+                
+                controller.Move(movement);
+                
+                if (direction != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.LookRotation(direction);
+                }
             }
             
             return NodeStatus.Running;
