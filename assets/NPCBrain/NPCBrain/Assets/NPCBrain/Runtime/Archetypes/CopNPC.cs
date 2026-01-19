@@ -924,7 +924,16 @@ namespace NPCBrain.Archetypes
             }
             
             // Use cop index to spread out - each cop searches a different quadrant
-            int copIndex = NPCRegistry<CopNPC>.Instances.IndexOf(this);
+            var instances = NPCRegistry<CopNPC>.Instances;
+            int copIndex = 0;
+            for (int i = 0; i < instances.Count; i++)
+            {
+                if (instances[i] == this)
+                {
+                    copIndex = i;
+                    break;
+                }
+            }
             int copCount = Mathf.Max(1, NPCRegistry<CopNPC>.Instances.Count);
             
             // Calculate angle based on cop index (spread evenly around the alarm location)
