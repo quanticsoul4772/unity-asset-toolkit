@@ -134,6 +134,10 @@ namespace NPCBrain.BehaviorTree.Composites
         /// Selects or maintains a utility-based action for the NPC, executes it, and handles periodic interruption checks and action completion recording.
         /// </summary>
         /// <param name="brain">The NPC brain used to evaluate action scores, provide criticality parameters, and execute/abort actions.</param>
+        /// <summary>
+        /// Selects and executes a utility action based on current scores, handling interruptions, forced switches, inertia updates, and completion recording.
+        /// </summary>
+        /// <param name="brain">The NPC brain controller used to evaluate action scores, execute or abort actions, and record action/plan outcomes.</param>
         /// <returns>The current action's <see cref="NodeStatus"/>: `Running` if the action is still executing, otherwise `Success` or `Failure` reflecting the action's outcome.</returns>
         protected override NodeStatus Tick(NPCBrainController brain)
         {
@@ -263,7 +267,11 @@ namespace NPCBrain.BehaviorTree.Composites
         /// <returns>The chosen UtilityAction, or null if no action could be selected.</returns>
         /// <remarks>
         /// Actions with scores less than or equal to zero are excluded from selection. Temperature controls exploration (higher values flatten probabilities); inertia, if positive, boosts the probability of the previously selected action proportionally to its remaining headroom and renormalizes the distribution. Returns null when the brain is null, when all actions score <= 0, or when numerical conditions prevent a valid probability distribution.
-        /// </remarks>
+        /// <summary>
+        /// Selects a UtilityAction from the configured actions by computing a softmax over positive action scores using the brain's criticality temperature and optionally biasing toward the previously selected action via inertia.
+        /// </summary>
+        /// <param name="brain">The NPC brain providing context and Criticality parameters (temperature and inertia). If null, selection cannot proceed.</param>
+        /// <returns>The chosen UtilityAction, or null if no viable action can be selected (for example, when the brain is null or all actions score ≤ 0).</returns>
         private UtilityAction SelectAction(NPCBrainController brain)
         {
             if (brain == null)
@@ -404,6 +412,10 @@ namespace NPCBrain.BehaviorTree.Composites
             _currentActionIndex = -1;
         }
         
+        /// <summary>
+        /// Clears the selector's active action state when the node is exited.
+        /// </summary>
+        /// <param name="brain">The NPC brain context for this exit; not used by this node but provided by the caller.</param>
         protected override void OnExit(NPCBrainController brain)
         {
             _currentAction = null;
@@ -415,6 +427,11 @@ namespace NPCBrain.BehaviorTree.Composites
         /// </summary>
         /// <remarks>
         /// If an action is currently running, that action's Reset method is invoked before clearing. After this call there will be no current action and the last-selected action index is cleared.
+        /// <summary>
+        /// Resets the selector to its initial state and clears inertia/history.
+        /// </summary>
+        /// <remarks>
+        /// If an action is currently executing, that action's Reset method is invoked. The current action reference and indices are cleared; the last selected action index is reset to -1 to remove any inertia bias.
         /// </remarks>
         public override void Reset()
         {
@@ -431,7 +448,10 @@ namespace NPCBrain.BehaviorTree.Composites
         /// <summary>
         /// Aborts the currently executing action (if any), clears selection state and inertia history, and forwards the abort to the base composite.
         /// </summary>
-        /// <param name="brain">The NPC brain controller on which the abort is performed.</param>
+        /// <summary>
+        /// Aborts the currently running action, clears the selector's current action and selection indices (including inertia history), and delegates the abort to the base node.
+        /// </summary>
+        /// <param name="brain">The NPC brain controller used to abort the current action and propagate the abort to the base class.</param>
         public override void Abort(NPCBrainController brain)
         {
             if (_currentAction != null)
