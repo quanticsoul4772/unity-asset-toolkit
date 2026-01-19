@@ -114,8 +114,11 @@ namespace NPCBrain
                 }
                 else if (_lastKnownRobberDirection.sqrMagnitude < 0.01f)
                 {
-                    // No previous direction either - this shouldn't happen with ultimate fallback
-                    Debug.LogWarning($"[CopAlertSystem] WARNING: No direction available! HandleTargetLost should have provided ultimate fallback.");
+                    // No previous direction either - this is expected when pursuit starts from alarm
+                    // (alarm provides position but not direction). Cops will converge on position.
+                    // Only log at debug level since this is normal for alarm-triggered pursuits.
+                    NPCBrainDebug.Log(NPCBrainDebug.Category.General, 
+                        "[CopAlertSystem] No direction for pursuit - converging on position only", null);
                 }
                 
                 string directionStatus = _lastKnownRobberDirection.sqrMagnitude > 0.01f 
