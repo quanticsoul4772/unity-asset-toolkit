@@ -24,11 +24,22 @@ namespace EasyPath
         
         private PathNode[,] _nodes;
         private AStarPathfinder _pathfinder;
-        
+
+        // Performance: Version-based reset eliminates O(width*height) reset per pathfind
+        private int _currentPathVersion;
+
+        // Performance: Pre-allocated buffer for GetNeighbors to avoid yield iterator allocation
+        private readonly List<PathNode> _neighborBuffer = new List<PathNode>(8);
+
         public int Width => _width;
         public int Height => _height;
         public float CellSize => _cellSize;
         public int WalkableCount { get; private set; }
+
+        /// <summary>
+        /// Current pathfinding version. Incremented each pathfind query to invalidate node state.
+        /// </summary>
+        public int CurrentPathVersion => _currentPathVersion;
         
         private void Awake()
         {
@@ -42,29 +53,39 @@ namespace EasyPath
         {
             _nodes = new PathNode[_width, _height];
             WalkableCount = 0;
-            
+            _currentPathVersion = 0;
+
+            // Performance: Cache origin to avoid transform.position access per cell
             Vector3 origin = transform.position;
-            
+            float halfCell = _cellSize * 0.5f;
+            Vector3 upOffset = Vector3.up * _obstacleCheckHeight;
+
             for (int x = 0; x < _width; x++)
             {
                 for (int y = 0; y < _height; y++)
                 {
-                    Vector3 worldPos = GridToWorld(x, y);
+                    // Performance: Inline GridToWorld calculation to avoid method call + transform access
+                    Vector3 worldPos = new Vector3(
+                        origin.x + x * _cellSize + halfCell,
+                        origin.y,
+                        origin.z + y * _cellSize + halfCell
+                    );
+
                     // Check for obstacles at elevated height to avoid detecting ground plane
-                    Vector3 checkPos = worldPos + Vector3.up * _obstacleCheckHeight;
+                    Vector3 checkPos = worldPos + upOffset;
                     bool walkable = !Physics.CheckSphere(checkPos, _obstacleCheckRadius, _obstacleLayer);
-                    
+
                     _nodes[x, y] = new PathNode(x, y, walkable, worldPos);
-                    
+
                     if (walkable)
                     {
                         WalkableCount++;
                     }
                 }
             }
-            
+
             _pathfinder = new AStarPathfinder(this);
-            
+
             // Runtime diagnostics - warn about potential misconfigurations
             ValidateGridConfiguration();
         }
@@ -122,8 +143,33 @@ namespace EasyPath
         }
         
         /// <summary>
-        /// Reset all nodes for a new pathfinding query.
+        /// Increments the path version, effectively invalidating all node states.
+        /// This is O(1) compared to the O(width*height) full reset.
         /// </summary>
+        public void IncrementPathVersion()
+        {
+            _currentPathVersion++;
+        }
+
+        /// <summary>
+        /// Resets a node if it was used in a previous pathfinding query.
+        /// Uses version comparison for O(1) lazy reset.
+        /// </summary>
+        /// <param name="node">The node to conditionally reset.</param>
+        public void ResetNodeIfNeeded(PathNode node)
+        {
+            if (node != null && node.LastUsedVersion != _currentPathVersion)
+            {
+                node.Reset();
+                node.LastUsedVersion = _currentPathVersion;
+            }
+        }
+
+        /// <summary>
+        /// Reset all nodes for a new pathfinding query.
+        /// Note: Prefer using IncrementPathVersion() + ResetNodeIfNeeded() for better performance.
+        /// </summary>
+        [System.Obsolete("Use IncrementPathVersion() for O(1) reset instead of O(width*height).")]
         public void ResetNodes()
         {
             for (int x = 0; x < _width; x++)
@@ -169,10 +215,14 @@ namespace EasyPath
         }
         
         /// <summary>
-        /// Get all valid neighbors of a node.
+        /// Get all valid neighbors of a node using a pre-allocated buffer (allocation-free).
         /// </summary>
-        public IEnumerable<PathNode> GetNeighbors(PathNode node)
+        /// <param name="node">The node to get neighbors for.</param>
+        /// <param name="results">List to fill with neighbors. Will be cleared first.</param>
+        public void GetNeighbors(PathNode node, List<PathNode> results)
         {
+            results.Clear();
+
             for (int x = -1; x <= 1; x++)
             {
                 for (int y = -1; y <= 1; y++)
@@ -181,10 +231,10 @@ namespace EasyPath
                     {
                         continue;
                     }
-                    
+
                     int checkX = node.X + x;
                     int checkY = node.Y + y;
-                    
+
                     PathNode neighbor = GetNode(checkX, checkY);
                     if (neighbor != null)
                     {
@@ -193,17 +243,27 @@ namespace EasyPath
                         {
                             PathNode adjX = GetNode(node.X + x, node.Y);
                             PathNode adjY = GetNode(node.X, node.Y + y);
-                            
+
                             if (adjX != null && !adjX.IsWalkable && adjY != null && !adjY.IsWalkable)
                             {
                                 continue; // Can't cut corners
                             }
                         }
-                        
-                        yield return neighbor;
+
+                        results.Add(neighbor);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Get all valid neighbors of a node.
+        /// Note: This allocates an iterator. Prefer GetNeighbors(node, results) for hot paths.
+        /// </summary>
+        public IEnumerable<PathNode> GetNeighbors(PathNode node)
+        {
+            GetNeighbors(node, _neighborBuffer);
+            return _neighborBuffer;
         }
         
         /// <summary>

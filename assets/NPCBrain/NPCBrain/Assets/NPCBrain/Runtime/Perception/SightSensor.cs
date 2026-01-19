@@ -115,12 +115,16 @@ namespace NPCBrain.Perception
             
             float closestDistance = float.MaxValue;
             int raycastCount = 0;
-            
+
+            // Performance: Pre-compute values used in loop
+            float halfViewAngle = _viewAngle * 0.5f;
+            Vector3 forward = transform.forward;
+
             for (int i = 0; i < count && _visibleTargets.Count < _maxTargets; i++)
             {
                 var collider = _overlapResults[i];
                 if (collider == null || collider.gameObject == gameObject) continue;
-                
+
                 // Filter by tag if specified
                 if (!string.IsNullOrEmpty(_targetTag))
                 {
@@ -130,35 +134,38 @@ namespace NPCBrain.Perception
                         _tagValidityChecked = true;
                         _targetTagIsValid = IsTagValid(_targetTag);
                     }
-                    
+
                     if (!_targetTagIsValid)
                     {
                         continue; // Tag is invalid, skip all targets
                     }
-                    
+
                     if (!collider.CompareTag(_targetTag))
                     {
                         if (ShouldLog())
                         {
-                            NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
+                            NPCBrainDebug.Log(NPCBrainDebug.Category.Perception,
                                 $"{collider.name} failed tag filter (has '{collider.tag}', need '{_targetTag}')", this);
                         }
                         continue;
                     }
                 }
-                
+
                 Vector3 targetPosition = collider.transform.position;
-                Vector3 directionToTarget = (targetPosition - eyePosition).normalized;
-                float distanceToTarget = Vector3.Distance(eyePosition, targetPosition);
-                
+
+                // Performance: Calculate direction and distance together to avoid redundant magnitude calc
+                Vector3 toTarget = targetPosition - eyePosition;
+                float distanceToTarget = toTarget.magnitude;
+                Vector3 directionToTarget = distanceToTarget > 0.0001f ? toTarget / distanceToTarget : Vector3.zero;
+
                 // Check if within view angle
-                float angleToTarget = Vector3.Angle(transform.forward, directionToTarget);
-                if (angleToTarget > _viewAngle * 0.5f)
+                float angleToTarget = Vector3.Angle(forward, directionToTarget);
+                if (angleToTarget > halfViewAngle)
                 {
                     if (ShouldLog())
                     {
-                        NPCBrainDebug.Log(NPCBrainDebug.Category.Perception, 
-                            $"{collider.name} outside view angle ({angleToTarget:F1}° > {_viewAngle * 0.5f:F1}°)", this);
+                        NPCBrainDebug.Log(NPCBrainDebug.Category.Perception,
+                            $"{collider.name} outside view angle ({angleToTarget:F1}° > {halfViewAngle:F1}°)", this);
                     }
                     continue;
                 }

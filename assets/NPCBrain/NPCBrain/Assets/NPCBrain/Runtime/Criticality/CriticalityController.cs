@@ -117,10 +117,11 @@ namespace NPCBrain.Criticality
             
             _actionHistory.Enqueue(actionId);
             _entropyDirty = true;
-            
-            if (_actionCounts.ContainsKey(actionId))
+
+            // Performance: Use TryGetValue to avoid double dictionary lookup
+            if (_actionCounts.TryGetValue(actionId, out int count))
             {
-                _actionCounts[actionId]++;
+                _actionCounts[actionId] = count + 1;
             }
             else
             {

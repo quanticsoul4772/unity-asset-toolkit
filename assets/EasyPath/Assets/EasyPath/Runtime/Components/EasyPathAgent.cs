@@ -22,12 +22,30 @@ namespace EasyPath
         private List<Vector3> _currentPath;
         private int _currentWaypointIndex;
         private bool _isMoving;
-        
+
+        // Performance: Cache remaining distance to avoid O(n) recalculation every access
+        private float _cachedRemainingDistance;
+        private int _lastCachedWaypointIndex = -1;
+        private bool _remainingDistanceDirty = true;
+
         public float Speed { get => _speed; set => _speed = value; }
         public float StoppingDistance { get => _stoppingDistance; set => _stoppingDistance = value; }
         public bool IsMoving => _isMoving;
         public bool HasPath => _currentPath != null && _currentPath.Count > 0;
-        public float RemainingDistance => CalculateRemainingDistance();
+
+        public float RemainingDistance
+        {
+            get
+            {
+                if (_remainingDistanceDirty || _currentWaypointIndex != _lastCachedWaypointIndex)
+                {
+                    _cachedRemainingDistance = CalculateRemainingDistance();
+                    _lastCachedWaypointIndex = _currentWaypointIndex;
+                    _remainingDistanceDirty = false;
+                }
+                return _cachedRemainingDistance;
+            }
+        }
         public Vector3 Destination => HasPath ? _currentPath[_currentPath.Count - 1] : transform.position;
         
         public event System.Action OnPathComplete;
@@ -74,7 +92,8 @@ namespace EasyPath
             _currentPath = path;
             _currentWaypointIndex = 0;
             _isMoving = true;
-            
+            _remainingDistanceDirty = true;
+
             return true;
         }
         
@@ -86,6 +105,8 @@ namespace EasyPath
             _isMoving = false;
             _currentPath = null;
             _currentWaypointIndex = 0;
+            _remainingDistanceDirty = true;
+            _lastCachedWaypointIndex = -1;
         }
         
         /// <summary>
@@ -133,30 +154,37 @@ namespace EasyPath
                 OnReachedDestination();
                 return;
             }
-            
+
+            // Performance: Cache transform.position to reduce property access overhead
+            Vector3 currentPos = transform.position;
+
             Vector3 targetWaypoint = _currentPath[_currentWaypointIndex];
-            targetWaypoint.y = transform.position.y; // Keep same Y level
-            
-            Vector3 direction = (targetWaypoint - transform.position);
+            targetWaypoint.y = currentPos.y; // Keep same Y level
+
+            Vector3 direction = targetWaypoint - currentPos;
             float distance = direction.magnitude;
-            
+
             // Check if we've reached the final waypoint
             if (_currentWaypointIndex == _currentPath.Count - 1 && distance <= _stoppingDistance)
             {
                 OnReachedDestination();
                 return;
             }
-            
+
             // Check if we've reached current waypoint
             if (distance <= _waypointTolerance)
             {
                 _currentWaypointIndex++;
+                _remainingDistanceDirty = true;
                 return;
             }
-            
-            // Move toward waypoint
-            direction.Normalize();
-            
+
+            // Move toward waypoint - avoid Normalize() allocation by dividing
+            if (distance > 0.0001f)
+            {
+                direction /= distance;
+            }
+
             // Rotation
             if (direction != Vector3.zero)
             {
@@ -167,15 +195,15 @@ namespace EasyPath
                     _rotationSpeed * Time.deltaTime
                 );
             }
-            
+
             // Movement
             float moveDistance = _speed * Time.deltaTime;
             if (moveDistance > distance)
             {
                 moveDistance = distance;
             }
-            
-            transform.position += direction * moveDistance;
+
+            transform.position = currentPos + direction * moveDistance;
         }
         
         private void OnReachedDestination()

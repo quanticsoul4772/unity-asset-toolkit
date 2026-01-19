@@ -113,16 +113,22 @@ namespace NPCBrain.BehaviorTree.Actions
         
         private NodeStatus MoveDirectly(Transform transform, Vector3 target, string debugName = "")
         {
-            Vector3 direction = (target - transform.position).normalized;
+            // Performance: Cache position to reduce property access overhead
+            Vector3 currentPos = transform.position;
+            Vector3 toTarget = target - currentPos;
+            float distance = toTarget.magnitude;
+
+            // Avoid division by zero and normalize efficiently
+            Vector3 direction = distance > 0.0001f ? toTarget / distance : Vector3.zero;
             Vector3 movement = direction * _moveSpeed * Time.deltaTime;
-            
-            transform.position += movement;
-            
+
+            transform.position = currentPos + movement;
+
             if (direction != Vector3.zero)
             {
                 transform.rotation = Quaternion.LookRotation(direction);
             }
-            
+
             return NodeStatus.Running;
         }
     }
