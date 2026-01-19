@@ -201,6 +201,37 @@ Created `BBKeys` static class with all common Blackboard key constants:
 
 ---
 
+## Round 6: Final Runtime Optimizations (Perception & Navigation)
+
+### SoundManager.cs
+
+| Optimization | Before | After | Impact |
+|--------------|--------|-------|--------|
+| sqrMagnitude | `Vector3.Distance()` in GetSoundsInRange | `sqrMagnitude` with squared effective range | Eliminates sqrt for every sound checked |
+| sqrMagnitude | `Vector3.Distance()` in GetSoundsInRangeNonAlloc | `sqrMagnitude` with squared effective range | Eliminates sqrt for every sound checked |
+
+### SoundEvent.cs
+
+| Optimization | Before | After | Impact |
+|--------------|--------|-------|--------|
+| Early-out sqrMagnitude | Always calculates distance | Check `sqrMagnitude >= radiusSqr` first | Only calculates sqrt when listener is in range |
+| GetVolumeAtPosition | Full distance calculation | Early-out with sqrMagnitude | Avoids unnecessary sqrt |
+| CalculatePriority | Full distance calculation | Early-out with sqrMagnitude | Avoids unnecessary sqrt |
+
+### WaypointPath.cs
+
+| Optimization | Before | After | Impact |
+|--------------|--------|-------|--------|
+| sqrMagnitude | `Vector3.Distance()` in GetNearestWaypointIndex | `sqrMagnitude` for comparison | Eliminates N sqrt operations per waypoint search |
+
+### TargetSelector.cs
+
+| Optimization | Before | After | Impact |
+|--------------|--------|-------|--------|
+| Combined direction+distance | Separate calculations | Compute direction, then use magnitude for distance | Avoids redundant vector operations |
+
+---
+
 ## Estimated Performance Impact
 
 ### With 50+ NPCs:
@@ -209,6 +240,12 @@ Created `BBKeys` static class with all common Blackboard key constants:
 - **Enumerator allocations eliminated**: 50+ per frame
 - **Boxing operations eliminated**: 200+ per frame
 - **String hash recalculations avoided**: 100+ per frame
+
+### With 10+ NPCs and 20+ active sounds (Round 6):
+- **SoundManager**: 200+ sqrt operations eliminated per frame in sound detection
+- **SoundEvent**: Unnecessary sqrt eliminated for out-of-range sounds
+- **WaypointPath**: N×M sqrt operations eliminated when NPCs find nearest waypoints
+- **TargetSelector**: Reduced redundant vector calculations
 
 ### Overall Improvement:
 - **30-50% reduction in per-NPC CPU cost**
@@ -234,15 +271,17 @@ Created `BBKeys` static class with all common Blackboard key constants:
 
 ## Files Modified
 
-### Core Runtime (13 files)
+### Core Runtime (14 files)
 - `Blackboard.cs` - Type-specific methods, TTL optimization
 - `BlackboardKeys.cs` - New file with key constants
 - `NPCBrainController.cs` - Rate-limited cleanup
 - `Memory.cs` - Struct enumerators, for loops
 - `SightSensor.cs` - HashSet, list swapping
 - `HearingSensor.cs` - HashSet, list swapping, for loops
-- `TargetSelector.cs` - HashSet, pooling, cached comparator
-- `SoundManager.cs` - Object pooling, frame-based cleanup
+- `TargetSelector.cs` - HashSet, pooling, cached comparator, combined direction+distance
+- `SoundManager.cs` - Object pooling, frame-based cleanup, sqrMagnitude
+- `SoundEvent.cs` - Early-out sqrMagnitude for GetVolumeAtPosition and CalculatePriority
+- `WaypointPath.cs` - sqrMagnitude in GetNearestWaypointIndex
 - `CriticalityController.cs` - Dirty-flag caching, struct enumerators
 
 ### Behavior Tree & Utility AI (8 files)
@@ -279,4 +318,5 @@ Created `BBKeys` static class with all common Blackboard key constants:
 ---
 
 *Last Updated: January 2026*
-*Total Commits: 10+ performance-related commits*
+*Total Commits: 15+ performance-related commits*
+*Total Files Optimized: 40+*
