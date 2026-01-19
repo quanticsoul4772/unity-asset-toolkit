@@ -195,6 +195,7 @@ namespace NPCBrain.BehaviorTree.Composites
                         _currentAction.Action.Abort(brain);
                         _currentAction = bestAction;
                         _currentActionIndex = bestIndex;
+                        _lastSelectedActionIndex = bestIndex; // Update inertia history to track the new action
                     }
                     else if (currentScore <= 0f && bestPositiveAction != null)
                     {
@@ -207,6 +208,7 @@ namespace NPCBrain.BehaviorTree.Composites
                         _currentAction.Action.Abort(brain);
                         _currentAction = bestPositiveAction;
                         _currentActionIndex = bestPositiveIndex;
+                        _lastSelectedActionIndex = bestPositiveIndex; // Update inertia history to track the new action
                     }
                 }
             }
