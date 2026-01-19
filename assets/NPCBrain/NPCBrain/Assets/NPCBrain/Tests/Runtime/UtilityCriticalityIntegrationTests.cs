@@ -260,8 +260,9 @@ namespace NPCBrain.Tests.Runtime
             // Count how often consecutive actions repeat with high inertia
             // Note: Don't reset the selector inside the loop - we need to preserve
             // _lastSelectedActionIndex so inertia can apply between selections
+            // Use 100 runs to reduce statistical variance
             int sameActionCount = 0;
-            int totalRuns = 20;
+            int totalRuns = 100;
 
             for (int i = 0; i < totalRuns; i++)
             {
@@ -286,10 +287,10 @@ namespace NPCBrain.Tests.Runtime
             }
 
             // High inertia should favor the previous action
-            // Note: Inertia degrades during test as actions/plans are recorded, so we use a lower threshold
-            // With initial high inertia degrading over time, we expect at least 35% consecutive repeats
-            // (vs 50% expected with pure random equal-probability selection)
-            Assert.GreaterOrEqual(sameActionCount, totalRuns * 0.35f,
+            // With equal scores and high inertia, we expect >= 50% consecutive repeats
+            // (50% is the random baseline with two equal-probability actions)
+            // Using 100 runs reduces statistical variance significantly
+            Assert.GreaterOrEqual(sameActionCount, totalRuns * 0.5f,
                 $"High inertia should favor previous action. Same action repeated {sameActionCount}/{totalRuns} times");
         }
 
