@@ -24,9 +24,6 @@ namespace EasyPath
         
         private PathNode[,] _nodes;
         private AStarPathfinder _pathfinder;
-        
-        // Flag to skip Awake() auto-build when using runtime Configure()
-        private bool _skipAwakeBuild;
 
         // Performance: Version-based reset eliminates O(width*height) reset per pathfind
         private int _currentPathVersion;
@@ -84,8 +81,6 @@ namespace EasyPath
         public void Configure(int width, int height, float cellSize, LayerMask obstacleLayer,
             float obstacleCheckRadius = -1f, float obstacleCheckHeight = 0.5f, bool showDebugGizmos = false)
         {
-            _skipAwakeBuild = true;  // Prevent Awake() from building with default values
-            
             _width = width;
             _height = height;
             _cellSize = cellSize;

@@ -3,7 +3,8 @@
     "rootNamespace": "NPCBrain.Demo",
     "references": [
         "NPCBrain.Runtime",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "EasyPath.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
