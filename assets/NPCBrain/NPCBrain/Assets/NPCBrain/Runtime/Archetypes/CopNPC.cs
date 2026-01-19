@@ -410,7 +410,7 @@ namespace NPCBrain.Archetypes
                     () => GetTargetPosition(),
                     _arrestDistance * 0.8f, // Get very close for arrest
                     _chaseSpeed,
-                    0.5f // Very short timeout - re-evaluate quickly to keep chasing
+                    1.5f // Short timeout to re-evaluate, but long enough to avoid jitter
                 )
             );
             chaseBehavior.Name = "ChaseBehavior";
