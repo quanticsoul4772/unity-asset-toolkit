@@ -24,6 +24,9 @@ namespace EasyPath
         
         private PathNode[,] _nodes;
         private AStarPathfinder _pathfinder;
+        
+        // Flag to skip Awake() auto-build when using runtime Configure()
+        private bool _skipAwakeBuild;
 
         // Performance: Version-based reset eliminates O(width*height) reset per pathfind
         private int _currentPathVersion;
@@ -43,10 +46,40 @@ namespace EasyPath
         
         /// <summary>
         /// Unity Awake lifecycle hook that initializes the pathfinding grid and related runtime state when the component is loaded.
+        /// Skipped if Configure() was called before Awake() runs.
         /// </summary>
         private void Awake()
         {
-            BuildGrid();
+            if (!_skipAwakeBuild)
+            {
+                BuildGrid();
+            }
+        }
+        
+        /// <summary>
+        /// Configures the grid settings for runtime setup. Call this BEFORE the component's Awake() runs,
+        /// or call BuildGrid() manually after Configure() if the component is already awake.
+        /// This is preferred over using reflection to set private fields.
+        /// </summary>
+        /// <param name="width">Grid width in cells</param>
+        /// <param name="height">Grid height in cells</param>
+        /// <param name="cellSize">Size of each cell in world units</param>
+        /// <param name="obstacleLayer">LayerMask for obstacle detection</param>
+        /// <param name="obstacleCheckRadius">Radius for obstacle sphere check (default: cellSize * 0.4)</param>
+        /// <param name="obstacleCheckHeight">Height above ground for obstacle check (default: 0.5)</param>
+        /// <param name="showDebugGizmos">Whether to show debug visualization (default: false)</param>
+        public void Configure(int width, int height, float cellSize, LayerMask obstacleLayer,
+            float obstacleCheckRadius = -1f, float obstacleCheckHeight = 0.5f, bool showDebugGizmos = false)
+        {
+            _skipAwakeBuild = true;  // Prevent Awake() from building with default values
+            
+            _width = width;
+            _height = height;
+            _cellSize = cellSize;
+            _obstacleLayer = obstacleLayer;
+            _obstacleCheckRadius = obstacleCheckRadius > 0 ? obstacleCheckRadius : cellSize * 0.4f;
+            _obstacleCheckHeight = obstacleCheckHeight;
+            _showDebugGizmos = showDebugGizmos;
         }
         
         /// <summary>

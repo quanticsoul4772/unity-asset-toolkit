@@ -30,6 +30,14 @@ namespace NPCBrain.BehaviorTree.Actions
         private const float BaseRecalcInterval = 0.5f;  // Base interval between path recalculations
         private const float BaseWaypointTolerance = 0.5f;  // Base tolerance for reaching waypoints
         
+        // Stuck detection
+        private Vector3 _lastStuckCheckPosition;
+        private float _lastStuckCheckTime;
+        private int _stuckCounter;
+        private const float StuckCheckInterval = 1.0f;
+        private const float StuckDistanceThreshold = 0.3f;
+        private const int MaxStuckCount = 3;
+        
         public MoveTo(Func<Vector3> targetGetter, float arrivalDistance, float moveSpeed, float timeout)
         {
             _targetGetter = targetGetter ?? throw new ArgumentNullException(nameof(targetGetter));
@@ -61,6 +69,9 @@ namespace NPCBrain.BehaviorTree.Actions
             _currentWaypointIndex = 0;
             _lastTargetPosition = Vector3.zero;
             _lastPathCalcTime = 0f;
+            _lastStuckCheckPosition = brain.transform.position;
+            _lastStuckCheckTime = Time.time;
+            _stuckCounter = 0;
             
             if (!_navAgentCached)
             {
@@ -100,6 +111,7 @@ namespace NPCBrain.BehaviorTree.Actions
             _cachedGrid = null;
             _currentPath = null;
             _currentWaypointIndex = 0;
+            _stuckCounter = 0;
         }
         
         protected override NodeStatus Tick(NPCBrainController brain)
@@ -202,8 +214,13 @@ namespace NPCBrain.BehaviorTree.Actions
                 
                 if (_currentPath == null || _currentPath.Count == 0)
                 {
-                    // Path failed - fall back to direct movement toward target
-                    return MoveViaCharacterController(controller, transform, target);
+                    // Path failed - target is unreachable
+                    // Don't move directly toward a blocked target as that will cause NPC to get stuck against walls
+                    if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
+                    {
+                        Debug.Log($"<color=red>[MoveTo]</color> {brain.name} cannot find path to target - waiting for recalc");
+                    }
+                    return NodeStatus.Running; // Wait and retry on next recalc interval
                 }
             }
             
@@ -229,14 +246,20 @@ namespace NPCBrain.BehaviorTree.Actions
                 // Skip waypoints if low inertia (more aggressive corner cutting)
                 if (inertia < 0.3f && _currentWaypointIndex < _currentPath.Count - 1)
                 {
-                    // Try to skip to a further waypoint if we have line of sight
+                    // Try to skip to a further waypoint if we have actual line of sight (raycast check)
                     int skipTarget = Mathf.Min(_currentWaypointIndex + 2, _currentPath.Count - 1);
                     Vector3 skipPos = _currentPath[skipTarget];
                     skipPos.y = transform.position.y;
                     
-                    // Simple check: if we're close enough, skip ahead
-                    if (Vector3.Distance(transform.position, skipPos) < 5f)
+                    // Raycast to check for actual line of sight - don't skip through walls
+                    Vector3 rayOrigin = transform.position + Vector3.up * 0.5f; // Raise to avoid ground
+                    Vector3 rayTarget = skipPos + Vector3.up * 0.5f;
+                    Vector3 rayDirection = rayTarget - rayOrigin;
+                    float rayDistance = rayDirection.magnitude;
+                    
+                    if (rayDistance < 5f && !Physics.Raycast(rayOrigin, rayDirection.normalized, rayDistance))
                     {
+                        // Clear line of sight - safe to skip waypoints
                         _currentWaypointIndex = skipTarget;
                     }
                 }
@@ -271,6 +294,32 @@ namespace NPCBrain.BehaviorTree.Actions
                 {
                     transform.rotation = Quaternion.LookRotation(direction);
                 }
+            }
+            
+            // Stuck detection - if we haven't moved much over time, we might be blocked
+            if (Time.time - _lastStuckCheckTime > StuckCheckInterval)
+            {
+                float movedDistance = Vector3.Distance(transform.position, _lastStuckCheckPosition);
+                if (movedDistance < StuckDistanceThreshold)
+                {
+                    _stuckCounter++;
+                    if (_stuckCounter >= MaxStuckCount)
+                    {
+                        // We're stuck - force path recalculation
+                        if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
+                        {
+                            Debug.Log($"<color=orange>[MoveTo]</color> {brain.name} appears stuck - forcing path recalc");
+                        }
+                        _currentPath = null;
+                        _stuckCounter = 0;
+                    }
+                }
+                else
+                {
+                    _stuckCounter = 0; // Reset if we're making progress
+                }
+                _lastStuckCheckPosition = transform.position;
+                _lastStuckCheckTime = Time.time;
             }
             
             return NodeStatus.Running;
