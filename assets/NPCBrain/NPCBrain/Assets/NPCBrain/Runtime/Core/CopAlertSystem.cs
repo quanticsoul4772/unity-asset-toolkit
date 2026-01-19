@@ -102,7 +102,15 @@ namespace NPCBrain
                 _timeLostSight = Time.time;
                 _hasActivePursuit = true;
                 
-                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=magenta>COORDINATED PURSUIT!</color> All cops pursuing from {lastPosition} in direction {lastDirection}");
+                bool hasValidDirection = lastDirection.sqrMagnitude > 0.01f;
+                string directionStatus = hasValidDirection ? $"direction {lastDirection}" : "<color=red>NO DIRECTION (zero vector!)</color>";
+                
+                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=magenta>COORDINATED PURSUIT STARTED!</color> Position: {lastPosition} | {directionStatus} | Duration: {PursuitValidDuration}s");
+                
+                if (!hasValidDirection)
+                {
+                    Debug.LogWarning($"[CopAlertSystem] WARNING: Pursuit started with zero direction! Cops will pursue to last known position only.");
+                }
             }
         }
         
@@ -120,11 +128,29 @@ namespace NPCBrain
             
             float timeSinceLost = Time.time - _timeLostSight;
             
+            // If no direction, just return last known position
+            if (_lastKnownRobberDirection.sqrMagnitude < 0.01f)
+            {
+                return _lastKnownRobberPosition;
+            }
+            
             // Estimate robber speed (flee speed is 7)
             float estimatedRobberSpeed = 7f;
             Vector3 predictedOffset = _lastKnownRobberDirection * estimatedRobberSpeed * timeSinceLost * predictionMultiplier;
             
             return _lastKnownRobberPosition + predictedOffset;
+        }
+        
+        /// <summary>
+        /// Logs the current status of the alert system (for debugging).
+        /// </summary>
+        public static void LogStatus()
+        {
+            string alertStatus = HasActiveAlert ? $"ACTIVE ({TimeSinceLastSighting:F1}s ago)" : "inactive";
+            string pursuitStatus = HasActivePursuit ? $"ACTIVE ({TimeSinceLostSight:F1}s ago)" : "inactive";
+            string directionStatus = _lastKnownRobberDirection.sqrMagnitude > 0.01f ? $"{_lastKnownRobberDirection}" : "NONE";
+            
+            Debug.Log($"<color=cyan>[CopAlertSystem]</color> Alert: {alertStatus} | Pursuit: {pursuitStatus} | LastPos: {_lastKnownRobberPosition} | Direction: {directionStatus}");
         }
         
         /// <summary>
