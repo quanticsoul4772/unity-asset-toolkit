@@ -92,6 +92,21 @@ namespace NPCBrain
             _floatData[key] = value;
             OnValueChanged?.Invoke(key, value);
         }
+
+        /// <summary>
+        /// Sets a float value only if it differs from the current value.
+        /// Performance: Avoids unnecessary event invocations.
+        /// </summary>
+        /// <returns>True if the value was changed.</returns>
+        public bool SetFloatIfChanged(string key, float value, float epsilon = 0.0001f)
+        {
+            if (_floatData.TryGetValue(key, out float existing) && Math.Abs(existing - value) < epsilon)
+            {
+                return false;
+            }
+            SetFloat(key, value);
+            return true;
+        }
         
         /// <summary>
         /// Gets a float value without unboxing.
@@ -108,6 +123,21 @@ namespace NPCBrain
         {
             _intData[key] = value;
             OnValueChanged?.Invoke(key, value);
+        }
+
+        /// <summary>
+        /// Sets an int value only if it differs from the current value.
+        /// Performance: Avoids unnecessary event invocations.
+        /// </summary>
+        /// <returns>True if the value was changed.</returns>
+        public bool SetIntIfChanged(string key, int value)
+        {
+            if (_intData.TryGetValue(key, out int existing) && existing == value)
+            {
+                return false;
+            }
+            SetInt(key, value);
+            return true;
         }
         
         /// <summary>
@@ -126,6 +156,21 @@ namespace NPCBrain
             _boolData[key] = value;
             OnValueChanged?.Invoke(key, value);
         }
+
+        /// <summary>
+        /// Sets a bool value only if it differs from the current value.
+        /// Performance: Avoids unnecessary event invocations.
+        /// </summary>
+        /// <returns>True if the value was changed.</returns>
+        public bool SetBoolIfChanged(string key, bool value)
+        {
+            if (_boolData.TryGetValue(key, out bool existing) && existing == value)
+            {
+                return false;
+            }
+            SetBool(key, value);
+            return true;
+        }
         
         /// <summary>
         /// Gets a bool value without unboxing.
@@ -142,6 +187,24 @@ namespace NPCBrain
         {
             _vectorData[key] = value;
             OnValueChanged?.Invoke(key, value);
+        }
+
+        /// <summary>
+        /// Sets a Vector3 value only if it differs from the current value.
+        /// Performance: Avoids unnecessary event invocations.
+        /// </summary>
+        /// <returns>True if the value was changed.</returns>
+        public bool SetVector3IfChanged(string key, Vector3 value, float epsilon = 0.0001f)
+        {
+            if (_vectorData.TryGetValue(key, out Vector3 existing) &&
+                Math.Abs(existing.x - value.x) < epsilon &&
+                Math.Abs(existing.y - value.y) < epsilon &&
+                Math.Abs(existing.z - value.z) < epsilon)
+            {
+                return false;
+            }
+            SetVector3(key, value);
+            return true;
         }
         
         /// <summary>

@@ -28,6 +28,24 @@ namespace NPCBrain.BehaviorTree.Composites
     /// </example>
     public class UtilitySelector : BTNode
     {
+        /// <summary>
+        /// Fast exp approximation using Schraudolph's algorithm.
+        /// Accurate to within ~2% for typical softmax ranges (-10 to 0).
+        /// </summary>
+        private static float FastExp(float x)
+        {
+            // Clamp to avoid overflow/underflow
+            if (x < -20f) return 0f;
+            if (x > 20f) return (float)Math.Exp(20f);
+
+            // Schraudolph's approximation: exp(x) ≈ 2^(x/ln2) via IEEE float bit manipulation
+            // For softmax with normalized scores, this provides sufficient accuracy
+            const float a = 12102203.16156f; // (1 << 23) / ln(2)
+            const float b = 1064866805.0f;   // (1 << 23) * (127 - ~0.043677448f * ln(2))
+            int i = (int)(a * x + b);
+            return BitConverter.Int32BitsToSingle(i);
+        }
+
         private readonly List<UtilityAction> _actions;
         private readonly List<float> _scoresList;
         private readonly List<float> _probabilitiesList;
@@ -171,9 +189,10 @@ namespace NPCBrain.BehaviorTree.Composites
                     _probabilities[i] = 0f;
                     continue;
                 }
-                
+
                 float scaledScore = (_scores[i] - maxScore) / temperature;
-                _probabilities[i] = (float)Math.Exp(scaledScore);
+                // Performance: Use fast exp approximation for softmax calculation
+                _probabilities[i] = FastExp(scaledScore);
                 sumExp += _probabilities[i];
             }
             

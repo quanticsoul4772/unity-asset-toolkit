@@ -14,7 +14,11 @@ namespace EasyPath
         private EasyPathGrid _grid;
         private PriorityQueue<PathNode> _openSet;
         private HashSet<PathNode> _closedSet;
-        
+
+        // Performance: Pre-allocated buffers to avoid per-pathfind allocations
+        private readonly List<PathNode> _neighborBuffer = new List<PathNode>(8);
+        private readonly Stack<Vector3> _pathStack = new Stack<Vector3>(64);
+
         public AStarPathfinder(EasyPathGrid grid)
         {
             _grid = grid;
@@ -56,51 +60,61 @@ namespace EasyPath
             {
                 return null;
             }
-            
+
             // Reset data structures
             _openSet.Clear();
             _closedSet.Clear();
-            _grid.ResetNodes();
-            
-            // Initialize start node
+
+            // Performance: Use version-based reset instead of O(width*height) full reset
+            _grid.IncrementPathVersion();
+
+            // Initialize start node (lazy reset via version check)
+            _grid.ResetNodeIfNeeded(startNode);
             startNode.GCost = 0;
             startNode.HCost = CalculateHeuristic(startNode, endNode);
             _openSet.Enqueue(startNode);
-            
+
             while (_openSet.Count > 0)
             {
                 PathNode currentNode = _openSet.Dequeue();
-                
+
                 // Found the goal
                 if (currentNode.Equals(endNode))
                 {
                     return ReconstructPath(currentNode);
                 }
-                
+
                 _closedSet.Add(currentNode);
-                
-                // Check all neighbors
-                foreach (PathNode neighbor in _grid.GetNeighbors(currentNode))
+
+                // Performance: Use pre-allocated buffer for neighbors
+                _grid.GetNeighbors(currentNode, _neighborBuffer);
+
+                for (int i = 0; i < _neighborBuffer.Count; i++)
                 {
+                    PathNode neighbor = _neighborBuffer[i];
+
                     if (_closedSet.Contains(neighbor))
                     {
                         continue;
                     }
-                    
+
                     if (!neighbor.IsWalkable)
                     {
                         continue;
                     }
-                    
+
+                    // Performance: Lazy reset via version check
+                    _grid.ResetNodeIfNeeded(neighbor);
+
                     int movementCost = GetMovementCost(currentNode, neighbor);
                     int tentativeGCost = currentNode.GCost + movementCost + neighbor.MovementPenalty;
-                    
+
                     if (tentativeGCost < neighbor.GCost)
                     {
                         neighbor.Parent = currentNode;
                         neighbor.GCost = tentativeGCost;
                         neighbor.HCost = CalculateHeuristic(neighbor, endNode);
-                        
+
                         if (!_openSet.Contains(neighbor))
                         {
                             _openSet.Enqueue(neighbor);
@@ -112,7 +126,7 @@ namespace EasyPath
                     }
                 }
             }
-            
+
             // No path found
             return null;
         }
@@ -137,16 +151,23 @@ namespace EasyPath
         
         private List<Vector3> ReconstructPath(PathNode endNode)
         {
-            List<Vector3> path = new List<Vector3>();
+            // Performance: Use cached stack to avoid Reverse() operation
+            _pathStack.Clear();
             PathNode current = endNode;
-            
+
             while (current != null)
             {
-                path.Add(current.WorldPosition);
+                _pathStack.Push(current.WorldPosition);
                 current = current.Parent;
             }
-            
-            path.Reverse();
+
+            // Build path in correct order from stack
+            var path = new List<Vector3>(_pathStack.Count);
+            while (_pathStack.Count > 0)
+            {
+                path.Add(_pathStack.Pop());
+            }
+
             return path;
         }
         

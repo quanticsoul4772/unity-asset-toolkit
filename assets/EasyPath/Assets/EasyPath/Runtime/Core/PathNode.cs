@@ -19,11 +19,14 @@ namespace EasyPath
         public int GCost { get; set; } // Cost from start
         public int HCost { get; set; } // Heuristic cost to end
         public int FCost => GCost + HCost; // Total cost
-        
+
         public PathNode Parent { get; set; }
-        
+
         // World position
         public Vector3 WorldPosition { get; set; }
+
+        // Performance: Version-based reset to avoid O(width*height) reset per pathfind
+        internal int LastUsedVersion { get; set; }
         
         public PathNode(int x, int y, bool isWalkable, Vector3 worldPosition)
         {
