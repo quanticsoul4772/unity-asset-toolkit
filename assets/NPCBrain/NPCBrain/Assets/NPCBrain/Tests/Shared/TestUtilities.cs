@@ -83,37 +83,28 @@ namespace NPCBrain.Tests
         private float _score;
 
         /// <summary>
-        /// Creates a DynamicConsideration initialized with the specified score.
+        /// Creates a DynamicConsideration initialized to the provided score.
         /// </summary>
-        /// <summary>
-        /// Creates a DynamicConsideration initialized to the provided score, which will be returned by Score(NPCBrainController) until changed via SetScore.
-        /// </summary>
-        /// <param name="initialScore">Initial score value returned by Score(NPCBrainController) until changed via SetScore.</param>
-        public DynamicConsideration(float initialScore)
+        /// <param name="initialScore">Initial score value returned until changed via SetScore.</param>
+        public DynamicConsideration(float initialScore) : base("DynamicConsideration")
         {
             _score = initialScore;
         }
 
         /// <summary>
-        /// Provides the consideration's current score.
+        /// Evaluates and returns the current score.
         /// </summary>
-        /// <param name="brain">Ignored for this consideration; included to match the evaluation signature.</param>
-        /// <summary>
-        /// Gets the consideration's current score.
-        /// </summary>
+        /// <param name="brain">Ignored for this consideration.</param>
         /// <returns>The current consideration score.</returns>
-        public override float Score(NPCBrainController brain)
+        protected override float Evaluate(NPCBrainController brain)
         {
             return _score;
         }
 
         /// <summary>
-        /// Sets the consideration's runtime score used when evaluating the node.
+        /// Sets the consideration's runtime score.
         /// </summary>
-        /// <summary>
-        /// Sets the consideration's runtime score returned by Score(NPCBrainController).
-        /// </summary>
-        /// <param name="score">The new score value that Score(NPCBrainController) will return.</param>
+        /// <param name="score">The new score value.</param>
         public void SetScore(float score)
         {
             _score = score;
