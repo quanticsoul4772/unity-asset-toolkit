@@ -923,12 +923,7 @@ namespace NPCBrain.Demo
                 }
             }
             
-            bool newShowGrid = GUILayout.Toggle(_showPathfindingDebug, " Show Pathfinding Grid");
-            if (newShowGrid != _showPathfindingDebug)
-            {
-                _showPathfindingDebug = newShowGrid;
-                // Note: Grid debug is controlled via the EasyPathGrid inspector
-            }
+            GUILayout.Label("  <size=10><i>Grid debug: set in EasyPathGrid inspector</i></size>");
             
             GUILayout.Space(5);
             GUILayout.Label("  <size=10><i>View in Scene window with Gizmos enabled</i></size>");

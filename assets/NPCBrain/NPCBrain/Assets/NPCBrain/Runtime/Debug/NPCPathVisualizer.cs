@@ -12,7 +12,6 @@ namespace NPCBrain.Debug
     {
         [Header("Path Visualization")]
         [SerializeField] private bool _showPaths = true;
-        [SerializeField] private float _pathLineWidth = 2f;
         [SerializeField] private float _waypointSize = 0.3f;
         [SerializeField] private float _currentWaypointSize = 0.5f;
         
@@ -214,10 +213,7 @@ namespace NPCBrain.Debug
             // Draw a vertical line at target for visibility
             Gizmos.DrawLine(data.TargetPosition, targetPos + Vector3.up * 0.5f);
             
-            // Draw NPC name label position (for reference)
-            #if UNITY_EDITOR
-            UnityEditor.Handles.Label(data.NpcPosition + Vector3.up * 2f, npcName);
-            #endif
+            // Note: NPC name labels could be drawn with Handles.Label in editor scripts
         }
     }
 }
