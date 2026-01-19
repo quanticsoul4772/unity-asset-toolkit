@@ -39,7 +39,7 @@ namespace NPCBrain.Archetypes
         
         [Header("Detection Settings")]
         [SerializeField] private float _copDetectionRange = 15f;
-        [SerializeField] private float _lootDetectionRange = 25f;
+        [SerializeField] private float _lootDetectionRange = 100f;  // Large range - robber should find loot across the map
         // Note: Cop detection now uses NPCRegistry<CopNPC> instead of tag-based detection
         
         [Header("Utility Weights")]
@@ -185,18 +185,29 @@ namespace NPCBrain.Archetypes
             Blackboard.SetBool(BBKeys.HasLoot, false);
             Blackboard.SetInt(BBKeys.LootValue, 0);
             
-            // Initialize action timestamps
-            Blackboard.SetFloat(BBKeys.LastStealTime, -10f);
-            Blackboard.SetFloat(BBKeys.LastFleeTime, -10f);
-            Blackboard.SetFloat(BBKeys.LastHideTime, -10f);
-            Blackboard.SetFloat(BBKeys.LastSneakTime, -10f);
-            Blackboard.SetFloat(BBKeys.LastScoutTime, -10f);
+            // Initialize action timestamps to allow immediate action
+            Blackboard.SetFloat(BBKeys.LastStealTime, -100f);
+            Blackboard.SetFloat(BBKeys.LastFleeTime, -100f);
+            Blackboard.SetFloat(BBKeys.LastHideTime, -100f);
+            Blackboard.SetFloat(BBKeys.LastSneakTime, -100f);
+            Blackboard.SetFloat(BBKeys.LastScoutTime, -100f);
             
-            // Find all loot points and cover points in scene
+            // Initial point discovery - will be refreshed in Start() after scene is fully set up
             RefreshKnownPoints();
             
             // Find escape zone (only one in scene)
             _escapeZone = Object.FindAnyObjectByType<EscapeZone>();
+        }
+        
+        private void Start()
+        {
+            // Refresh points after scene is fully set up (Awake order is not guaranteed)
+            RefreshKnownPoints();
+            
+            // Also schedule another refresh in case scene setup is still in progress
+            Invoke(nameof(RefreshKnownPoints), 0.5f);
+            
+            Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>START - Found {_knownLootPoints.Count} loot points, {_knownCoverPoints.Count} cover points</color>");
         }
         
         protected override void OnDestroy()
@@ -207,13 +218,24 @@ namespace NPCBrain.Archetypes
         
         private void RefreshKnownPoints()
         {
-            // Use FindObjectsOfType only once during initialization
-            // This is acceptable as it only happens on Awake
+            // Find all loot points and cover points in scene
             _knownLootPoints.Clear();
             _knownLootPoints.AddRange(Object.FindObjectsByType<LootPoint>(FindObjectsSortMode.None));
             
             _knownCoverPoints.Clear();
             _knownCoverPoints.AddRange(Object.FindObjectsByType<CoverPoint>(FindObjectsSortMode.None));
+            
+            // Find escape zone if not already found
+            if (_escapeZone == null)
+            {
+                _escapeZone = Object.FindAnyObjectByType<EscapeZone>();
+            }
+            
+            // Log for debugging
+            if (_knownLootPoints.Count > 0)
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> RefreshKnownPoints: Found {_knownLootPoints.Count} loot points");
+            }
         }
         
         private float _lastRobberDebugTime;
@@ -237,7 +259,7 @@ namespace NPCBrain.Archetypes
                 float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 999f);
                 float timeRemaining = HeistTimer.TimeRemaining;
                 string timeInfo = HeistTimer.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s | Urgency: {Urgency:F2}" : "No time limit";
-                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot}");
+                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | Loot: {lootInfo} | KnownLoot: {_knownLootPoints.Count}");
             }
         }
         
@@ -300,7 +322,16 @@ namespace NPCBrain.Archetypes
         private void UpdateLootAvailability()
         {
             // Cache loot availability to avoid repeated FindNearestLoot() calls during utility scoring
-            _hasLootAvailable = FindNearestLoot() != null;
+            var nearestLoot = FindNearestLoot();
+            _hasLootAvailable = nearestLoot != null;
+            
+            // If no loot found but we know loot points exist, try refreshing
+            if (!_hasLootAvailable && _knownLootPoints.Count == 0)
+            {
+                RefreshKnownPoints();
+                nearestLoot = FindNearestLoot();
+                _hasLootAvailable = nearestLoot != null;
+            }
         }
         
         private void EmitFootstepsIfMoving()
@@ -551,9 +582,9 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetTargetLootPosition(),
                     1.5f,
-                    _normalSpeed  // Use normal speed - urgency handled by action selection
+                    _normalSpeed + 1f  // Slightly faster when stealing
                 ),
-                new Wait(_stealTime * 0.8f, () => TryStealTargetLoot())  // Slightly faster steal
+                new Wait(_stealTime * 0.5f, () => TryStealTargetLoot())  // Faster steal
             );
             stealBehavior.Name = "StealBehavior";
             
@@ -561,42 +592,40 @@ namespace NPCBrain.Archetypes
                 "StealLoot",
                 stealBehavior,
                 _stealWeight,
-                // Must not have loot already
-                new BlackboardConsideration<bool>("NoLootYet", BBKeys.HasLoot,
-                    has => has ? 0f : 1f, false),
-                // Must have loot available to steal - critical gate! (uses cached value for performance)
+                // Must not have loot already - but still allow partial score to avoid complete zeroing
+                new FunctionalConsideration("NoLootYet",
+                    _ => Blackboard.GetBool(BBKeys.HasLoot, false) ? 0f : 1f),
+                // Must have loot available to steal - uses cached value but with fallback
                 new FunctionalConsideration("LootAvailable", 
-                    _ => _hasLootAvailable ? 1f : 0f),
+                    _ => {
+                        // Check cached value first, then do direct check as fallback
+                        if (_hasLootAvailable) return 1f;
+                        // Direct check as fallback
+                        var loot = FindNearestLoot();
+                        return loot != null ? 1f : 0f;
+                    }),
                 // Cop visibility - at high urgency, take more risks!
-                // Normally: 0 if sees cop. At high urgency: 0.5 even if sees cop (risky steal!)
                 new FunctionalConsideration("CopRiskVsUrgency",
                     _ => {
                         bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
                         float urgency = Urgency;
                         if (!seesCop) return 1f;
                         // At high urgency, we might try to steal even with cop visible (risky!)
-                        return urgency > 0.7f ? 0.4f : 0f;
+                        return urgency > 0.5f ? 0.5f : 0.1f;  // Small chance even at low urgency
                     }),
-                // Has a target loot nearby - boost when urgent
+                // Base score - always high since stealing is the main goal!
                 new FunctionalConsideration("BaseStealScore",
-                    _ => 0.8f + Urgency * 0.2f), // 0.8 base, up to 1.0 at max urgency
+                    _ => 0.9f + Urgency * 0.1f), // 0.9 base, up to 1.0 at max urgency
                 // Fear matters less when urgent - take risks!
                 new FunctionalConsideration("FearVsUrgencyForSteal",
                     _ => {
                         float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
                         float urgency = Urgency;
-                        // Normal: fear reduces score by 70%. At max urgency: only 20%
-                        float fearMultiplier = Mathf.Lerp(0.7f, 0.2f, urgency);
+                        // Normal: fear reduces score by 50%. At max urgency: only 10%
+                        float fearMultiplier = Mathf.Lerp(0.5f, 0.1f, urgency);
                         return 1f - fear * fearMultiplier;
-                    }),
-                // Cooldown - reduced at high urgency (act faster!)
-                new FunctionalConsideration("StealCooldown",
-                    _ => {
-                        float lastSteal = Blackboard.GetFloat(BBKeys.LastStealTime, -10f);
-                        float cooldown = Mathf.Lerp(3f, 1f, Urgency); // 3s normal, 1s at max urgency
-                        float elapsed = Time.time - lastSteal;
-                        return elapsed >= cooldown ? 1f : elapsed / cooldown;
                     })
+                // Removed cooldown - stealing should always be available when possible!
             );
         }
         
@@ -692,29 +721,27 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetScoutPosition(),
                     _arrivalDistance,
-                    _normalSpeed,  // Normal speed - urgency makes scouting less likely to be selected
-                    6f
+                    _normalSpeed + 0.5f,  // Slightly faster scouting
+                    4f  // Shorter timeout
                 )
             );
             scoutBehavior.Name = "ScoutBehavior";
             
+            // Scout is the FALLBACK action - it should ALWAYS have a positive score!
+            // This ensures the robber is never stuck doing nothing.
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
                 _scoutWeight,
-                // Baseline behavior - reduced when urgent (no time for leisurely scouting!)
-                new FunctionalConsideration("BaseScoutScore",
-                    _ => 0.7f * (1f - Urgency * 0.5f)), // 0.7 base, down to 0.35 at max urgency
-                // Lower when fear is high
-                new BlackboardConsideration<float>("LowFearForScout", BBKeys.FearLevel,
-                    f => 1f - f * 0.8f, 0f),
-                // Cooldown - but shorter at high urgency
-                new FunctionalConsideration("ScoutCooldown",
+                // GUARANTEED MINIMUM SCORE - Scout is the fallback, must never be 0!
+                // This single consideration ensures Scout always has a positive utility.
+                new FunctionalConsideration("FallbackScore",
                     _ => {
-                        float lastScout = Blackboard.GetFloat(BBKeys.LastScoutTime, -10f);
-                        float cooldown = Mathf.Lerp(3f, 1.5f, Urgency); // 3s normal, 1.5s at max urgency
-                        float elapsed = Time.time - lastScout;
-                        return elapsed >= cooldown ? 1f : elapsed / cooldown;
+                        float urgency = Urgency;
+                        float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
+                        // Base: 0.8, reduced by urgency and fear but never below 0.3
+                        float score = 0.8f * (1f - urgency * 0.3f) * (1f - fear * 0.5f);
+                        return Mathf.Max(0.3f, score);  // Floor at 0.3 - NEVER zero!
                     })
             );
         }
@@ -773,6 +800,12 @@ namespace NPCBrain.Archetypes
             // Cache transform.position
             Vector3 myPosition = transform.position;
             
+            // If no known loot points, try to refresh
+            if (_knownLootPoints.Count == 0)
+            {
+                RefreshKnownPoints();
+            }
+            
             for (int i = 0; i < _knownLootPoints.Count; i++)
             {
                 var loot = _knownLootPoints[i];
@@ -780,7 +813,10 @@ namespace NPCBrain.Archetypes
                 
                 // Use sqrMagnitude for distance comparison
                 float distSqr = (myPosition - loot.transform.position).sqrMagnitude;
-                if (distSqr < nearestDistSqr && distSqr <= _lootDetectionRangeSqr)
+                // Increased detection range - robber should find loot across the map!
+                // Use 10000 (100^2) as max range instead of configured range for initial finding
+                float maxRangeSqr = Mathf.Max(_lootDetectionRangeSqr, 10000f);
+                if (distSqr < nearestDistSqr && distSqr <= maxRangeSqr)
                 {
                     nearestDistSqr = distSqr;
                     nearest = loot;
