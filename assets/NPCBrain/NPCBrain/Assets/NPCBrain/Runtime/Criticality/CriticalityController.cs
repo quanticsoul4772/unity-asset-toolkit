@@ -107,7 +107,13 @@ namespace NPCBrain.Criticality
         /// <summary>
         /// Records that an action was taken. Call this when a UtilityAction completes.
         /// </summary>
-        /// <param name="actionId">The index of the action that was taken.</param>
+        /// <summary>
+        /// Records an observed action into the recent-action history used for entropy and temperature control.
+        /// </summary>
+        /// <param name="actionId">Index of the action taken; negative values are ignored.</param>
+        /// <remarks>
+        /// Enqueues the action into the bounded history, updates occurrence counts, and marks cached entropy as needing recalculation. If the history exceeds the configured capacity, the oldest action is removed and its count decremented.
+        /// </remarks>
         public void RecordAction(int actionId)
         {
             if (actionId < 0)

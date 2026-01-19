@@ -31,7 +31,11 @@ namespace NPCBrain.BehaviorTree.Composites
         /// <summary>
         /// Fast exp approximation using Schraudolph's algorithm.
         /// Accurate to within ~2% for typical softmax ranges (-10 to 0).
+        /// <summary>
+        /// Approximates the exponential function e^x using a fast IEEE float bit-level approximation with clamping for extreme inputs.
         /// </summary>
+        /// <param name="x">The exponent value.</param>
+        /// <returns>`e^x` approximated; returns 0 when x &lt; -20, returns `exp(20)` when x &gt; 20, otherwise an efficient float-precision approximation.</returns>
         private static float FastExp(float x)
         {
             // Clamp to avoid overflow/underflow
@@ -145,6 +149,14 @@ namespace NPCBrain.BehaviorTree.Composites
             return status;
         }
         
+        /// <summary>
+        /// Selects a UtilityAction using a softmax distribution over actions with positive scores.
+        /// </summary>
+        /// <remarks>
+        /// Populates internal score and probability arrays for the last selection, sets the selected action index, and respects the temperature provided by brain.Criticality (defaults to 1). Actions with scores less than or equal to zero are excluded from selection. Logs warnings when selection cannot proceed (e.g., null brain, all scores <= 0, or numerical issues).
+        /// </remarks>
+        /// <param name="brain">The NPCBrainController used to evaluate action scores and obtain the criticality temperature.</param>
+        /// <returns>The chosen UtilityAction, or null if no action could be selected.</returns>
         private UtilityAction SelectAction(NPCBrainController brain)
         {
             if (brain == null)

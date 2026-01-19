@@ -19,6 +19,10 @@ namespace EasyPath
         private readonly List<PathNode> _neighborBuffer = new List<PathNode>(8);
         private readonly Stack<Vector3> _pathStack = new Stack<Vector3>(64);
 
+        /// <summary>
+        /// Creates a new AStarPathfinder configured to operate on the provided grid.
+        /// </summary>
+        /// <param name="grid">The grid instance used for pathfinding operations.</param>
         public AStarPathfinder(EasyPathGrid grid)
         {
             _grid = grid;
@@ -53,7 +57,17 @@ namespace EasyPath
         
         /// <summary>
         /// Find a path between two nodes.
+        /// <summary>
+        /// Computes a path of world positions from a start node to an end node using the A* algorithm.
         /// </summary>
+        /// <param name="startNode">The starting grid node for the path search.</param>
+        /// <param name="endNode">The target grid node for the path search.</param>
+        /// <returns>
+        /// A list of world-space positions representing the path from start to end, or <c>null</c> if no path is available or if either input node is <c>null</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method mutates pathfinding state: it clears the internal open and closed sets, increments the grid's path version (enabling lazy node resets), and updates node fields such as <c>Parent</c>, <c>GCost</c>, and <c>HCost</c>. It returns the reconstructed path when the target is reached; otherwise it returns <c>null</c>.
+        /// </remarks>
         public List<Vector3> FindPath(PathNode startNode, PathNode endNode)
         {
             if (startNode == null || endNode == null)
@@ -149,6 +163,11 @@ namespace EasyPath
             return isDiagonal ? DIAGONAL_COST : STRAIGHT_COST;
         }
         
+        /// <summary>
+        /// Reconstructs the path by following parent links from the specified end node back to the start and returns the path as world positions in start-to-end order.
+        /// </summary>
+        /// <param name="endNode">The terminal node of the path from which to begin reconstruction; may be null.</param>
+        /// <returns>A list of world-space positions representing the path from start to end. Returns an empty list if <paramref name="endNode"/> is null.</returns>
         private List<Vector3> ReconstructPath(PathNode endNode)
         {
             // Performance: Use cached stack to avoid Reverse() operation

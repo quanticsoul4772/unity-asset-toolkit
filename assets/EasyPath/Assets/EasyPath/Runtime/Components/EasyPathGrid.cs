@@ -41,6 +41,9 @@ namespace EasyPath
         /// </summary>
         public int CurrentPathVersion => _currentPathVersion;
         
+        /// <summary>
+        /// Unity Awake lifecycle hook that initializes the pathfinding grid and related runtime state when the component is loaded.
+        /// </summary>
         private void Awake()
         {
             BuildGrid();
@@ -48,7 +51,12 @@ namespace EasyPath
         
         /// <summary>
         /// Build or rebuild the pathfinding grid.
+        /// <summary>
+        /// Initializes the internal grid data for the current component configuration and prepares the pathfinder.
         /// </summary>
+        /// <remarks>
+        /// Allocates and populates the internal node array, sets WalkableCount to the number of walkable cells, resets the path version to zero, and constructs the A* pathfinder instance. Each node's walkability is determined by sampling the scene using the configured obstacle settings. Calls ValidateGridConfiguration() after building the grid.
+        /// </remarks>
         public void BuildGrid()
         {
             _nodes = new PathNode[_width, _height];
@@ -92,7 +100,12 @@ namespace EasyPath
         
         /// <summary>
         /// Validates the grid configuration and logs warnings for common issues.
+        /// <summary>
+        /// Validates the grid configuration and emits warnings for common misconfigurations or suspicious values.
         /// </summary>
+        /// <remarks>
+        /// Logs warnings when the walkable cell percentage is unusually low, when the obstacle layer is unset or configured to \"Everything\", or when the cell size is unusually small or large. Logs a summary message when the grid configuration appears reasonable.
+        /// </remarks>
         private void ValidateGridConfiguration()
         {
             int totalCells = _width * _height;
@@ -145,7 +158,12 @@ namespace EasyPath
         /// <summary>
         /// Increments the path version, effectively invalidating all node states.
         /// This is O(1) compared to the O(width*height) full reset.
+        /// <summary>
+        /// Advance the grid's pathfinding version to invalidate any previously cached per-node path state.
         /// </summary>
+        /// <remarks>
+        /// Incrementing the version allows nodes to be lazily reset on next access without iterating the entire grid.
+        /// </remarks>
         public void IncrementPathVersion()
         {
             _currentPathVersion++;
@@ -155,7 +173,11 @@ namespace EasyPath
         /// Resets a node if it was used in a previous pathfinding query.
         /// Uses version comparison for O(1) lazy reset.
         /// </summary>
-        /// <param name="node">The node to conditionally reset.</param>
+        /// <summary>
+        /// Resets the node when its LastUsedVersion differs from the grid's current path version.
+        /// When reset, the node's LastUsedVersion is updated to the current path version.
+        /// </summary>
+        /// <param name="node">The node to inspect and reset if stale; null is accepted.</param>
         public void ResetNodeIfNeeded(PathNode node)
         {
             if (node != null && node.LastUsedVersion != _currentPathVersion)
@@ -168,7 +190,12 @@ namespace EasyPath
         /// <summary>
         /// Reset all nodes for a new pathfinding query.
         /// Note: Prefer using IncrementPathVersion() + ResetNodeIfNeeded() for better performance.
+        /// <summary>
+        /// Reset every node in the grid to its default state.
         /// </summary>
+        /// <remarks>
+        /// Performs a full traversal of the grid (O(width * height)). This method is deprecated; use <see cref="IncrementPathVersion"/> for O(1) invalidation and lazy per-node resets.
+        /// </remarks>
         [System.Obsolete("Use IncrementPathVersion() for O(1) reset instead of O(width*height).")]
         public void ResetNodes()
         {
@@ -207,7 +234,11 @@ namespace EasyPath
         
         /// <summary>
         /// Get the node at a world position.
+        /// <summary>
+        /// Gets the grid node that contains the specified world-space position.
         /// </summary>
+        /// <param name="worldPos">A world-space position to map into the grid.</param>
+        /// <returns>The PathNode for the grid cell containing <paramref name="worldPos"/>.</returns>
         public PathNode GetNodeFromWorldPosition(Vector3 worldPos)
         {
             Vector2Int gridPos = WorldToGrid(worldPos);
@@ -218,7 +249,11 @@ namespace EasyPath
         /// Get all valid neighbors of a node using a pre-allocated buffer (allocation-free).
         /// </summary>
         /// <param name="node">The node to get neighbors for.</param>
-        /// <param name="results">List to fill with neighbors. Will be cleared first.</param>
+        /// <summary>
+        /// Populates the provided list with the valid neighboring nodes of the specified node using an 8-way neighborhood while preventing diagonal corner-cutting.
+        /// </summary>
+        /// <param name="node">The source grid node whose neighbors will be collected.</param>
+        /// <param name="results">The list to fill with neighbor nodes; this list is cleared before use to enable allocation-free reuse. Diagonal neighbors are omitted when both adjacent axis-aligned neighbors are not walkable.</param>
         public void GetNeighbors(PathNode node, List<PathNode> results)
         {
             results.Clear();
@@ -259,7 +294,10 @@ namespace EasyPath
         /// <summary>
         /// Get all valid neighbors of a node.
         /// Note: This allocates an iterator. Prefer GetNeighbors(node, results) for hot paths.
+        /// <summary>
+        /// Enumerates the neighbor nodes of the given grid node using an internal reusable buffer.
         /// </summary>
+        /// <returns>An IEnumerable&lt;PathNode&gt; containing the valid neighboring nodes. The sequence is backed by an internal buffer and may be mutated or reused by subsequent calls, so callers should not cache the returned collection or rely on its contents persisting.</returns>
         public IEnumerable<PathNode> GetNeighbors(PathNode node)
         {
             GetNeighbors(node, _neighborBuffer);

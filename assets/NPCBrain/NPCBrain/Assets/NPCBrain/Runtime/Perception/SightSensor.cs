@@ -75,7 +75,10 @@ namespace NPCBrain.Perception
         /// Updates the sensor, detecting visible targets.
         /// Called automatically by NPCBrainController each tick.
         /// </summary>
-        /// <param name="brain">The brain controller this sensor belongs to.</param>
+        /// <summary>
+        /// Updates the sensor's visible-target set by scanning for colliders within the view cone, verifying line of sight (with a per-tick raycast limit), updating ClosestTarget, and notifying the provided brain of any targets acquired or lost.
+        /// </summary>
+        /// <param name="brain">The NPCBrainController to notify about target acquisition and loss; may be null to skip notifications.</param>
         public void Tick(NPCBrainController brain)
         {
             // Swap lists instead of copying (avoids allocation)
