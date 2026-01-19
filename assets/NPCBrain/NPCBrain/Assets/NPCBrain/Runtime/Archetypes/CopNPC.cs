@@ -465,6 +465,12 @@ namespace NPCBrain.Archetypes
             // This is critical because the sensor may not have ticked yet this frame
             _sightSensor.Tick(this);
             
+            // If Tick already set a target via HandleTargetAcquired, we're done
+            if (Blackboard.Has(BBKeys.Target))
+            {
+                return;
+            }
+            
             if (!_sightSensor.HasVisibleTargets)
             {
                 return;
