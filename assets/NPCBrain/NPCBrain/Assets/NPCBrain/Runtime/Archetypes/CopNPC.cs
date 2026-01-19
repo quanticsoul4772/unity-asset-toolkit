@@ -45,8 +45,7 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _footstepAlertBoost = 0.5f;  // Increased from 0.2 - cops now react more to footsteps
         
         [Header("Pursuit Persistence")]
-        [SerializeField] private float _pursuitPersistenceTime = 4f;  // How long to continue pursuing after losing sight
-        [SerializeField] private float _pursuitPredictionMultiplier = 1.5f;  // How far ahead to predict robber position
+        [SerializeField] private float _pursuitPredictionMultiplier = 1.5f;  // How far ahead to predict robber position (passed to CopAlertSystem)
         
         [Header("Utility Weights")]
         [SerializeField] private float _arrestWeight = 2.0f;  // Highest priority - arrest when close
@@ -205,7 +204,8 @@ namespace NPCBrain.Archetypes
                 Vector3 lastPosition = target.transform.position;
                 Vector3 lastDirection = Blackboard.GetVector3(BBKeys.LastKnownRobberDirection, Vector3.zero);
                 
-                // Store pursuit persistence data locally
+                // Store pursuit persistence data locally (kept for debugging/UI display even though
+                // coordinated pursuit uses CopAlertSystem shared data)
                 Blackboard.SetVector3(BBKeys.LastKnownRobberPosition, lastPosition);
                 Blackboard.SetFloat(BBKeys.TimeLostSight, Time.time);
                 
