@@ -43,7 +43,6 @@ namespace NPCBrain
         public const string LastKnownRobberPosition = "lastKnownRobberPosition";
         public const string LastKnownRobberDirection = "lastKnownRobberDirection";
         public const string TimeLostSight = "timeLostSight";
-        public const string PreviousRobberPosition = "previousRobberPosition";
         
         // CopNPC keys
         public const string CanArrest = "canArrest";

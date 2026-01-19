@@ -187,6 +187,7 @@ namespace NPCBrain.Archetypes
             // Crime in progress - chase the robber!
             Debug.Log($"<color=blue>[{name}]</color> <color=green>CRIME IN PROGRESS - SETTING TARGET TO CHASE!</color>");
             _cachedTargetRobber = robber;
+            _lastTrackedRobberPosition = target.transform.position;  // Reset for accurate direction tracking
             Blackboard.Set(BBKeys.Target, target);
             Blackboard.SetVector3(BBKeys.InvestigatePosition, target.transform.position);
             IncreaseAlert(0.6f);
