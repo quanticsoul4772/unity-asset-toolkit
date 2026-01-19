@@ -389,6 +389,12 @@ namespace NPCBrain.Archetypes
                 pursuitStatus = "EXPIRED";
             }
             
+            // Log warning if we're in Patrol/Return but crime is active - this shouldn't happen!
+            if (crimeActive && (_cachedState == "Patrol" || _cachedState == "Return"))
+            {
+                Debug.LogWarning($"<color=red>[{name}] BUG: {_cachedState} action active during crime! Crime={crimeActive}</color>");
+            }
+            
             Debug.Log($"<color=blue>[{name}]</color> ACTION: <color=white>{_cachedState}</color> | Crime: {crimeActive} | Alert: {hasActiveAlert} | Pursuit: {pursuitStatus} | AlertLevel: {AlertLevel:F2}");
         }
         
@@ -821,7 +827,8 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => Blackboard.GetVector3(BBKeys.HomePosition, transform.position),
                     _arrivalDistance,
-                    _patrolSpeed
+                    _patrolSpeed,
+                    5f  // Add timeout so return can be interrupted
                 )
             );
             returnBehavior.Name = "ReturnBehavior";
@@ -832,8 +839,11 @@ namespace NPCBrain.Archetypes
                 _returnWeight,
                 // IMPORTANT: Don't return to home base when crime is in progress!
                 // Cops should be actively searching, not casually going home
-                new BlackboardConsideration<bool>("NoCrimeInProgress", BBKeys.CrimeInProgress,
-                    crime => crime ? 0f : 1f, false),
+                new FunctionalConsideration("NoCrimeInProgress",
+                    brain => {
+                        bool crime = brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false);
+                        return crime ? 0f : 1f;
+                    }),
                 // No target
                 new BlackboardConsideration<GameObject>("NoTarget", BBKeys.Target,
                     t => t == null ? 1f : 0f, null),
@@ -872,11 +882,19 @@ namespace NPCBrain.Archetypes
                 searchBehavior,
                 _searchWeight,
                 // MUST have crime in progress - this is the active search behavior
-                new BlackboardConsideration<bool>("CrimeActive", BBKeys.CrimeInProgress,
-                    crime => crime ? 1f : 0f, false),
+                new FunctionalConsideration("CrimeActive",
+                    brain => {
+                        bool crime = brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false);
+                        float score = crime ? 1f : 0f;
+                        return score;
+                    }),
                 // Must NOT have direct visual on target (otherwise Chase takes over)
-                new BlackboardConsideration<GameObject>("NoDirectVisual", BBKeys.Target,
-                    t => t == null ? 1f : 0f, null),
+                new FunctionalConsideration("NoDirectVisual",
+                    brain => {
+                        bool hasTarget = brain.Blackboard.TryGet<GameObject>(BBKeys.Target, out var t) && t != null;
+                        float score = hasTarget ? 0f : 1f;
+                        return score;
+                    }),
                 // Less priority when there's an active pursuit
                 new FunctionalConsideration("NoActivePursuit",
                     _ => CopAlertSystem.HasActivePursuit ? 0.3f : 1f),
@@ -962,7 +980,8 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetCurrentWaypoint(),
                     _arrivalDistance,
-                    _patrolSpeed
+                    _patrolSpeed,
+                    5f  // Add timeout so patrol can be interrupted
                 ),
                 new Wait(_waypointWaitTime),
                 new AdvanceWaypoint()
@@ -975,8 +994,11 @@ namespace NPCBrain.Archetypes
                 _patrolWeight,
                 // IMPORTANT: Don't casually patrol when crime is in progress!
                 // Cops should be actively searching, not casually patrolling
-                new BlackboardConsideration<bool>("NoCrimeInProgress", BBKeys.CrimeInProgress,
-                    crime => crime ? 0f : 1f, false),
+                new FunctionalConsideration("NoCrimeInProgress",
+                    brain => {
+                        bool crime = brain.Blackboard.GetBool(BBKeys.CrimeInProgress, false);
+                        return crime ? 0f : 1f;
+                    }),
                 // Always available as baseline (when no crime)
                 new ConstantConsideration(0.8f),
                 // Less likely when alert

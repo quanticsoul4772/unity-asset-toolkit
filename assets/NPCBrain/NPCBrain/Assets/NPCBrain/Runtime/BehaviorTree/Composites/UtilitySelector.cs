@@ -119,7 +119,7 @@ namespace NPCBrain.BehaviorTree.Composites
         /// Threshold for interrupting current action. If a new action scores this much higher
         /// than the current action, interrupt and switch to the new action.
         /// </summary>
-        public float InterruptThreshold { get; set; } = 0.5f;
+        public float InterruptThreshold { get; set; } = 0.3f;
         
         /// <summary>
         /// How often to check for action interruption (in seconds). Default 0.25s.
@@ -172,11 +172,28 @@ namespace NPCBrain.BehaviorTree.Composites
                     // If a significantly better action exists, interrupt current and switch
                     if (bestAction != null)
                     {
-                        NPCBrainDebug.Log(NPCBrainDebug.Category.Utility,
-                            $"Interrupting {_currentAction.Name} (score {currentScore:F2}) for {bestAction.Name} (score {bestScore:F2})");
+                        Debug.Log($"<color=yellow>[UtilitySelector]</color> Interrupting {_currentAction.Name} (score {currentScore:F2}) for {bestAction.Name} (score {bestScore:F2})");
                         _currentAction.Action.Abort(brain);
                         _currentAction = bestAction;
                         _currentActionIndex = bestIndex;
+                    }
+                    else if (currentScore <= 0f)
+                    {
+                        // IMPORTANT: If current action scores 0, we MUST switch to something else!
+                        // Find any action with positive score
+                        for (int i = 0; i < _actions.Count; i++)
+                        {
+                            if (_actions[i] == _currentAction) continue;
+                            float score = _actions[i].Score(brain);
+                            if (score > 0f)
+                            {
+                                Debug.Log($"<color=yellow>[UtilitySelector]</color> Force-switching from {_currentAction.Name} (score 0) to {_actions[i].Name} (score {score:F2})");
+                                _currentAction.Action.Abort(brain);
+                                _currentAction = _actions[i];
+                                _currentActionIndex = i;
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -274,6 +291,18 @@ namespace NPCBrain.BehaviorTree.Composites
             for (int i = 0; i < _actions.Count; i++)
             {
                 _probabilities[i] /= sumExp;
+            }
+            
+            // Debug: Log all action scores
+            if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+            {
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.Append($"[UtilitySelector] Scores: ");
+                for (int i = 0; i < _actions.Count; i++)
+                {
+                    sb.Append($"{_actions[i].Name}={_scores[i]:F2} ");
+                }
+                Debug.Log(sb.ToString());
             }
             
             float randomValue = (float)_random.NextDouble();
