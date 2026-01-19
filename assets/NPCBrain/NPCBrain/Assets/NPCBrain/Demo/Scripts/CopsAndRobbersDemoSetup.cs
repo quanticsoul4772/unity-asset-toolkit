@@ -502,18 +502,27 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Bank vault loot (high value)
-            Vector3 bankCenter = new Vector3(halfSize * 0.5f, 0.5f, halfSize * 0.5f);
+            // Bank area - loot placed OUTSIDE buildings but nearby (accessible!)
+            // Bank building is at (halfSize * 0.5f, 0, halfSize * 0.5f) with size (10, 4, 8)
+            // So place loot in front of bank (south side) where NPCs can reach it
+            Vector3 bankFront = new Vector3(halfSize * 0.5f, 0.5f, halfSize * 0.5f - 6f);
             
-            // Define loot positions and values - more loot spread around
+            // Define loot positions and values - ALL positions are now OUTSIDE buildings
             var lootDefinitions = new (Vector3 position, int value, string name)[]
             {
-                (bankCenter + new Vector3(0f, 0f, 0f), 500, "MainVaultLoot"),
-                (bankCenter + new Vector3(-3f, 0f, 1f), 250, "BankSideLoot"),
-                (new Vector3(-halfSize * 0.6f, 0.5f, -halfSize * 0.5f), 150, "ShopLoot1"),
-                (new Vector3(-halfSize * 0.35f, 0.5f, -halfSize * 0.65f), 100, "ShopLoot2"),
-                (new Vector3(-halfSize * 0.5f, 0.5f, halfSize * 0.5f), 200, "WarehouseLoot"),
-                (new Vector3(halfSize * 0.5f, 0.5f, -halfSize * 0.5f), 100, "ParkingLoot"),
+                // Bank loot - in front of the bank building
+                (bankFront, 500, "MainVaultLoot"),
+                (bankFront + new Vector3(-4f, 0f, 0f), 250, "BankSideLoot"),
+                
+                // Shop area (southwest) - in the street near shops, not inside them
+                (new Vector3(-halfSize * 0.45f, 0.5f, -halfSize * 0.4f), 150, "ShopLoot1"),
+                (new Vector3(-halfSize * 0.25f, 0.5f, -halfSize * 0.55f), 100, "ShopLoot2"),
+                
+                // Warehouse area (northwest) - outside warehouse, near loading dock
+                (new Vector3(-halfSize * 0.35f, 0.5f, halfSize * 0.35f), 200, "WarehouseLoot"),
+                
+                // Parking area (southeast) - between cars, accessible
+                (new Vector3(halfSize * 0.45f, 0.5f, -halfSize * 0.4f), 100, "ParkingLoot"),
             };
             
             // Create loot points up to the configured count
