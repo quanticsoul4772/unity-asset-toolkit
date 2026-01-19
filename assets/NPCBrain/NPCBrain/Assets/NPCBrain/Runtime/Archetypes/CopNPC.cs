@@ -73,6 +73,7 @@ namespace NPCBrain.Archetypes
         private Vector3 _lastTrackedRobberPosition;  // For calculating robber velocity/direction
         private Vector3 _cachedSearchPosition;  // Cached search position to avoid jittery movement
         private float _lastSearchPositionTime;  // When the search position was last calculated
+        private SightSensor _sightSensor;  // Cached sight sensor for re-evaluation
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
@@ -129,6 +130,7 @@ namespace NPCBrain.Archetypes
             NPCRegistry<CopNPC>.Register(this);
             _homePosition = transform.position;
             _arrestDistanceSqr = _arrestDistance * _arrestDistance;
+            _sightSensor = GetComponent<SightSensor>();
             
             // Note: Detection uses NPCRegistry<CopNPC> instead of tags to avoid Unity tag setup requirements
             
@@ -285,6 +287,11 @@ namespace NPCBrain.Archetypes
                     CopAlertSystem.BroadcastRobberSighting(sound.Position, sound.Source);
                     
                     Debug.Log($"<color=blue>[{name}]</color> <color=red>*** ALARM HEARD! ***</color> Position: {sound.Position} | CrimeInProgress now TRUE");
+                    
+                    // CRITICAL: Re-evaluate any currently visible targets!
+                    // If a cop was already seeing the robber before the crime, the SightSensor
+                    // won't re-fire OnTargetAcquired, so we need to manually check and set targets.
+                    ReEvaluateVisibleTargets();
                 }
                 else if (sound.Type >= SoundType.Footstep)
                 {
@@ -418,6 +425,10 @@ namespace NPCBrain.Archetypes
                 {
                     Blackboard.SetBool(BBKeys.CrimeInProgress, true);
                     Blackboard.SetVector3(BBKeys.AlarmLocation, CopAlertSystem.LastKnownRobberPosition);
+                    
+                    // CRITICAL: Re-evaluate any currently visible targets!
+                    // This cop just learned about the crime via shared alert - check if they can already see the robber
+                    ReEvaluateVisibleTargets();
                 }
                 
                 IncreaseAlert(0.3f * Time.deltaTime); // Stay alert while responding
@@ -425,6 +436,45 @@ namespace NPCBrain.Archetypes
             else
             {
                 Blackboard.SetBool(BBKeys.RespondingToAlert, false);
+            }
+        }
+        
+        /// <summary>
+        /// Re-evaluates currently visible targets and sets them as chase targets.
+        /// Call this when CrimeInProgress becomes TRUE to catch any robbers already in view.
+        /// </summary>
+        private void ReEvaluateVisibleTargets()
+        {
+            if (_sightSensor == null || !_sightSensor.HasVisibleTargets)
+            {
+                return;
+            }
+            
+            // Check all visible targets for robbers
+            var visibleTargets = _sightSensor.VisibleTargets;
+            for (int i = 0; i < visibleTargets.Count; i++)
+            {
+                var target = visibleTargets[i];
+                if (target == null) continue;
+                
+                var robber = target.GetComponent<RobberNPC>();
+                if (robber != null && !robber.HasEscaped)
+                {
+                    // Found a visible robber - set as target!
+                    Debug.Log($"<color=blue>[{name}]</color> <color=lime>*** RE-EVALUATED: ROBBER ALREADY VISIBLE! ***</color> Setting {target.name} as chase target!");
+                    
+                    _cachedTargetRobber = robber;
+                    _lastTrackedRobberPosition = target.transform.position;
+                    Blackboard.Set(BBKeys.Target, target);
+                    Blackboard.SetVector3(BBKeys.InvestigatePosition, target.transform.position);
+                    IncreaseAlert(0.6f);
+                    
+                    // Broadcast to other cops
+                    CopAlertSystem.BroadcastRobberSighting(target.transform.position, target);
+                    
+                    // Only need to set one target
+                    return;
+                }
             }
         }
         
