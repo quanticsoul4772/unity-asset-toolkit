@@ -5,7 +5,6 @@ using NPCBrain.BehaviorTree;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.BehaviorTree.Actions;
 using NPCBrain.Components;
-using NPCBrain.Demo;
 using NPCBrain.Perception;
 using NPCBrain.UtilityAI;
 
@@ -146,8 +145,8 @@ namespace NPCBrain.Archetypes
         /// </summary>
         private float CalculateUrgency()
         {
-            // Access time from CopsAndRobbersDemoSetup static properties
-            float timeNormalized = NPCBrain.Demo.CopsAndRobbersDemoSetup.HeistTimeRemainingNormalized;
+            // Access time from HeistTimer static class
+            float timeNormalized = HeistTimer.TimeRemainingNormalized;
             
             // Invert so 0 time = 1 urgency, full time = 0 urgency
             // Use exponential curve: urgency rises slowly at first, then dramatically
@@ -236,8 +235,8 @@ namespace NPCBrain.Archetypes
                 var nearestLoot = FindNearestLoot();
                 string lootInfo = nearestLoot != null ? $"{nearestLoot.name} at {Vector3.Distance(transform.position, nearestLoot.transform.position):F1}m" : "NO LOOT FOUND";
                 float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 999f);
-                float timeRemaining = CopsAndRobbersDemoSetup.HeistTimeRemaining;
-                string timeInfo = CopsAndRobbersDemoSetup.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s | Urgency: {Urgency:F2}" : "No time limit";
+                float timeRemaining = HeistTimer.TimeRemaining;
+                string timeInfo = HeistTimer.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s | Urgency: {Urgency:F2}" : "No time limit";
                 Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot}");
             }
         }

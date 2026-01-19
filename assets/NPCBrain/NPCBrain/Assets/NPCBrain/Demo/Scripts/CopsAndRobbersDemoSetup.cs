@@ -62,42 +62,7 @@ namespace NPCBrain.Demo
         private bool _gameEnded;
         private string _winner;
         
-        // Time limit - static for robber access
-        private static float _staticHeistTimeLimit;
-        private static float _staticHeistStartTime;
-        private static bool _staticTimeLimitEnabled;
-        private static bool _staticGameActive;
-        
-        /// <summary>Total time allowed for the heist in seconds.</summary>
-        public static float HeistTimeLimit => _staticHeistTimeLimit;
-        
-        /// <summary>Time remaining in the heist in seconds.</summary>
-        public static float HeistTimeRemaining => _staticTimeLimitEnabled && _staticGameActive 
-            ? Mathf.Max(0f, _staticHeistTimeLimit - (Time.time - _staticHeistStartTime)) 
-            : float.MaxValue;
-        
-        /// <summary>Time remaining normalized (1.0 = full time, 0.0 = no time left).</summary>
-        public static float HeistTimeRemainingNormalized => _staticTimeLimitEnabled && _staticGameActive && _staticHeistTimeLimit > 0f
-            ? Mathf.Clamp01(HeistTimeRemaining / _staticHeistTimeLimit)
-            : 1f;
-        
-        /// <summary>Whether the time limit is enabled.</summary>
-        public static bool IsTimeLimitEnabled => _staticTimeLimitEnabled;
-        
-        /// <summary>Whether the heist is currently active.</summary>
-        public static bool IsHeistActive => _staticGameActive;
-        
-        /// <summary>
-        /// Resets static variables on domain reload (important when domain reload is disabled).
-        /// </summary>
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics()
-        {
-            _staticHeistTimeLimit = 120f;
-            _staticHeistStartTime = 0f;
-            _staticTimeLimitEnabled = false;
-            _staticGameActive = false;
-        }
+        // Time limit now managed by HeistTimer static class in Runtime
         
         private void Start()
         {
@@ -120,10 +85,10 @@ namespace NPCBrain.Demo
         private void CheckGameEnd()
         {
             // Check if time has expired
-            if (_enableTimeLimit && HeistTimeRemaining <= 0f)
+            if (_enableTimeLimit && HeistTimer.HasTimeExpired)
             {
                 _gameEnded = true;
-                _staticGameActive = false;
+                HeistTimer.EndHeist();
                 _winner = "COPS WIN! (Time expired)";
                 
                 // Arrest any remaining active robbers
@@ -155,7 +120,7 @@ namespace NPCBrain.Demo
             if (activeRobbers == 0)
             {
                 _gameEnded = true;
-                _staticGameActive = false;
+                HeistTimer.EndHeist();
                 _winner = _robberScore > _copScore ? "ROBBERS WIN!" : "COPS WIN!";
                 Debug.Log($"<color=yellow>[CopsAndRobbers] Game Over! {_winner}</color>");
             }
@@ -181,11 +146,8 @@ namespace NPCBrain.Demo
             CreateRobbers();
             CreatePathVisualizer();  // Create visualizer for path debug
             
-            // Initialize time limit system
-            _staticHeistTimeLimit = _heistTimeLimit;
-            _staticHeistStartTime = Time.time;
-            _staticTimeLimitEnabled = _enableTimeLimit;
-            _staticGameActive = true;
+            // Initialize time limit system via HeistTimer
+            HeistTimer.StartHeist(_heistTimeLimit, _enableTimeLimit);
             
             string timeLimitInfo = _enableTimeLimit ? $" Time limit: {_heistTimeLimit}s" : " No time limit";
             Debug.Log($"<color=cyan>Cops and Robbers Demo generated!</color>\n" +
@@ -204,11 +166,8 @@ namespace NPCBrain.Demo
             _gameEnded = false;
             _winner = "";
             
-            // Reset time limit statics
-            _staticHeistTimeLimit = _heistTimeLimit;
-            _staticHeistStartTime = Time.time;
-            _staticTimeLimitEnabled = _enableTimeLimit;
-            _staticGameActive = true;
+            // Reset time limit via HeistTimer
+            HeistTimer.StartHeist(_heistTimeLimit, _enableTimeLimit);
             
             GenerateScene();
         }
@@ -910,7 +869,7 @@ namespace NPCBrain.Demo
             // Show time remaining if time limit is enabled
             if (_enableTimeLimit && !_gameEnded)
             {
-                float remaining = HeistTimeRemaining;
+                float remaining = HeistTimer.TimeRemaining;
                 string remainingStr = System.TimeSpan.FromSeconds(remaining).ToString(@"mm\:ss");
                 string timeColor = remaining > 30f ? "white" : (remaining > 10f ? "yellow" : "red");
                 string urgencyIndicator = remaining <= 30f ? (remaining <= 10f ? " ⚠️ CRITICAL!" : " ⏰ HURRY!") : "";
