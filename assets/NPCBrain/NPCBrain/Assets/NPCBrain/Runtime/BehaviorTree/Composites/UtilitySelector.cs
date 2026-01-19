@@ -122,10 +122,10 @@ namespace NPCBrain.BehaviorTree.Composites
         public float InterruptThreshold { get; set; } = 0.3f;
         
         /// <summary>
-        /// How often to check for action interruption (in seconds). Default 0.25s.
+        /// How often to check for action interruption (in seconds). Default 0.1s.
         /// Lower values = more responsive but higher CPU cost.
         /// </summary>
-        public float InterruptCheckInterval { get; set; } = 0.25f;
+        public float InterruptCheckInterval { get; set; } = 0.1f;
         
         private float _lastInterruptCheckTime;
         

@@ -50,7 +50,7 @@ namespace NPCBrain.Archetypes
         [Header("Utility Weights")]
         [SerializeField] private float _arrestWeight = 2.0f;  // Highest priority - arrest when close
         [SerializeField] private float _chaseWeight = 1.8f;   // Very high - always chase when target visible
-        [SerializeField] private float _pursueLastKnownWeight = 1.6f;  // High - continue pursuit after losing sight
+        [SerializeField] private float _pursueLastKnownWeight = 1.9f;  // Very high - continue pursuit after losing sight
         [SerializeField] private float _trackFootstepsWeight = 1.0f;  // High - follow footsteps aggressively
         [SerializeField] private float _respondToAlertWeight = 0.95f;
         [SerializeField] private float _alarmInvestigateWeight = 0.9f;
@@ -489,7 +489,7 @@ namespace NPCBrain.Archetypes
             var returnAction = CreateReturnAction();
             var patrolAction = CreatePatrolAction();
             
-            return new UtilitySelector(
+            var selector = new UtilitySelector(
                 arrestAction,
                 chaseAction,
                 pursueLastKnownAction,  // High priority - continue pursuit after losing sight
@@ -502,6 +502,12 @@ namespace NPCBrain.Archetypes
                 returnAction,
                 patrolAction
             );
+            
+            // Configure for faster reaction to high-priority events like target acquisition
+            selector.InterruptCheckInterval = 0.05f;  // Check every 50ms for cops
+            selector.InterruptThreshold = 0.2f;       // Lower threshold to allow easier interruption
+            
+            return selector;
         }
         
         private UtilityAction CreateArrestAction()
@@ -603,9 +609,10 @@ namespace NPCBrain.Archetypes
                 new FunctionalConsideration("HasActivePursuit",
                     _ => {
                         if (!CopAlertSystem.HasActivePursuit) return 0f;
-                        // Score 1.0 immediately after losing sight, decays to 0 over pursuit duration
+                        // High score throughout pursuit - slight decay but stays above 0.5
                         float timeSinceLost = CopAlertSystem.TimeSinceLostSight;
-                        return Mathf.Clamp01(1f - (timeSinceLost / CopAlertSystem.PursuitValidDuration));
+                        float decay = 1f - (timeSinceLost / CopAlertSystem.PursuitValidDuration) * 0.5f;
+                        return Mathf.Clamp01(decay);  // Decays from 1.0 to 0.5 over 5 seconds
                     }),
                 // Must have a valid shared direction (not zero) - or fallback to position-based pursuit
                 new FunctionalConsideration("HasSharedDirection",
@@ -887,9 +894,9 @@ namespace NPCBrain.Archetypes
                 // Must NOT have direct visual on target (otherwise Chase takes over)
                 new FunctionalConsideration("NoDirectVisual",
                     brain => (brain.Blackboard.TryGet<GameObject>(BBKeys.Target, out var t) && t != null) ? 0f : 1f),
-                // Less priority when there's an active pursuit
+                // Much less priority when there's an active pursuit - cops should be pursuing, not searching!
                 new FunctionalConsideration("NoActivePursuit",
-                    _ => CopAlertSystem.HasActivePursuit ? 0.3f : 1f),
+                    _ => CopAlertSystem.HasActivePursuit ? 0.05f : 1f),
                 // Less priority when there are recent footsteps to track
                 new FunctionalConsideration("NoRecentFootsteps",
                     brain => {
