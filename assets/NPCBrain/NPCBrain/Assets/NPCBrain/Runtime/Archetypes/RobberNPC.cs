@@ -88,8 +88,7 @@ namespace NPCBrain.Archetypes
                 if (_cachedState == "Stealing") return "Coast is clear - grabbing the loot!";
                 if (_cachedState == "Hiding")
                 {
-                    float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
-                    return fear > 0.5f ? "Too dangerous - laying low" : "Staying out of sight";
+                    return FearLevel > 0.5f ? "Too dangerous - laying low" : "Staying out of sight";
                 }
                 if (_cachedState == "Sneaking") return _isCarryingLoot ? "Moving carefully with the goods" : "Approaching target quietly";
                 if (_cachedState == "Scouting") return "Looking for opportunities...";

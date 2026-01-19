@@ -83,8 +83,7 @@ namespace NPCBrain.Archetypes
                 if (_cachedState == "Return") return "No threats detected - returning to patrol area";
                 if (_cachedState == "Patrol")
                 {
-                    float alert = Blackboard.GetFloat(BBKeys.AlertLevel, 0f);
-                    return alert > 0.3f ? "Patrolling - staying vigilant" : "Routine patrol - area secure";
+                    return AlertLevel > 0.3f ? "Patrolling - staying vigilant" : "Routine patrol - area secure";
                 }
                 return "Monitoring the area";
             }
