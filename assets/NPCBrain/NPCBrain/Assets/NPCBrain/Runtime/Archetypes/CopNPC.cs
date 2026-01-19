@@ -59,6 +59,10 @@ namespace NPCBrain.Archetypes
         private RobberNPC _cachedTargetRobber;
         private float _arrestDistanceSqr;
         private string _cachedState = "Patrol";
+        private float _lastDebugLogTime;
+        private float _lastChaseLogTime;
+        private float _lastFootstepLogTime;
+        private float _lastTrackLogTime;
         
         /// <summary>Current behavior state for UI display.</summary>
         public string CurrentState => _cachedState;
@@ -191,8 +195,6 @@ namespace NPCBrain.Archetypes
             // Don't log losing sight of walls/buildings - too spammy
         }
         
-        private float _lastFootstepLogTime;
-        
         private void HandleSoundHeard(SoundEvent sound)
         {
             // Always track footstep position for TrackFootsteps action, even if we have a visual target
@@ -252,9 +254,6 @@ namespace NPCBrain.Archetypes
                 Blackboard.SetFloat(BBKeys.AlertLevel, Mathf.Max(0f, current - _alertDecayRate * Time.deltaTime));
             }
         }
-        
-        private float _lastDebugLogTime;
-        private float _lastChaseLogTime;
         
         private void LateUpdate()
         {
@@ -452,8 +451,6 @@ namespace NPCBrain.Archetypes
                 // Chase should ALWAYS win when there's a target to chase
             );
         }
-        
-        private float _lastTrackLogTime;
         
         private UtilityAction CreateTrackFootstepsAction()
         {

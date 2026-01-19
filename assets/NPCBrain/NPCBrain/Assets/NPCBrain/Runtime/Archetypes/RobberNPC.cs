@@ -288,7 +288,8 @@ namespace NPCBrain.Archetypes
                     
                     // Emit footstep sound that cops can hear
                     // Use EmitSound directly to pass the source GameObject
-                    SoundManager.EmitSound(currentPosition, SoundType.Footstep, volume, 20f, gameObject);
+                    // Use 15f radius for consistency with standard EmitFootstep helper
+                    SoundManager.EmitSound(currentPosition, SoundType.Footstep, volume, 15f, gameObject);
                     _lastFootstepTime = Time.time;
                 }
             }
