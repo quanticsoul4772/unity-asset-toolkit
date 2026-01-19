@@ -1148,6 +1148,14 @@ namespace NPCBrain.Archetypes
             // Add hearing sensor
             var hearingSensor = copObj.AddComponent<HearingSensor>();
             
+            // Add CharacterController for collision-based movement (respects walls/obstacles)
+            var charController = copObj.AddComponent<CharacterController>();
+            charController.height = 2f;
+            charController.radius = 0.5f;
+            charController.center = new Vector3(0f, 1f, 0f);
+            charController.slopeLimit = 45f;
+            charController.stepOffset = 0.3f;
+            
             // Add cop component
             var cop = copObj.AddComponent<CopNPC>();
             
