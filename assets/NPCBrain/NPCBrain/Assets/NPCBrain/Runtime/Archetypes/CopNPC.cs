@@ -151,18 +151,25 @@ namespace NPCBrain.Archetypes
         {
             // Only react to RobberNPC targets (filter since we can't use tags)
             var robber = target.GetComponent<RobberNPC>();
-            if (robber == null) return;
+            if (robber == null)
+            {
+                Debug.Log($"<color=blue>[{name}]</color> Target acquired but not a RobberNPC: {target.name}");
+                return;
+            }
+            
+            Debug.Log($"<color=blue>[{name}]</color> <color=yellow>TARGET ACQUIRED: {target.name}</color> | CrimeInProgress: {Blackboard.GetBool(BBKeys.CrimeInProgress, false)}");
             
             // IMPORTANT: Only chase robbers if a crime is in progress (alarm triggered)
             // Before the alarm, cops just patrol and guard - they don't chase civilians
             if (!Blackboard.GetBool(BBKeys.CrimeInProgress, false))
             {
                 // Cop sees robber but no crime yet - just note their presence
-                NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} sees suspicious person but no crime reported yet", this);
+                Debug.Log($"<color=blue>[{name}]</color> <color=orange>No crime yet - ignoring robber</color>");
                 return;
             }
             
             // Crime in progress - chase the robber!
+            Debug.Log($"<color=blue>[{name}]</color> <color=green>CRIME IN PROGRESS - SETTING TARGET TO CHASE!</color>");
             _cachedTargetRobber = robber;
             Blackboard.Set(BBKeys.Target, target);
             Blackboard.SetVector3(BBKeys.InvestigatePosition, target.transform.position);
@@ -174,9 +181,12 @@ namespace NPCBrain.Archetypes
         
         private void HandleTargetLost(GameObject target)
         {
+            Debug.Log($"<color=blue>[{name}]</color> <color=red>TARGET LOST: {target?.name}</color>");
+            
             // Single lookup instead of Has + Get
             if (Blackboard.TryGet<GameObject>(BBKeys.Target, out var currentTarget) && currentTarget == target)
             {
+                Debug.Log($"<color=blue>[{name}]</color> Clearing target from blackboard");
                 Blackboard.Remove(BBKeys.Target);
                 _cachedTargetRobber = null;
             }
@@ -199,7 +209,7 @@ namespace NPCBrain.Archetypes
                     // Broadcast alarm to all cops so they ALL converge
                     CopAlertSystem.BroadcastRobberSighting(sound.Position, sound.Source);
                     
-                    NPCBrainDebug.Log(NPCBrainDebug.Category.General, $"[CopsAndRobbers] {name} heard ALARM at {sound.Position}! Crime in progress!", this);
+                    Debug.Log($"<color=blue>[{name}]</color> <color=red>*** ALARM HEARD! ***</color> Position: {sound.Position} | CrimeInProgress now TRUE");
                 }
                 else if (sound.Type >= SoundType.Footstep)
                 {
@@ -224,6 +234,8 @@ namespace NPCBrain.Archetypes
             }
         }
         
+        private float _lastDebugLogTime;
+        
         private void LateUpdate()
         {
             // Single lookup for target - fixes redundant Blackboard access
@@ -233,6 +245,14 @@ namespace NPCBrain.Archetypes
                 Vector3 robberPosition = target.transform.position;
                 Blackboard.SetVector3(BBKeys.InvestigatePosition, robberPosition);
                 IncreaseAlert(_alertIncreaseRate * Time.deltaTime);
+                
+                // Log every 2 seconds to avoid spam
+                if (Time.time - _lastDebugLogTime > 2f)
+                {
+                    _lastDebugLogTime = Time.time;
+                    float dist = Vector3.Distance(transform.position, robberPosition);
+                    Debug.Log($"<color=blue>[{name}]</color> <color=cyan>TRACKING TARGET</color> | State: {_cachedState} | Distance: {dist:F1}m | CanArrest: {Blackboard.GetBool(BBKeys.CanArrest, false)}");
+                }
                 
                 // Broadcast robber sighting to all cops
                 CopAlertSystem.BroadcastRobberSighting(robberPosition, target);
