@@ -122,6 +122,7 @@ namespace NPCBrain.Archetypes
             Blackboard.SetFloat(BBKeys.LastPatrolTime, -10f);
             Blackboard.SetFloat(BBKeys.LastReturnTime, -10f);
             Blackboard.SetFloat(BBKeys.LastArrestTime, -10f);
+            Blackboard.SetBool(BBKeys.RespondingToAlert, false);
             
             // Subscribe to perception events
             OnTargetAcquired += HandleTargetAcquired;

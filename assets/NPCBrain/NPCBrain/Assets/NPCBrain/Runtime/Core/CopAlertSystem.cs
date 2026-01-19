@@ -39,13 +39,19 @@ namespace NPCBrain
         /// <param name="robber">The robber GameObject.</param>
         public static void BroadcastRobberSighting(Vector3 robberPosition, GameObject robber)
         {
+            // Only log when this is a new alert (not every frame)
+            bool isNewAlert = !_hasActiveAlert || (Time.time - _lastSightingTime) > 1f;
+            
             _lastKnownRobberPosition = robberPosition;
             _lastSightingTime = Time.time;
             _lastSeenRobber = robber;
             _hasActiveAlert = true;
             
-            NPCBrainDebug.Log(NPCBrainDebug.Category.General, 
-                $"[CopAlertSystem] ALERT: Robber spotted at {robberPosition}!", null);
+            if (isNewAlert)
+            {
+                NPCBrainDebug.Log(NPCBrainDebug.Category.General, 
+                    $"[CopAlertSystem] ALERT: Robber spotted at {robberPosition}!", null);
+            }
         }
         
         /// <summary>
