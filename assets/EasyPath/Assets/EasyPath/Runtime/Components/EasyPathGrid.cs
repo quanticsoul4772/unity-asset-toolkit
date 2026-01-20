@@ -143,8 +143,6 @@ namespace EasyPath
         }
         
         /// <summary>
-        /// Validates the grid configuration and logs warnings for common issues.
-        /// <summary>
         /// Validates the grid configuration and emits warnings for common misconfigurations or suspicious values.
         /// </summary>
         /// <remarks>
@@ -230,13 +228,12 @@ namespace EasyPath
         }
 
         /// <summary>
-        /// Reset all nodes for a new pathfinding query.
-        /// Note: Prefer using IncrementPathVersion() + ResetNodeIfNeeded() for better performance.
-        /// <summary>
         /// Reset every node in the grid to its default state.
         /// </summary>
         /// <remarks>
         /// Performs a full traversal of the grid (O(width * height)). This method is deprecated; use <see cref="IncrementPathVersion"/> for O(1) invalidation and lazy per-node resets.
+        ///
+        /// Note: Prefer using IncrementPathVersion() + ResetNodeIfNeeded() for better performance.
         /// </remarks>
         [System.Obsolete("Use IncrementPathVersion() for O(1) reset instead of O(width*height).")]
         public void ResetNodes()
@@ -332,12 +329,13 @@ namespace EasyPath
         }
 
         /// <summary>
-        /// Get all valid neighbors of a node.
-        /// Note: This allocates an iterator. Prefer GetNeighbors(node, results) for hot paths.
-        /// <summary>
         /// Enumerates the neighbor nodes of the given grid node using an internal reusable buffer.
         /// </summary>
+        /// <param name="node">The grid node whose neighbors to enumerate.</param>
         /// <returns>An IEnumerable&lt;PathNode&gt; containing the valid neighboring nodes. The sequence is backed by an internal buffer and may be mutated or reused by subsequent calls, so callers should not cache the returned collection or rely on its contents persisting.</returns>
+        /// <remarks>
+        /// Note: This allocates an iterator. Prefer GetNeighbors(node, results) for hot paths.
+        /// </remarks>
         public IEnumerable<PathNode> GetNeighbors(PathNode node)
         {
             GetNeighbors(node, _neighborBuffer);

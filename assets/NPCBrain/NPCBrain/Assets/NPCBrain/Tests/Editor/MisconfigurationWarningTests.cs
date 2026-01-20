@@ -70,7 +70,7 @@ namespace NPCBrain.Tests.Editor
             var selector = new UtilitySelector(action);
             selector.LogWarnings = true;
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Utility\].*All.*action.*scored <= 0"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[UtilitySelector\].*All.*action.*scored <= 0"));
             
             selector.Execute(_brain);
         }
@@ -445,7 +445,7 @@ namespace NPCBrain.Tests.Editor
             var selector = new UtilitySelector(action1, action2, action3);
             selector.LogWarnings = true;
             
-            LogAssert.Expect(LogType.Warning, new Regex(@"\[NPCBrain\.Utility\].*All 3 action.*scored <= 0"));
+            LogAssert.Expect(LogType.Warning, new Regex(@"\[UtilitySelector\].*All 3 action.*scored <= 0"));
             
             selector.Execute(_brain);
         }

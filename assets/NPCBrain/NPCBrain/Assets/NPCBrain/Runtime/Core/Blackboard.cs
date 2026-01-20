@@ -158,8 +158,6 @@ namespace NPCBrain
         }
         
         /// <summary>
-        /// Sets a bool value without boxing.
-        /// <summary>
         /// Stores a boolean value in the blackboard under the given key.
         /// </summary>
         /// <param name="key">The identifier under which to store the value.</param>
@@ -199,8 +197,6 @@ namespace NPCBrain
             return _boolData.TryGetValue(key, out bool value) ? value : defaultValue;
         }
         
-        /// <summary>
-        /// Sets a Vector3 value without boxing.
         /// <summary>
         /// Stores the Vector3 value for the specified key and raises the OnValueChanged event.
         /// </summary>
