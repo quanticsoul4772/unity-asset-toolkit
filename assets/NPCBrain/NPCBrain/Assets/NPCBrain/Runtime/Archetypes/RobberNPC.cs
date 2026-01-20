@@ -584,7 +584,8 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetTargetLootPosition(),
                     1.5f,
-                    _normalSpeed + 1f  // Slightly faster when stealing
+                    _normalSpeed + 1f,  // Slightly faster when stealing
+                    10f  // Longer timeout - don't interrupt while approaching loot!
                 ),
                 new Wait(_stealTime * 0.5f, () => TryStealTargetLoot())  // Faster steal
             );
@@ -600,6 +601,17 @@ namespace NPCBrain.Archetypes
                 // Must have loot available to steal - use cached value (updated in LateUpdate)
                 new FunctionalConsideration("LootAvailable", 
                     _ => _hasLootAvailable ? 1f : 0f),
+                // PROXIMITY BOOST: Higher score when closer to loot!
+                // This ensures StealLoot wins over Scout when we're close
+                new FunctionalConsideration("LootProximityBoost",
+                    _ => {
+                        var loot = FindNearestLoot();
+                        if (loot == null) return 0.5f;
+                        float dist = Vector3.Distance(transform.position, loot.transform.position);
+                        // At 0m: 1.2 (high priority), at 20m: 0.6 (lower), at 40m+: 0.4
+                        // This makes StealLoot dominant when close to loot
+                        return Mathf.Lerp(1.2f, 0.4f, Mathf.Clamp01(dist / 40f));
+                    }),
                 // Cop visibility - at high urgency, take more risks!
                 new FunctionalConsideration("CopRiskVsUrgency",
                     _ => {
@@ -609,9 +621,6 @@ namespace NPCBrain.Archetypes
                         // At high urgency, we might try to steal even with cop visible (risky!)
                         return urgency > 0.5f ? 0.5f : 0.1f;  // Small chance even at low urgency
                     }),
-                // Base score - always high since stealing is the main goal!
-                new FunctionalConsideration("BaseStealScore",
-                    _ => 0.9f + Urgency * 0.1f), // 0.9 base, up to 1.0 at max urgency
                 // Fear matters less when urgent - take risks!
                 new FunctionalConsideration("FearVsUrgencyForSteal",
                     _ => {
@@ -717,22 +726,35 @@ namespace NPCBrain.Archetypes
                     () => GetScoutPosition(),
                     _arrivalDistance,
                     _normalSpeed + 1f,  // Faster scouting - get to loot quickly!
-                    3f  // Short timeout to re-evaluate often
+                    8f  // Longer timeout - let Scout complete its movement
                 )
             );
             scoutBehavior.Name = "ScoutBehavior";
             
             // Scout is the FALLBACK action - it should ALWAYS have a positive score!
-            // Use HIGH base score (1.0) so even with low consideration, it's always viable.
-            // This ensures the robber is NEVER stuck doing nothing.
+            // BUT it should yield to StealLoot when close to loot to avoid oscillation.
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
-                1.0f,  // HIGH base score - Scout is the fallback!
-                // GUARANTEED MINIMUM SCORE - Scout is the fallback, must never be 0!
-                // Returns a constant high value to ensure Scout ALWAYS works.
-                new FunctionalConsideration("AlwaysAvailable",
-                    _ => 0.8f)  // Simple constant - Scout MUST always work!
+                _scoutWeight,  // Use configured weight (0.3) as base
+                // DISTANCE-BASED FALLBACK: High score when far from loot, low when close
+                // This prevents oscillation with StealLoot by making Scout back off
+                // when we're close enough for StealLoot to take over
+                new FunctionalConsideration("DistanceToLoot",
+                    _ => {
+                        var loot = FindNearestLoot();
+                        if (loot == null) return 1.0f;  // No loot? Scout to find some!
+                        
+                        float dist = Vector3.Distance(transform.position, loot.transform.position);
+                        // At 0m: 0.3 (low - let StealLoot handle it)
+                        // At 15m: 0.8 (medium - transitioning)
+                        // At 30m+: 1.0 (high - need to scout toward loot)
+                        // This creates a smooth handoff to StealLoot
+                        return Mathf.Lerp(0.3f, 1.0f, Mathf.Clamp01((dist - 5f) / 25f));
+                    }),
+                // Guaranteed minimum so Scout is always viable as fallback
+                new FunctionalConsideration("MinimumFallback",
+                    _ => 0.5f)  // Ensures Scout never scores 0
             );
         }
         

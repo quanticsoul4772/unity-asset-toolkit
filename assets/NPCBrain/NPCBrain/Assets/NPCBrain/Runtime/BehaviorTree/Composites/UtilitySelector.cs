@@ -129,14 +129,15 @@ namespace NPCBrain.BehaviorTree.Composites
         /// <summary>
         /// Threshold for interrupting current action. If a new action scores this much higher
         /// than the current action, interrupt and switch to the new action.
+        /// Higher values = more commitment to current action, less oscillation.
         /// </summary>
-        public float InterruptThreshold { get; set; } = 0.3f;
+        public float InterruptThreshold { get; set; } = 0.5f;
         
         /// <summary>
-        /// How often to check for action interruption (in seconds). Default 0.1s.
+        /// How often to check for action interruption (in seconds). Default 0.25s.
         /// Lower values = more responsive but higher CPU cost.
         /// </summary>
-        public float InterruptCheckInterval { get; set; } = 0.1f;
+        public float InterruptCheckInterval { get; set; } = 0.25f;
         
         private float _lastInterruptCheckTime;
         
