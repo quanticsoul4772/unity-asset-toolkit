@@ -5,6 +5,7 @@ using NPCBrain.Components;
 using NPCBrain.Perception;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.Debugging;
+using NPCBrain.Demo.UI;
 using EasyPath;
 
 namespace NPCBrain.Demo
@@ -48,6 +49,14 @@ namespace NPCBrain.Demo
         [SerializeField] private EscapeZone _escapeZone;
         private EasyPathGrid _pathfindingGrid;
         private NPCPathVisualizer _pathVisualizer;
+        
+        // Modern UI components
+        private CopsAndRobbersUI _gameUI;
+        private MinimapController _minimap;
+        private FloatingIndicatorManager _floatingIndicators;
+        
+        [Header("UI Settings")]
+        [SerializeField] private bool _showFloatingIndicators = true;
         
         // Layer for obstacles (used by pathfinding)
         // NOTE: Layer 8 should be named "Obstacles" in Unity (Edit → Project Settings → Tags and Layers)
@@ -145,6 +154,7 @@ namespace NPCBrain.Demo
             CreateCops();
             CreateRobbers();
             CreatePathVisualizer();  // Create visualizer for path debug
+            CreateModernUI();  // Create Canvas-based UI system
             
             // Initialize time limit system via HeistTimer
             HeistTimer.StartHeist(_heistTimeLimit, _enableTimeLimit);
@@ -208,6 +218,26 @@ namespace NPCBrain.Demo
             _pathfindingGrid = null;
             _pathVisualizer = null;
             NPCPathVisualizer.ClearAllPaths();
+            
+            // Cleanup modern UI
+            if (_gameUI != null)
+            {
+                _gameUI.Cleanup();
+                Object.Destroy(_gameUI.gameObject);
+                _gameUI = null;
+            }
+            if (_minimap != null)
+            {
+                _minimap.Cleanup();
+                Object.Destroy(_minimap.gameObject);
+                _minimap = null;
+            }
+            if (_floatingIndicators != null)
+            {
+                _floatingIndicators.Cleanup();
+                Object.Destroy(_floatingIndicators.gameObject);
+                _floatingIndicators = null;
+            }
         }
         
         private void OnDestroy()
@@ -653,6 +683,43 @@ namespace NPCBrain.Demo
         }
         
         /// <summary>
+        /// Creates the modern Canvas-based UI system.
+        /// </summary>
+        private void CreateModernUI()
+        {
+            // Create main HUD
+            var uiObj = new GameObject("CopsAndRobbersUI");
+            uiObj.transform.SetParent(transform);
+            _gameUI = uiObj.AddComponent<CopsAndRobbersUI>();
+            _gameUI.Initialize(
+                _cops,
+                _robbers,
+                _lootPoints,
+                _pathfindingGrid,
+                () => _gameTime,
+                () => _copScore,
+                () => _robberScore,
+                () => _gameEnded,
+                () => _winner,
+                () => _enableTimeLimit,
+                () => RestartGame()
+            );
+            
+            // Create minimap
+            var minimapObj = new GameObject("Minimap");
+            minimapObj.transform.SetParent(transform);
+            _minimap = minimapObj.AddComponent<MinimapController>();
+            _minimap.Initialize(_cops, _robbers, _lootPoints, _escapeZone, _arenaSize);
+            
+            // Create floating indicators
+            var indicatorsObj = new GameObject("FloatingIndicatorManager");
+            indicatorsObj.transform.SetParent(transform);
+            _floatingIndicators = indicatorsObj.AddComponent<FloatingIndicatorManager>();
+            _floatingIndicators.ShowIndicators = _showFloatingIndicators;
+            _floatingIndicators.Initialize(_cops, _robbers);
+        }
+        
+        /// <summary>
         /// Creates an EasyPathGrid for A* pathfinding after all obstacles have been placed.
         /// </summary>
         private void CreatePathfindingGrid()
@@ -852,226 +919,5 @@ namespace NPCBrain.Demo
             return robber;
         }
         
-        private void OnGUI()
-        {
-            // Main panel
-            GUILayout.BeginArea(new Rect(10, 10, 480, 700));
-            
-            // Title and score
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("<size=18><b>🚔 COPS AND ROBBERS 🎭</b></size>");
-            GUILayout.Label("<i>NPCBrain Unified Demo - All Archetypes</i>");
-            GUILayout.Space(5);
-            
-            string timeStr = System.TimeSpan.FromSeconds(_gameTime).ToString(@"mm\:ss");
-            GUILayout.Label($"<b>Elapsed:</b> {timeStr}");
-            
-            // Show time remaining if time limit is enabled
-            if (_enableTimeLimit && !_gameEnded)
-            {
-                float remaining = HeistTimer.TimeRemaining;
-                string remainingStr = System.TimeSpan.FromSeconds(remaining).ToString(@"mm\:ss");
-                string timeColor = remaining > 30f ? "white" : (remaining > 10f ? "yellow" : "red");
-                string urgencyIndicator = remaining <= 30f ? (remaining <= 10f ? " ⚠️ CRITICAL!" : " ⏰ HURRY!") : "";
-                GUILayout.Label($"<b>Remaining:</b> <color={timeColor}>{remainingStr}{urgencyIndicator}</color>");
-            }
-            
-            GUILayout.BeginHorizontal();
-            GUILayout.Label($"<color=#4488FF><b>COPS: ${_copScore}</b></color>", GUILayout.Width(150));
-            GUILayout.Label($"<color=#444444><b>ROBBERS: ${_robberScore}</b></color>");
-            GUILayout.EndHorizontal();
-            
-            if (_gameEnded)
-            {
-                GUILayout.Label($"<size=16><color=yellow><b>{_winner}</b></color></size>");
-            }
-            GUILayout.EndVertical();
-            
-            GUILayout.Space(5);
-            
-            // Cops section
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>👮 COPS (Utility AI + Hearing + Sight)</b>");
-            foreach (var cop in _cops)
-            {
-                if (cop == null) continue;
-                DrawNPCStatus(cop, _copColor);
-            }
-            GUILayout.EndVertical();
-            
-            GUILayout.Space(5);
-            
-            // Robbers section
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>🎭 ROBBERS (Utility AI + Evasion)</b>");
-            foreach (var robber in _robbers)
-            {
-                if (robber == null) continue;
-                DrawRobberStatus(robber);
-            }
-            GUILayout.EndVertical();
-            
-            GUILayout.Space(5);
-            
-            // Loot status
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>💰 LOOT STATUS</b>");
-            foreach (var loot in _lootPoints)
-            {
-                if (loot == null) continue;
-                string status = loot.IsStolen ? "<color=red>STOLEN</color>" : "<color=green>Available</color>";
-                GUILayout.Label($"  {loot.name}: ${loot.Value} - {status}");
-            }
-            GUILayout.EndVertical();
-            
-            GUILayout.Space(5);
-            
-            // Criticality legend
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>📊 CRITICALITY SYSTEM</b>");
-            GUILayout.Label("  <b>T</b> = Temperature (exploration vs exploitation)");
-            GUILayout.Label("    <color=green>Low</color> = Deterministic, optimal paths");
-            GUILayout.Label("    <color=red>High</color> = Random, commits to paths");
-            GUILayout.Label("  <b>I</b> = Inertia (tendency to repeat actions)");
-            GUILayout.Label("    <color=green>High</color> = Precise path following");
-            GUILayout.Label("    <color=yellow>Low</color> = Cuts corners, shortcuts");
-            GUILayout.EndVertical();
-            
-            // Pathfinding info
-            if (_pathfindingGrid != null)
-            {
-                GUILayout.BeginVertical("box");
-                GUILayout.Label("<b>🗺️ A* PATHFINDING</b>");
-                GUILayout.Label($"  Grid: {_pathfindingGrid.Width}x{_pathfindingGrid.Height} cells");
-                GUILayout.Label($"  Walkable: {_pathfindingGrid.WalkableCount} cells");
-                GUILayout.Label($"  Active paths: {NPCPathVisualizer.PathCount}");
-                GUILayout.Label("  Integrated with Criticality!");
-                GUILayout.EndVertical();
-            }
-            
-            GUILayout.Space(5);
-            
-            // Controls
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("<b>🎮 CONTROLS</b>");
-            if (GUILayout.Button("Restart Game"))
-            {
-                RestartGame();
-            }
-            
-            // Debug visualization toggles
-            GUILayout.Space(5);
-            GUILayout.Label("<b>Debug Visualization (Scene View)</b>");
-            
-            bool newShowPaths = GUILayout.Toggle(_showNPCPaths, " Show NPC Paths");
-            if (newShowPaths != _showNPCPaths)
-            {
-                _showNPCPaths = newShowPaths;
-                if (_pathVisualizer != null)
-                {
-                    _pathVisualizer.ShowPaths = _showNPCPaths;
-                }
-            }
-            
-            GUILayout.Label("  <size=10><i>Grid debug: set in EasyPathGrid inspector</i></size>");
-            
-            GUILayout.Space(5);
-            GUILayout.Label("  <size=10><i>View in Scene window with Gizmos enabled</i></size>");
-            GUILayout.Label("  Drag camera with mouse to observe");
-            GUILayout.Label("  All AI is fully autonomous!");
-            GUILayout.EndVertical();
-            
-            GUILayout.EndArea();
-        }
-        
-        private void DrawNPCStatus(CopNPC cop, Color color)
-        {
-            string state = cop.CurrentState;
-            float alert = cop.AlertLevel;
-            
-            string stateColor = GetStateColor(state);
-            
-            // Get current action from UtilitySelector
-            string actionName = "(selecting)";
-            if (cop.BehaviorTree is UtilitySelector selector && selector.CurrentAction != null)
-            {
-                actionName = selector.CurrentAction.Name;
-            }
-            
-            // Criticality info
-            string critInfo = GetCriticalityInfo(cop);
-            
-            // Role and Goal display
-            GUILayout.Label($"  <b>{cop.name}</b> - <i>{cop.Role}</i>");
-            GUILayout.Label($"      <size=10><color=#888888>Goal: {cop.Goal}</color></size>");
-            GUILayout.Label($"      Action: <color={stateColor}>{actionName}</color>{critInfo}");
-            GUILayout.Label($"      <color=#AADDFF>→ {cop.CurrentReason}</color>");
-            // Show vision info for debugging
-            string visionInfo = cop.Perception != null && cop.Perception.HasVisibleTargets 
-                ? $"<color=red>SEES TARGET!</color>" 
-                : $"No visual ({cop.Perception?.VisibleTargets.Count ?? 0} targets)";
-            string crimeStatus = cop.CrimeInProgress ? "<color=red>CRIME!</color>" : "No crime";
-            GUILayout.Label($"      Alert: {alert:F2} | Arrests: {cop.ArrestCount} | {crimeStatus}");
-            GUILayout.Label($"      Vision: {visionInfo}");
-        }
-        
-        private void DrawRobberStatus(RobberNPC robber)
-        {
-            if (!robber.gameObject.activeSelf)
-            {
-                string status = robber.HasEscaped ? "<color=green>ESCAPED!</color>" : "<color=red>ARRESTED!</color>";
-                GUILayout.Label($"  <b>{robber.name}</b> - <i>{robber.Role}</i>");
-                GUILayout.Label($"      {status}");
-                GUILayout.Label($"      <color=#AADDFF>→ {robber.CurrentReason}</color>");
-                return;
-            }
-            
-            string state = robber.CurrentState;
-            string stateColor = GetStateColor(state);
-            
-            // Get current action from UtilitySelector
-            string actionName = "(selecting)";
-            if (robber.BehaviorTree is UtilitySelector selector && selector.CurrentAction != null)
-            {
-                actionName = selector.CurrentAction.Name;
-            }
-            
-            // Criticality info
-            string critInfo = GetCriticalityInfo(robber);
-            
-            string lootInfo = robber.IsCarryingLoot ? $" 💰${robber.CarriedLootValue}" : "";
-            string fearInfo = robber.FearLevel > 0.3f ? " 😰" : "";
-            
-            // Role and Goal display
-            GUILayout.Label($"  <b>{robber.name}</b> - <i>{robber.Role}</i>{lootInfo}{fearInfo}");
-            GUILayout.Label($"      <size=10><color=#888888>Goal: {robber.Goal}</color></size>");
-            GUILayout.Label($"      Action: <color={stateColor}>{actionName}</color>{critInfo}");
-            GUILayout.Label($"      <color=#FFDDAA>→ {robber.CurrentReason}</color>");
-            GUILayout.Label($"      Fear: {robber.FearLevel:F2} | CanSeeCop: {robber.CanSeeCop} | Urgency: {robber.Urgency:F2}");
-        }
-        
-        private string GetStateColor(string state)
-        {
-            if (state.Contains("Arrest") || state.Contains("Chase") || state.Contains("Flee"))
-                return "red";
-            if (state.Contains("Investigate") || state.Contains("Steal") || state.Contains("Escape"))
-                return "yellow";
-            if (state.Contains("Hide") || state.Contains("Sneak"))
-                return "cyan";
-            if (state.Contains("Return"))
-                return "cyan";
-            return "green";
-        }
-        
-        private string GetCriticalityInfo(NPCBrainController npc)
-        {
-            if (npc.Criticality == null) return "";
-            
-            float temp = npc.Criticality.Temperature;
-            float inertia = npc.Criticality.Inertia;
-            string tempColor = temp < 1f ? "green" : (temp < 1.5f ? "yellow" : "red");
-            
-            return $" T:<color={tempColor}>{temp:F1}</color> I:{inertia:F1}";
-        }
     }
 }
