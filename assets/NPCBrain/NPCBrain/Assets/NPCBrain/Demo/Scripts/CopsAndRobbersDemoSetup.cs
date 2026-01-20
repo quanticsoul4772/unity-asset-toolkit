@@ -756,15 +756,17 @@ namespace NPCBrain.Demo
             
             // Use the public Configure() API instead of fragile reflection
             // This is cleaner and won't break if field names change
-            // IMPORTANT: obstacleCheckRadius must be >= CharacterController radius (0.5m) + buffer
-            // to prevent NPCs from getting stuck on obstacles that pathfinding considers walkable
-            float npcRadius = 0.6f;  // CharacterController radius (0.5) + small buffer
+            // IMPORTANT: obstacleCheckRadius must be >= (cellSize/2 + CharacterController.radius)
+            // to prevent NPCs from getting stuck on obstacles that pathfinding considers walkable.
+            // With cellSize=1.0 and CharController.radius=0.5, we need at least 1.0m check radius.
+            float npcRadius = 0.5f;  // CharacterController radius
+            float safeObstacleRadius = (_gridCellSize / 2f) + npcRadius + 0.1f;  // cell half + npc radius + buffer
             _pathfindingGrid.Configure(
                 width: gridSize,
                 height: gridSize,
                 cellSize: _gridCellSize,
                 obstacleLayer: obstacleLayerMask,
-                obstacleCheckRadius: npcRadius,  // Was 0.4f - too small for CharacterController!
+                obstacleCheckRadius: safeObstacleRadius,  // Now properly accounts for cell size + NPC size
                 obstacleCheckHeight: 0.5f,
                 showDebugGizmos: _showPathfindingDebug
             );
