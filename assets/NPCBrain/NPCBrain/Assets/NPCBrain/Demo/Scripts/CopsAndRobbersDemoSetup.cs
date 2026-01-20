@@ -169,7 +169,8 @@ namespace NPCBrain.Demo
             CreateCops();
             CreateRobbers();
             CreatePathVisualizer();  // Create visualizer for path debug
-            CreateModernUI();  // Create Canvas-based UI system
+            // Note: Canvas UI disabled - using OnGUI overlay instead (press F1 to toggle)
+            // CreateModernUI();
             
             // Initialize time limit system via HeistTimer
             HeistTimer.StartHeist(_heistTimeLimit, _enableTimeLimit);
