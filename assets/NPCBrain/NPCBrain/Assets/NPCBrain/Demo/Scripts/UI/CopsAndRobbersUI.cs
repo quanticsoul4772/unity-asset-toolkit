@@ -5,6 +5,7 @@ using UnityEngine.InputSystem.UI;
 using NPCBrain.Archetypes;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.Components;
+using NPCBrain.Core;
 
 namespace NPCBrain.Demo.UI
 {
@@ -519,9 +520,9 @@ namespace NPCBrain.Demo.UI
                 
                 string stateColor = GetStateColor(cop.CurrentState);
                 
-                // Get additional cop details
-                string alertInfo = "";
-                string visionInfo = cop.CanSeeTarget ? " 👁️" : "";
+                // Get additional cop details - check if cop has a target in blackboard
+                bool hasTarget = cop.Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null;
+                string visionInfo = hasTarget ? " 👁️" : "";
                 
                 text.text = $"<b>{cop.name}</b> - {cop.Role}{visionInfo}\n" +
                            $"  Goal: {cop.Goal}\n" +
