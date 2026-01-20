@@ -33,8 +33,6 @@ namespace NPCBrain.BehaviorTree.Actions
         private float _lastStuckCheckTime;
         private int _stuckCounter;
         private int _recoveryAttempts;
-        private float _lastRecoveryTime;
-        private Vector3 _recoveryDirection;
         
         // Debug logging
         private float _lastDebugLogTime;
@@ -79,8 +77,6 @@ namespace NPCBrain.BehaviorTree.Actions
             _lastStuckCheckTime = Time.time;
             _stuckCounter = 0;
             _recoveryAttempts = 0;
-            _lastRecoveryTime = 0f;
-            _recoveryDirection = Vector3.zero;
             _lastLoggedWaypointCount = -1;
             _hasLoggedInitialPath = false;
             
@@ -127,8 +123,6 @@ namespace NPCBrain.BehaviorTree.Actions
             _currentWaypointIndex = 0;
             _stuckCounter = 0;
             _recoveryAttempts = 0;
-            _lastRecoveryTime = 0f;
-            _recoveryDirection = Vector3.zero;
             _lastLoggedWaypointCount = -1;
             _hasLoggedInitialPath = false;
         }
@@ -377,21 +371,9 @@ namespace NPCBrain.BehaviorTree.Actions
                 {
                     _stuckCounter = 0; // Reset if we're making progress
                     _recoveryAttempts = 0; // Reset recovery attempts on successful movement
-                    _recoveryDirection = Vector3.zero;
                 }
                 _lastStuckCheckPosition = transform.position;
                 _lastStuckCheckTime = Time.time;
-            }
-            
-            // If we're in recovery mode, apply recovery movement
-            if (_recoveryDirection != Vector3.zero && Time.time - _lastRecoveryTime < 0.5f)
-            {
-                Vector3 recoveryMove = _recoveryDirection * _moveSpeed * 0.5f * Time.deltaTime;
-                if (!controller.isGrounded)
-                {
-                    recoveryMove.y = -PathfindingSettings.Gravity * Time.deltaTime;
-                }
-                controller.Move(recoveryMove);
             }
             
             // Debug logging every 3 seconds - show where we're going
@@ -410,50 +392,72 @@ namespace NPCBrain.BehaviorTree.Actions
         /// <summary>
         /// Performs stuck recovery maneuvers to get the NPC unstuck.
         /// Tries different strategies based on the recovery attempt number.
+        /// Uses collision flags to make smarter recovery decisions.
         /// </summary>
         private void PerformStuckRecovery(NPCBrainController brain, CharacterController controller, Transform transform, Vector3 target)
         {
             Vector3 currentPos = transform.position;
             Vector3 toTarget = (target - currentPos);
             toTarget.y = 0;
+            
+            // Handle edge case where NPC is very close to target (near-zero direction)
+            float distanceToTarget = toTarget.magnitude;
+            if (distanceToTarget < 0.01f)
+            {
+                // Very close to target - use forward direction or random
+                toTarget = transform.forward;
+                if (toTarget.sqrMagnitude < 0.01f)
+                {
+                    float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+                    toTarget = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                }
+            }
             toTarget.Normalize();
             
             // Get the collision flags to understand where we're blocked
             CollisionFlags flags = controller.collisionFlags;
             bool blockedOnSides = (flags & CollisionFlags.Sides) != 0;
             
+            Vector3 recoveryDirection;
+            
             // Choose recovery strategy based on attempt number
+            // When blocked on sides, prioritize sliding movements (strategies 0, 1) first
             int strategy = _recoveryAttempts % 6;
+            if (blockedOnSides && strategy >= 2 && strategy <= 4)
+            {
+                // Remap to sliding strategies when blocked on sides
+                strategy = _recoveryAttempts % 2; // Alternate between left (0) and right (1)
+            }
             
             switch (strategy)
             {
                 case 0:
                     // Try sliding left (perpendicular to target direction)
-                    _recoveryDirection = Vector3.Cross(Vector3.up, toTarget).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: sliding LEFT");
+                    recoveryDirection = Vector3.Cross(Vector3.up, toTarget).normalized;
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: sliding LEFT (blockedOnSides={blockedOnSides})");
                     break;
                     
                 case 1:
                     // Try sliding right
-                    _recoveryDirection = -Vector3.Cross(Vector3.up, toTarget).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: sliding RIGHT");
+                    recoveryDirection = -Vector3.Cross(Vector3.up, toTarget).normalized;
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: sliding RIGHT (blockedOnSides={blockedOnSides})");
                     break;
                     
                 case 2:
                     // Try stepping backward
-                    _recoveryDirection = -toTarget;
+                    recoveryDirection = -toTarget;
                     Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: stepping BACK");
                     break;
                     
                 case 3:
                     // Try diagonal left-back
-                    _recoveryDirection = (-toTarget + Vector3.Cross(Vector3.up, toTarget)).normalized;
+                    recoveryDirection = (-toTarget + Vector3.Cross(Vector3.up, toTarget)).normalized;
                     Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: diagonal LEFT-BACK");
                     break;
                     
                 case 4:
                     // Try diagonal right-back
-                    _recoveryDirection = (-toTarget - Vector3.Cross(Vector3.up, toTarget)).normalized;
+                    recoveryDirection = (-toTarget - Vector3.Cross(Vector3.up, toTarget)).normalized;
                     Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: diagonal RIGHT-BACK");
                     break;
                     
@@ -463,27 +467,29 @@ namespace NPCBrain.BehaviorTree.Actions
                     {
                         _currentWaypointIndex++;
                         Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: skipping to waypoint {_currentWaypointIndex}/{_currentPath.Count}");
-                        _recoveryDirection = Vector3.zero;
+                        return; // No movement needed for waypoint skip
                     }
                     else
                     {
                         // Random direction as last resort
                         float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                        _recoveryDirection = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                        recoveryDirection = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
                         Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: random direction");
                     }
                     break;
+                    
+                default:
+                    recoveryDirection = Vector3.zero;
+                    break;
             }
             
-            _lastRecoveryTime = Time.time;
-            
-            // Apply an immediate recovery movement
-            if (_recoveryDirection != Vector3.zero)
+            // Apply an immediate recovery movement (no continuous follow-up to avoid movement conflicts)
+            if (recoveryDirection != Vector3.zero)
             {
-                Vector3 immediateMove = _recoveryDirection * 0.3f; // Small immediate push
+                Vector3 immediateMove = recoveryDirection * PathfindingSettings.StuckRecoveryPushDistance;
                 if (!controller.isGrounded)
                 {
-                    immediateMove.y = -0.1f;
+                    immediateMove.y = -PathfindingSettings.Gravity * Time.deltaTime;
                 }
                 controller.Move(immediateMove);
             }

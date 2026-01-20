@@ -164,6 +164,16 @@ namespace NPCBrain.Settings
         /// </remarks>
         public const int MaxStuckCount = 3;
         
+        /// <summary>
+        /// Distance (meters) to push NPC when performing stuck recovery.
+        /// This is the immediate push applied in the recovery direction.
+        /// </summary>
+        /// <remarks>
+        /// <para>Should be large enough to escape collision but small enough to not overshoot.</para>
+        /// <para>Recommended range: 0.2 - 0.5</para>
+        /// </remarks>
+        public const float StuckRecoveryPushDistance = 0.3f;
+        
         #endregion
         
         #region Path Following Settings
