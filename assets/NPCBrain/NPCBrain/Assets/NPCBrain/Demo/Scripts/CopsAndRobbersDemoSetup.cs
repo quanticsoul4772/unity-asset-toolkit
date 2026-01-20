@@ -764,13 +764,11 @@ namespace NPCBrain.Demo
             LayerMask obstacleLayerMask = 1 << _obstacleLayer;
             
             // Use the public Configure() API instead of fragile reflection
-            // This is cleaner and won't break if field names change
-            // IMPORTANT: obstacleCheckRadius must be large enough that A* paths stay well clear of obstacles.
-            // A* finds shortest paths which naturally hug obstacles - paths route to cells at the edge of
-            // walkable areas where the CharacterController still physically collides.
-            // With cellSize=1.0 and CharController.radius=0.5, using 2.5m provides 1m clearance beyond NPC radius.
+            // SIMPLIFIED ARENA: With only boundary walls (no interior obstacles), we use a smaller
+            // obstacle check radius to maximize walkable area and create direct paths.
+            // When obstacles are re-enabled, increase this to 2.5m for proper clearance.
             float npcRadius = 0.5f;  // CharacterController radius
-            float safeObstacleRadius = (_gridCellSize / 2f) + npcRadius + 1.5f;  // cell half + npc radius + generous buffer (2.5m total)
+            float safeObstacleRadius = npcRadius + 0.5f;  // 1.0m - smaller for simplified testing
             _pathfindingGrid.Configure(
                 width: gridSize,
                 height: gridSize,
