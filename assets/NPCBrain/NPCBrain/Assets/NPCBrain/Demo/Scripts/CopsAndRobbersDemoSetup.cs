@@ -39,7 +39,7 @@ namespace NPCBrain.Demo
         
         [Header("Pathfinding")]
         [SerializeField] private float _gridCellSize = 1f;
-        [SerializeField] private bool _showPathfindingDebug = false;
+        [SerializeField] private bool _showPathfindingDebug = true;  // ENABLED for debugging stuck NPCs
         [SerializeField] private bool _showNPCPaths = true;
         
         [Header("References (auto-populated)")]
