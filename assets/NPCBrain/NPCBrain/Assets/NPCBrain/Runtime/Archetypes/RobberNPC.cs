@@ -95,13 +95,13 @@ namespace NPCBrain.Archetypes
             {
                 if (_cachedState == "Flee!") return "Cop spotted - need to escape!";
                 if (_cachedState == "Escaping") return _isCarryingLoot ? $"Got ${_carriedLootValue} - heading to escape zone!" : "Making my getaway!";
-                if (_cachedState == "Stealing") return "Coast is clear - grabbing the loot!";
+                if (_cachedState == "Stealing") return "Going for the loot - no fear!";
                 if (_cachedState == "Hiding")
                 {
                     return FearLevel > 0.5f ? "Too dangerous - laying low" : "Staying out of sight";
                 }
                 if (_cachedState == "Sneaking") return _isCarryingLoot ? "Moving carefully with the goods" : "Approaching target quietly";
-                if (_cachedState == "Scouting") return "Looking for opportunities...";
+                if (_cachedState == "Scouting") return _isCarryingLoot ? "Looking for the exit..." : "Boldly seeking the loot!";
                 if (_cachedState == "Arrested!") return "Busted!";
                 if (_cachedState == "Escaped!") return "Got away with the loot!";
                 if (_cachedState == "Time's Up!") return "Ran out of time!";
@@ -430,16 +430,25 @@ namespace NPCBrain.Archetypes
         {
             float fearLevel = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
             
-            if (Blackboard.GetBool(BBKeys.CanSeeCop, false))
+            // KEY DESIGN: Robber is BOLD when approaching loot (no fear)!
+            // Fear only kicks in AFTER stealing - now they have something to lose.
+            if (!_isCarryingLoot)
             {
-                // Increase fear when we see a cop
+                // No loot yet = stay bold and confident!
+                // Rapidly decay any existing fear to 0
+                fearLevel = Mathf.MoveTowards(fearLevel, 0f, Time.deltaTime * 3f);
+            }
+            else if (Blackboard.GetBool(BBKeys.CanSeeCop, false))
+            {
+                // Carrying loot AND see a cop = FEAR!
+                // Now we have something to lose - get nervous!
                 float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
                 float proximityFear = Mathf.Clamp01(1f - (copDist / _copDetectionRange));
                 fearLevel = Mathf.MoveTowards(fearLevel, 0.5f + proximityFear * 0.5f, Time.deltaTime * 2f);
             }
             else
             {
-                // Decay fear when no cop visible
+                // Carrying loot but no cop visible - slowly calm down
                 fearLevel = Mathf.MoveTowards(fearLevel, 0f, Time.deltaTime * 0.3f);
             }
             
@@ -690,14 +699,14 @@ namespace NPCBrain.Archetypes
                         float urgencyBonus = urgency * 0.3f;  // Up to 0.3 at max urgency
                         return 0.3f + distBonus + urgencyBonus;
                     }),
-                // Fear reduction - but keep minimum viable score
+                // Fear impact - but robber is BOLD before stealing (fear=0), so this mainly affects
+                // edge cases where robber somehow has fear without loot
                 new FunctionalConsideration("FearVsUrgencyForSteal",
                     _ => {
                         float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
-                        float urgency = Urgency;
-                        // Normal: fear reduces score by 40%. At max urgency: only 10%
-                        float fearMultiplier = Mathf.Lerp(0.4f, 0.1f, urgency);
-                        return Mathf.Max(0.3f, 1f - fear * fearMultiplier);  // Never go below 0.3
+                        // Fear is 0 before stealing, so this usually returns 1.0
+                        // If somehow fearful, still allow stealing at reduced score
+                        return Mathf.Max(0.5f, 1f - fear * 0.3f);
                     })
             );
         }
