@@ -155,11 +155,12 @@ namespace NPCBrain.Demo
             ValidateObstacleLayer();  // Check layer exists before creating obstacles
             CreateGround();
             CreateWalls();
-            CreateBank();
-            CreateStreets();
+            // TEMPORARILY DISABLED - Testing plain pathfinding without obstacles
+            // CreateBank();
+            // CreateStreets();
             CreateEscapeZone();
             CreateLootPoints();
-            CreateCoverPoints();
+            // CreateCoverPoints();  // No cover needed without obstacles
             CreatePathfindingGrid();  // Create grid AFTER all obstacles
             CreateCops();
             CreateRobbers();
@@ -171,7 +172,7 @@ namespace NPCBrain.Demo
             HeistTimer.StartHeist(_heistTimeLimit, _enableTimeLimit);
             
             string timeLimitInfo = _enableTimeLimit ? $" Time limit: {_heistTimeLimit}s" : " No time limit";
-            Debug.Log($"<color=cyan>Cops and Robbers Demo generated!</color>\n" +
+            Debug.Log($"<color=cyan>Cops and Robbers Demo generated (SIMPLIFIED - no obstacles)!</color>\n" +
                 $"Watch the AI battle it out! Robbers steal loot and escape, Cops patrol and arrest.{timeLimitInfo}");
         }
         
@@ -314,11 +315,11 @@ namespace NPCBrain.Demo
             CreateWall("WallEast", new Vector3(halfSize, wallHeight / 2f, 0f), new Vector3(wallThickness, wallHeight, _arenaSize + wallThickness * 2));
             CreateWall("WallWest", new Vector3(-halfSize, wallHeight / 2f, 0f), new Vector3(wallThickness, wallHeight, _arenaSize + wallThickness * 2));
             
-            // Add corner pillars for extra containment
-            CreateCornerPillar("CornerNE", new Vector3(halfSize, 0f, halfSize));
-            CreateCornerPillar("CornerNW", new Vector3(-halfSize, 0f, halfSize));
-            CreateCornerPillar("CornerSE", new Vector3(halfSize, 0f, -halfSize));
-            CreateCornerPillar("CornerSW", new Vector3(-halfSize, 0f, -halfSize));
+            // Corner pillars disabled for simplified testing
+            // CreateCornerPillar("CornerNE", new Vector3(halfSize, 0f, halfSize));
+            // CreateCornerPillar("CornerNW", new Vector3(-halfSize, 0f, halfSize));
+            // CreateCornerPillar("CornerSE", new Vector3(halfSize, 0f, -halfSize));
+            // CreateCornerPillar("CornerSW", new Vector3(-halfSize, 0f, -halfSize));
         }
         
         /// <summary>
@@ -643,27 +644,25 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Bank area - loot placed OUTSIDE buildings but nearby (accessible!)
-            // Bank building is at (halfSize * 0.5f, 0, halfSize * 0.5f) with size (10, 4, 8)
-            // So place loot in front of bank (south side) where NPCs can reach it
-            Vector3 bankFront = new Vector3(halfSize * 0.5f, 0.5f, halfSize * 0.5f - 6f);
-            
-            // Define loot positions and values - ALL positions are now OUTSIDE buildings
+            // SIMPLIFIED: Loot in open positions for testing pathfinding
+            // Spread across the arena in easily accessible locations
             var lootDefinitions = new (Vector3 position, int value, string name)[]
             {
-                // Bank loot - in front of the bank building
-                (bankFront, 500, "MainVaultLoot"),
-                (bankFront + new Vector3(-4f, 0f, 0f), 250, "BankSideLoot"),
+                // North side loot
+                (new Vector3(0f, 0.5f, halfSize * 0.6f), 500, "NorthLoot"),
                 
-                // Shop area (southwest) - in the street near shops, not inside them
-                (new Vector3(-halfSize * 0.45f, 0.5f, -halfSize * 0.4f), 150, "ShopLoot1"),
-                (new Vector3(-halfSize * 0.25f, 0.5f, -halfSize * 0.55f), 100, "ShopLoot2"),
+                // East side loot
+                (new Vector3(halfSize * 0.6f, 0.5f, 0f), 250, "EastLoot"),
                 
-                // Warehouse area (northwest) - outside warehouse, near loading dock
-                (new Vector3(-halfSize * 0.35f, 0.5f, halfSize * 0.35f), 200, "WarehouseLoot"),
+                // West side loot
+                (new Vector3(-halfSize * 0.6f, 0.5f, 0f), 200, "WestLoot"),
                 
-                // Parking area (southeast) - between cars, accessible
-                (new Vector3(halfSize * 0.45f, 0.5f, -halfSize * 0.4f), 100, "ParkingLoot"),
+                // Center-ish loot
+                (new Vector3(halfSize * 0.3f, 0.5f, halfSize * 0.3f), 150, "CenterNELoot"),
+                (new Vector3(-halfSize * 0.3f, 0.5f, halfSize * 0.3f), 100, "CenterNWLoot"),
+                
+                // South-center (near escape but not too close)
+                (new Vector3(0f, 0.5f, -halfSize * 0.3f), 100, "SouthLoot"),
             };
             
             // Create loot points up to the configured count
@@ -826,14 +825,14 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Spread cops around the larger arena
+            // SIMPLIFIED: Cops spread around the arena edges for testing
             Vector3[] copPositions = new Vector3[]
             {
-                new Vector3(halfSize * 0.35f, 0.1f, halfSize * 0.7f),   // Near bank
-                new Vector3(-halfSize * 0.4f, 0.1f, halfSize * 0.4f),   // Northwest patrol
-                new Vector3(halfSize * 0.6f, 0.1f, -halfSize * 0.4f),   // Southeast patrol
-                new Vector3(-halfSize * 0.4f, 0.1f, -halfSize * 0.4f),  // Southwest patrol
-                new Vector3(0f, 0.1f, 0f),                               // Center patrol
+                new Vector3(halfSize * 0.7f, 0.1f, halfSize * 0.7f),   // Northeast corner
+                new Vector3(-halfSize * 0.7f, 0.1f, halfSize * 0.7f),  // Northwest corner
+                new Vector3(halfSize * 0.7f, 0.1f, -halfSize * 0.3f),  // East side
+                new Vector3(-halfSize * 0.7f, 0.1f, -halfSize * 0.3f), // West side
+                new Vector3(0f, 0.1f, 0f),                              // Center patrol
             };
             
             for (int i = 0; i < Mathf.Min(_copCount, copPositions.Length); i++)
@@ -910,14 +909,14 @@ namespace NPCBrain.Demo
         {
             float halfSize = _arenaSize / 2f;
             
-            // Robbers spawn scattered around the map, away from escape zone (south)
-            // They need to navigate through obstacles to reach loot and escape
+            // SIMPLIFIED: Robbers spawn in south area (away from loot) to test pathfinding
+            // They need to navigate to loot in north and then return to escape zone in south
             Vector3[] robberPositions = new Vector3[]
             {
-                new Vector3(-halfSize * 0.3f, 0.1f, halfSize * 0.2f),   // Northwest area
-                new Vector3(halfSize * 0.2f, 0.1f, halfSize * 0.3f),    // Near bank
-                new Vector3(0f, 0.1f, 5f),                               // Center north
-                new Vector3(-halfSize * 0.5f, 0.1f, -halfSize * 0.2f),  // West side
+                new Vector3(-halfSize * 0.4f, 0.1f, -halfSize * 0.5f),  // Southwest (far from loot)
+                new Vector3(halfSize * 0.4f, 0.1f, -halfSize * 0.5f),   // Southeast (far from loot)
+                new Vector3(0f, 0.1f, -halfSize * 0.4f),                 // South center (far from loot)
+                new Vector3(-halfSize * 0.2f, 0.1f, -halfSize * 0.6f),  // Near escape zone
             };
             
             for (int i = 0; i < Mathf.Min(_robberCount, robberPositions.Length); i++)
