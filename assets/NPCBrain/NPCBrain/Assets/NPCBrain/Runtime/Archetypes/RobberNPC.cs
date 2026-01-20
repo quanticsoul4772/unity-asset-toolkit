@@ -66,6 +66,8 @@ namespace NPCBrain.Archetypes
         private bool _hasLootAvailable;  // Cached for performance
         private float _cachedLootDistance = 999f;  // Cached distance to nearest loot
         private int _tickCount;  // Debug counter
+        private Vector3 _cachedCoverPosition;  // Cached to prevent moving target
+        private float _coverPositionCacheTime;  // When cover was last cached
         
         [Header("Sound Settings")]
         [SerializeField] private float _footstepInterval = 0.4f;
@@ -717,9 +719,10 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetNearestCoverPosition(),
                     _arrivalDistance,
-                    _normalSpeed
+                    _normalSpeed,
+                    5f  // 5 second timeout - don't get stuck trying to reach cover
                 ),
-                new Wait(3f)
+                new Wait(1f)  // Short pause, then re-evaluate
             );
             hideBehavior.Name = "HideBehavior";
             
@@ -727,6 +730,18 @@ namespace NPCBrain.Archetypes
                 "Hide",
                 hideBehavior,
                 _hideWeight,
+                // CRITICAL: If we have loot, we should be ESCAPING, not hiding!
+                // This prevents the robber from hiding forever when they should run to escape zone
+                new FunctionalConsideration("ShouldEscapeInstead",
+                    _ => {
+                        bool hasLoot = Blackboard.GetBool(BBKeys.HasLoot, false);
+                        if (!hasLoot) return 1.0f;  // No loot - hiding is fine
+                        // Has loot - only hide if cop is VERY close (emergency)
+                        bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
+                        float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
+                        if (seesCop && copDist < 5f) return 0.8f;  // Emergency hide - cop is right there!
+                        return 0.0f;  // Has loot and no immediate danger - GO ESCAPE!
+                    }),
                 // Fear consideration - but hiding is less attractive when urgent!
                 // No time to hide when the clock is ticking!
                 // IMPORTANT: Hide should only win when NOT seeing a cop (just lost sight)
@@ -940,6 +955,13 @@ namespace NPCBrain.Archetypes
         
         private Vector3 GetNearestCoverPosition()
         {
+            // Cache the cover position for 2 seconds to prevent moving target issues
+            // This stops the MoveTo from never arriving because target keeps changing
+            if (Time.time - _coverPositionCacheTime < 2f && _cachedCoverPosition != Vector3.zero)
+            {
+                return _cachedCoverPosition;
+            }
+            
             CoverPoint nearest = null;
             float nearestDistSqr = float.MaxValue;
             
@@ -964,11 +986,18 @@ namespace NPCBrain.Archetypes
             
             if (nearest != null)
             {
-                return nearest.HidePosition;
+                _cachedCoverPosition = nearest.HidePosition;
+                _coverPositionCacheTime = Time.time;
+                return _cachedCoverPosition;
             }
             
-            // No cover found, just move away from cop
-            return GetFleePosition();
+            // No cover found - pick a fixed fallback position (don't use GetFleePosition which changes every frame!)
+            // Move to a position 10m away from current position, away from the cop
+            Vector3 copPos = Blackboard.GetVector3(BBKeys.ClosestCopPosition, myPosition + Vector3.forward * 10f);
+            Vector3 awayFromCop = (myPosition - copPos).normalized;
+            _cachedCoverPosition = myPosition + awayFromCop * 10f;
+            _coverPositionCacheTime = Time.time;
+            return _cachedCoverPosition;
         }
         
         private Vector3 GetSneakPosition()
