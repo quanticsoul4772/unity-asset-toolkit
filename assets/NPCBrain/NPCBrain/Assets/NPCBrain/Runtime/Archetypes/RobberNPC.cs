@@ -248,6 +248,14 @@ namespace NPCBrain.Archetypes
         
         private float _lastRobberDebugTime;
         
+        // Cache action references for debug logging
+        private UtilityAction _fleeAction;
+        private UtilityAction _carryToEscapeAction;
+        private UtilityAction _stealAction;
+        private UtilityAction _hideAction;
+        private UtilityAction _sneakAction;
+        private UtilityAction _scoutAction;
+        
         private void LateUpdate()
         {
             if (_hasEscaped) return;
@@ -275,7 +283,48 @@ namespace NPCBrain.Archetypes
                 string behaviorInfo = BehaviorTree != null ? "BT OK" : "BT NULL!";
                 string lastStatusInfo = $"LastStatus: {LastStatus}";
                 
-                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | LootAvail: {_hasLootAvailable} | Loot: {lootInfo} | KnownLoot: {_knownLootPoints.Count} | Ticks: {_tickCount} | {behaviorInfo} | {lastStatusInfo}");
+                // Calculate and log ALL action scores to diagnose the issue
+                string scoreInfo = GetUtilityScoresDebug();
+                
+                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | LootAvail: {_hasLootAvailable} | Loot: {lootInfo} | {behaviorInfo} | {lastStatusInfo}");
+                Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>SCORES:</color> {scoreInfo}");
+            }
+        }
+        
+        /// <summary>
+        /// Debug helper to log all utility action scores.
+        /// </summary>
+        private string GetUtilityScoresDebug()
+        {
+            if (_fleeAction == null || _scoutAction == null)
+            {
+                return "Actions not cached!";
+            }
+            
+            try
+            {
+                float flee = _fleeAction.Score(this);
+                float carry = _carryToEscapeAction.Score(this);
+                float steal = _stealAction.Score(this);
+                float hide = _hideAction.Score(this);
+                float sneak = _sneakAction.Score(this);
+                float scout = _scoutAction.Score(this);
+                
+                // Find the winner
+                float maxScore = Mathf.Max(flee, carry, steal, hide, sneak, scout);
+                string winner = "?";
+                if (maxScore == flee) winner = "Flee";
+                else if (maxScore == carry) winner = "CarryToEscape";
+                else if (maxScore == steal) winner = "StealLoot";
+                else if (maxScore == hide) winner = "Hide";
+                else if (maxScore == sneak) winner = "Sneak";
+                else if (maxScore == scout) winner = "Scout";
+                
+                return $"Flee={flee:F2} Carry={carry:F2} Steal={steal:F2} Hide={hide:F2} Sneak={sneak:F2} Scout={scout:F2} | <b>Winner: {winner} ({maxScore:F2})</b>";
+            }
+            catch (System.Exception e)
+            {
+                return $"Score error: {e.Message}";
             }
         }
         
@@ -484,22 +533,23 @@ namespace NPCBrain.Archetypes
         /// <inheritdoc/>
         protected override BTNode CreateBehaviorTree()
         {
-            var fleeAction = CreateFleeAction();
-            var carryToEscapeAction = CreateCarryToEscapeAction();
-            var stealAction = CreateStealAction();
-            var hideAction = CreateHideAction();
-            var sneakAction = CreateSneakAction();
-            var scoutAction = CreateScoutAction();
+            // Create and CACHE actions so we can debug their scores later
+            _fleeAction = CreateFleeAction();
+            _carryToEscapeAction = CreateCarryToEscapeAction();
+            _stealAction = CreateStealAction();
+            _hideAction = CreateHideAction();
+            _sneakAction = CreateSneakAction();
+            _scoutAction = CreateScoutAction();
             
-            Debug.Log($"<color=magenta>[{name}]</color> <color=green>CreateBehaviorTree - 6 actions created</color>");
+            Debug.Log($"<color=magenta>[{name}]</color> <color=green>CreateBehaviorTree - 6 actions created and cached for debug</color>");
             
             var selector = new UtilitySelector(
-                fleeAction,
-                carryToEscapeAction,
-                stealAction,
-                hideAction,
-                sneakAction,
-                scoutAction
+                _fleeAction,
+                _carryToEscapeAction,
+                _stealAction,
+                _hideAction,
+                _sneakAction,
+                _scoutAction
             );
             
             // Enable warning logging so we can see when no action is selected
@@ -615,37 +665,39 @@ namespace NPCBrain.Archetypes
                 new FunctionalConsideration("NoLootYet",
                     _ => Blackboard.GetBool(BBKeys.HasLoot, false) ? 0f : 1f),
                 // Must have loot available to steal - use cached value (updated in LateUpdate)
-                // Note: _hasLootAvailable is initialized in Start() before first tick
                 new FunctionalConsideration("LootAvailable", 
                     _ => _hasLootAvailable ? 1f : 0f),
                 // PROXIMITY BOOST: Higher score when closer to loot!
-                // This ensures StealLoot wins over Scout when we're close
                 new FunctionalConsideration("LootProximityBoost",
                     _ => {
                         if (!_hasLootAvailable) return 0.3f;
-                        // Use cached distance to avoid repeated FindNearestLoot calls
                         float dist = _cachedLootDistance;
-                        // At 0m: 1.3 (very high priority), at 15m: 0.8, at 40m+: 0.4
-                        // This makes StealLoot dominant when close to loot
-                        return Mathf.Lerp(1.3f, 0.4f, Mathf.Clamp01(dist / 40f));
+                        // At 0m: 1.3 (very high priority), at 40m+: 0.5
+                        return Mathf.Lerp(1.3f, 0.5f, Mathf.Clamp01(dist / 40f));
                     }),
-                // Cop visibility - at high urgency, take more risks!
+                // Cop visibility - LESS PUNISHING now!
+                // Even with cop visible, we should still try to steal if not too close
                 new FunctionalConsideration("CopRiskVsUrgency",
                     _ => {
                         bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
-                        float urgency = Urgency;
                         if (!seesCop) return 1f;
-                        // At high urgency, we might try to steal even with cop visible (risky!)
-                        return urgency > 0.5f ? 0.5f : 0.1f;  // Small chance even at low urgency
+                        // Can see cop - but still try if cop is far away or urgency is high
+                        float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
+                        float urgency = Urgency;
+                        // Base: 0.3 when seeing cop (was 0.1 - too punishing!)
+                        // Boost if cop is far (>10m) or urgency is high
+                        float distBonus = Mathf.Clamp01((copDist - 5f) / 15f) * 0.4f;  // 0 at 5m, 0.4 at 20m
+                        float urgencyBonus = urgency * 0.3f;  // Up to 0.3 at max urgency
+                        return 0.3f + distBonus + urgencyBonus;
                     }),
-                // Fear matters less when urgent - take risks!
+                // Fear reduction - but keep minimum viable score
                 new FunctionalConsideration("FearVsUrgencyForSteal",
                     _ => {
                         float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
                         float urgency = Urgency;
-                        // Normal: fear reduces score by 50%. At max urgency: only 10%
-                        float fearMultiplier = Mathf.Lerp(0.5f, 0.1f, urgency);
-                        return 1f - fear * fearMultiplier;
+                        // Normal: fear reduces score by 40%. At max urgency: only 10%
+                        float fearMultiplier = Mathf.Lerp(0.4f, 0.1f, urgency);
+                        return Mathf.Max(0.3f, 1f - fear * fearMultiplier);  // Never go below 0.3
                     })
             );
         }
@@ -670,18 +722,29 @@ namespace NPCBrain.Archetypes
                 _hideWeight,
                 // Fear consideration - but hiding is less attractive when urgent!
                 // No time to hide when the clock is ticking!
+                // IMPORTANT: Hide should only win when NOT seeing a cop (just lost sight)
                 new FunctionalConsideration("FearVsUrgencyForHide",
                     _ => {
                         float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
                         float urgency = Urgency;
-                        float baseFearScore = fear > 0.3f ? 0.5f + fear * 0.5f : 0.2f;
+                        // Only hide if fear is meaningful
+                        if (fear < 0.2f) return 0.1f;  // No reason to hide if not scared
+                        float baseFearScore = 0.4f + fear * 0.4f;  // 0.4-0.8 based on fear
                         // At high urgency, hiding becomes much less attractive
-                        // Multiply by inverse urgency: at 0 urgency = 100%, at max urgency = 20%
                         return baseFearScore * (1f - urgency * 0.8f);
                     }),
-                // Not seeing cop but was recently
-                new BlackboardConsideration<bool>("NoCopNow", BBKeys.CanSeeCop,
-                    sees => sees ? 0.3f : 1f, false),
+                // CRITICAL: Hide is for when you JUST LOST sight of a cop, not when you can see one!
+                // When you can SEE a cop, you should FLEE, not hide.
+                // When you CAN'T see a cop but were recently scared, THEN hide.
+                new FunctionalConsideration("RecentlySawCopButNotNow",
+                    _ => {
+                        bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
+                        if (seesCop) return 0.1f;  // Very low - you can see cop, should flee instead!
+                        // Don't see cop now - check if we recently saw one
+                        float timeSinceCop = TimeSinceLastCopSight;
+                        if (timeSinceCop < 5f) return 1.0f;  // Recently saw cop, good time to hide
+                        return 0.3f;  // Long time since cop, no real need to hide
+                    }),
                 // Cooldown
                 new TimeConsideration("HideCooldown", BBKeys.LastHideTime, 5f)
             );
@@ -749,14 +812,15 @@ namespace NPCBrain.Archetypes
             scoutBehavior.Name = "ScoutBehavior";
             
             // Scout is the FALLBACK action - it should ALWAYS have a positive score!
-            // IMPORTANT: We use NO considerations here to guarantee Scout ALWAYS scores positive.
-            // The base score of 0.3 ensures it loses to StealLoot (0.85 base) when close to loot,
-            // but still provides a fallback when all other actions score 0.
+            // IMPORTANT: We use a GUARANTEED 1.0 consideration to ensure Scout works.
+            // The base score of 0.35 ensures it can beat Hide (which scores ~0.17-0.3 typically)
+            // but still loses to StealLoot when close to loot.
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
-                0.3f  // Low base score so other actions win, but ALWAYS positive!
-                // NO CONSIDERATIONS - Scout must NEVER score 0!
+                0.35f,  // Slightly higher to beat Hide's typical score
+                // Single consideration that ALWAYS returns 1.0 to ensure score is calculated
+                new FunctionalConsideration("AlwaysReady", _ => 1.0f)
             );
         }
         
