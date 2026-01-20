@@ -621,7 +621,7 @@ namespace NPCBrain.Archetypes
                     () => GetEscapePosition(),
                     _arrivalDistance,
                     _fleeSpeed,  // Use flee speed - urgency!
-                    2f  // Short timeout to re-evaluate quickly
+                    15f  // Long enough to reach escape zone
                 )
             );
             carryBehavior.Name = "CarryToEscapeBehavior";

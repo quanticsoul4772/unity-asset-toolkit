@@ -638,7 +638,7 @@ namespace NPCBrain.Archetypes
                     () => GetTargetPosition(),
                     _arrestDistance * 0.8f, // Get very close for arrest
                     _chaseSpeed,
-                    1.5f // Short timeout to re-evaluate, but long enough to avoid jitter
+                    15f // Long enough to reach distant targets
                 )
             );
             chaseBehavior.Name = "ChaseBehavior";
@@ -678,7 +678,7 @@ namespace NPCBrain.Archetypes
                     () => GetPredictedRobberPosition(),
                     _arrivalDistance,
                     _chaseSpeed,  // Move at chase speed - this is active pursuit!
-                    1.0f  // Short timeout to re-evaluate frequently
+                    15f  // Long enough to reach distant targets
                 )
             );
             pursueBehavior.Name = "PursueLastKnownBehavior";
@@ -921,7 +921,7 @@ namespace NPCBrain.Archetypes
                     () => Blackboard.GetVector3(BBKeys.LastFootstepPosition, transform.position),
                     _arrivalDistance,
                     _chaseSpeed,  // Move fast - this is active pursuit!
-                    1.0f  // Short timeout to react quickly to new footsteps
+                    10f  // Long enough to reach footstep location
                 )
             );
             trackBehavior.Name = "TrackFootstepsBehavior";
@@ -1145,7 +1145,7 @@ namespace NPCBrain.Archetypes
                     () => GetSearchPosition(),
                     _arrivalDistance,
                     _investigateSpeed,  // Move at investigation speed - actively searching
-                    3f  // Re-evaluate every 3 seconds to pick new search targets
+                    10f  // Long enough to reach search position
                 )
             );
             searchBehavior.Name = "SearchBehavior";
