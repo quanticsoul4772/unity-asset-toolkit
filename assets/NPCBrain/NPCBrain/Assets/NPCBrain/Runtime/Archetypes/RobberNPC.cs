@@ -750,7 +750,7 @@ namespace NPCBrain.Archetypes
                         // Use cached distance to avoid repeated FindNearestLoot calls
                         float dist = _cachedLootDistance;
                         // At 0-5m: 0.2 (very low - let StealLoot handle it)
-                        // At 15m: ~0.5 (transitioning)
+                        // At 15m: 0.44 (transitioning)
                         // At 30m+: 0.8 (high - need to scout toward loot)
                         return Mathf.Lerp(0.2f, 0.8f, Mathf.Clamp01((dist - 5f) / 25f));
                     })
