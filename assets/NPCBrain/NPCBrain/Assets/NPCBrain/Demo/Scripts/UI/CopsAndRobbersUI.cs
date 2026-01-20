@@ -459,6 +459,8 @@ namespace NPCBrain.Demo.UI
         private void UpdateTimeAndScore()
         {
             float gameTime = _getGameTime();
+            // Clamp to valid range to prevent TimeSpan overflow
+            gameTime = Mathf.Clamp(gameTime, 0f, 359999f); // Max ~100 hours
             string timeStr = System.TimeSpan.FromSeconds(gameTime).ToString(@"mm\:ss");
             
             string timeDisplay = $"Elapsed: {timeStr}";
@@ -466,6 +468,13 @@ namespace NPCBrain.Demo.UI
             if (_getTimeLimitEnabled())
             {
                 float remaining = HeistTimer.TimeRemaining;
+                // Clamp to valid range - handle Infinity, NaN, and negative values
+                if (float.IsNaN(remaining) || float.IsInfinity(remaining) || remaining < 0f)
+                {
+                    remaining = 0f;
+                }
+                remaining = Mathf.Clamp(remaining, 0f, 359999f);
+                
                 string remainingStr = System.TimeSpan.FromSeconds(remaining).ToString(@"mm\:ss");
                 string urgency = remaining <= 10f ? " <color=red>⚠️ CRITICAL!</color>" : 
                                  remaining <= 30f ? " <color=yellow>⏰ HURRY!</color>" : "";
