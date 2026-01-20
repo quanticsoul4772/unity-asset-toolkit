@@ -64,6 +64,7 @@ namespace NPCBrain.Archetypes
         private float _lootDetectionRangeSqr;
         private float _copDetectionRangeSqr;
         private bool _hasLootAvailable;  // Cached for performance
+        private float _cachedLootDistance = 999f;  // Cached distance to nearest loot
         private int _tickCount;  // Debug counter
         
         [Header("Sound Settings")]
@@ -328,10 +329,12 @@ namespace NPCBrain.Archetypes
         
         private void UpdateLootAvailability()
         {
-            // Cache loot availability to avoid repeated FindNearestLoot() calls during utility scoring
-            // Note: FindNearestLoot() handles refresh internally if needed
+            // Cache loot availability AND distance to avoid repeated FindNearestLoot() calls during utility scoring
             var nearestLoot = FindNearestLoot();
             _hasLootAvailable = nearestLoot != null;
+            _cachedLootDistance = nearestLoot != null 
+                ? Vector3.Distance(transform.position, nearestLoot.transform.position) 
+                : 999f;
         }
         
         private void EmitFootstepsIfMoving()
@@ -605,12 +608,12 @@ namespace NPCBrain.Archetypes
                 // This ensures StealLoot wins over Scout when we're close
                 new FunctionalConsideration("LootProximityBoost",
                     _ => {
-                        var loot = FindNearestLoot();
-                        if (loot == null) return 0.5f;
-                        float dist = Vector3.Distance(transform.position, loot.transform.position);
-                        // At 0m: 1.2 (high priority), at 20m: 0.6 (lower), at 40m+: 0.4
+                        if (!_hasLootAvailable) return 0.3f;
+                        // Use cached distance to avoid repeated FindNearestLoot calls
+                        float dist = _cachedLootDistance;
+                        // At 0m: 1.3 (very high priority), at 15m: 0.8, at 40m+: 0.4
                         // This makes StealLoot dominant when close to loot
-                        return Mathf.Lerp(1.2f, 0.4f, Mathf.Clamp01(dist / 40f));
+                        return Mathf.Lerp(1.3f, 0.4f, Mathf.Clamp01(dist / 40f));
                     }),
                 // Cop visibility - at high urgency, take more risks!
                 new FunctionalConsideration("CopRiskVsUrgency",
@@ -736,25 +739,21 @@ namespace NPCBrain.Archetypes
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
-                _scoutWeight,  // Use configured weight (0.3) as base
-                // DISTANCE-BASED FALLBACK: High score when far from loot, low when close
+                1.0f,  // HIGH base score - Scout is the fallback!
+                // DISTANCE-BASED SCORING: High score when far from loot, low when close
                 // This prevents oscillation with StealLoot by making Scout back off
                 // when we're close enough for StealLoot to take over
                 new FunctionalConsideration("DistanceToLoot",
                     _ => {
-                        var loot = FindNearestLoot();
-                        if (loot == null) return 1.0f;  // No loot? Scout to find some!
+                        if (!_hasLootAvailable) return 0.8f;  // No loot? Scout to find some!
                         
-                        float dist = Vector3.Distance(transform.position, loot.transform.position);
-                        // At 0m: 0.3 (low - let StealLoot handle it)
-                        // At 15m: 0.8 (medium - transitioning)
-                        // At 30m+: 1.0 (high - need to scout toward loot)
-                        // This creates a smooth handoff to StealLoot
-                        return Mathf.Lerp(0.3f, 1.0f, Mathf.Clamp01((dist - 5f) / 25f));
-                    }),
-                // Guaranteed minimum so Scout is always viable as fallback
-                new FunctionalConsideration("MinimumFallback",
-                    _ => 0.5f)  // Ensures Scout never scores 0
+                        // Use cached distance to avoid repeated FindNearestLoot calls
+                        float dist = _cachedLootDistance;
+                        // At 0-5m: 0.2 (very low - let StealLoot handle it)
+                        // At 15m: ~0.5 (transitioning)
+                        // At 30m+: 0.8 (high - need to scout toward loot)
+                        return Mathf.Lerp(0.2f, 0.8f, Mathf.Clamp01((dist - 5f) / 25f));
+                    })
             );
         }
         
