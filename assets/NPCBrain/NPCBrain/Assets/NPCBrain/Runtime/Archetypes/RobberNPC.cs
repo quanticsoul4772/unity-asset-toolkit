@@ -301,31 +301,26 @@ namespace NPCBrain.Archetypes
                 return "Actions not cached!";
             }
             
-            try
-            {
-                float flee = _fleeAction.Score(this);
-                float carry = _carryToEscapeAction.Score(this);
-                float steal = _stealAction.Score(this);
-                float hide = _hideAction.Score(this);
-                float sneak = _sneakAction.Score(this);
-                float scout = _scoutAction.Score(this);
-                
-                // Find the winner
-                float maxScore = Mathf.Max(flee, carry, steal, hide, sneak, scout);
-                string winner = "?";
-                if (maxScore == flee) winner = "Flee";
-                else if (maxScore == carry) winner = "CarryToEscape";
-                else if (maxScore == steal) winner = "StealLoot";
-                else if (maxScore == hide) winner = "Hide";
-                else if (maxScore == sneak) winner = "Sneak";
-                else if (maxScore == scout) winner = "Scout";
-                
-                return $"Flee={flee:F2} Carry={carry:F2} Steal={steal:F2} Hide={hide:F2} Sneak={sneak:F2} Scout={scout:F2} | <b>Winner: {winner} ({maxScore:F2})</b>";
-            }
-            catch (System.Exception e)
-            {
-                return $"Score error: {e.Message}";
-            }
+            // No try/catch here - if Score() throws, we WANT to see the full error
+            // so we can diagnose the root cause rather than masking bugs
+            float flee = _fleeAction.Score(this);
+            float carry = _carryToEscapeAction.Score(this);
+            float steal = _stealAction.Score(this);
+            float hide = _hideAction.Score(this);
+            float sneak = _sneakAction.Score(this);
+            float scout = _scoutAction.Score(this);
+            
+            // Find the winner
+            float maxScore = Mathf.Max(flee, carry, steal, hide, sneak, scout);
+            string winner = "?";
+            if (maxScore == flee) winner = "Flee";
+            else if (maxScore == carry) winner = "CarryToEscape";
+            else if (maxScore == steal) winner = "StealLoot";
+            else if (maxScore == hide) winner = "Hide";
+            else if (maxScore == sneak) winner = "Sneak";
+            else if (maxScore == scout) winner = "Scout";
+            
+            return $"Flee={flee:F2} Carry={carry:F2} Steal={steal:F2} Hide={hide:F2} Sneak={sneak:F2} Scout={scout:F2} | <b>Winner: {winner} ({maxScore:F2})</b>";
         }
         
         private void UpdateCopDetection()
@@ -552,6 +547,9 @@ namespace NPCBrain.Archetypes
             
             Debug.Log($"<color=magenta>[{name}]</color> <color=green>CreateBehaviorTree - 6 actions created and cached for debug</color>");
             
+            // DIAGNOSTIC: Log action creation details to help debug why robber might not show [UtilitySelector] logs
+            Debug.Log($"<color=magenta>[{name}]</color> Actions: Flee={_fleeAction != null}, Carry={_carryToEscapeAction != null}, Steal={_stealAction != null}, Hide={_hideAction != null}, Sneak={_sneakAction != null}, Scout={_scoutAction != null}");
+            
             var selector = new UtilitySelector(
                 _fleeAction,
                 _carryToEscapeAction,
@@ -563,6 +561,10 @@ namespace NPCBrain.Archetypes
             
             // Enable warning logging so we can see when no action is selected
             selector.LogWarnings = true;
+            
+            // DIAGNOSTIC: Log selector details to help debug missing [UtilitySelector] logs
+            // Note: 6 actions = Flee, CarryToEscape, StealLoot, Hide, Sneak, Scout
+            Debug.Log($"<color=magenta>[{name}]</color> UtilitySelector created with 6 actions, LogWarnings={selector.LogWarnings}");
             
             return selector;
         }
@@ -687,7 +689,10 @@ namespace NPCBrain.Archetypes
                         return Mathf.Lerp(1.3f, 0.5f, Mathf.Clamp01(dist / 40f));
                     }),
                 // Cop visibility - LESS PUNISHING now!
-                // Even with cop visible, we should still try to steal if not too close
+                // INTENDED BEHAVIOR: Robber WILL try to steal even with cops visible because
+                // they are BOLD before stealing (fear=0). This is by design - the robber takes
+                // risks to get the loot, then becomes nervous after stealing.
+                // StealLoot (0.5-0.6) will beat Scout (0.35) when loot is nearby, even with cops visible.
                 new FunctionalConsideration("CopRiskVsUrgency",
                     _ => {
                         bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
@@ -826,6 +831,11 @@ namespace NPCBrain.Archetypes
             // IMPORTANT: We use a GUARANTEED 1.0 consideration to ensure Scout works.
             // The base score of 0.35 ensures it can beat Hide (which scores ~0.17-0.3 typically)
             // but still loses to StealLoot when close to loot.
+            //
+            // WORKAROUND: We add a dummy "AlwaysReady" consideration that returns 1.0 because
+            // UtilityAction.Score() may behave unexpectedly with zero considerations in some
+            // edge cases (e.g., compensation factor calculation divides by consideration count).
+            // Adding a single 1.0 consideration ensures consistent scoring behavior.
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
