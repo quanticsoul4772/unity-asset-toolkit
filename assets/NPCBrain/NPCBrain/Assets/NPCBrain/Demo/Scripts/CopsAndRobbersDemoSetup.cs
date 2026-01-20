@@ -98,12 +98,7 @@ namespace NPCBrain.Demo
                 _gameTime += Time.deltaTime;
                 CheckGameEnd();
             }
-            
-            // Toggle overlay with F1 key
-            if (Input.GetKeyDown(KeyCode.F1))
-            {
-                _showOverlay = !_showOverlay;
-            }
+            // Note: F1/R key handling moved to OnGUI using Event.current (Input System compatible)
         }
         
         private void CheckGameEnd()
@@ -1071,10 +1066,19 @@ namespace NPCBrain.Demo
             
             GUI.EndScrollView();
             
-            // Handle R key for restart
-            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.R)
+            // Handle keyboard input via Event.current (Input System compatible)
+            if (Event.current.type == EventType.KeyDown)
             {
-                RestartGame();
+                if (Event.current.keyCode == KeyCode.F1)
+                {
+                    _showOverlay = !_showOverlay;
+                    Event.current.Use();
+                }
+                else if (Event.current.keyCode == KeyCode.R)
+                {
+                    RestartGame();
+                    Event.current.Use();
+                }
             }
         }
         
