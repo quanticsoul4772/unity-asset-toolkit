@@ -65,10 +65,6 @@ namespace NPCBrain.BehaviorTree.Composites
         private const float LOG_INTERVAL = 2f; // Log every 2 seconds max
         private string _lastLoggedActionName;
         
-        // Diagnostic logging for debugging action continuation
-        private float _lastContinueLogTime;
-        private int _continueTickCount;
-        
         // Interruption log throttle: avoid spam when same interruption keeps happening
         private string _lastInterruptFromAction;
         private string _lastInterruptToAction;
@@ -170,14 +166,6 @@ namespace NPCBrain.BehaviorTree.Composites
             // This fixes the issue where cops wouldn't switch from Patrol to Chase
             if (_currentAction != null)
             {
-                _continueTickCount++;
-                
-                // DIAGNOSTIC: Log when continuing an action (every 2 seconds)
-                if (Time.time - _lastContinueLogTime > LOG_INTERVAL)
-                {
-                    _lastContinueLogTime = Time.time;
-                    Debug.Log($"<color=cyan>[UtilitySelector DIAG]</color> {brain.name} continuing action '{_currentAction.Name}' (tick #{_continueTickCount})");
-                }
                 // Throttle interruption checks for performance (default every 0.25s)
                 float currentTime = Time.time;
                 if (currentTime - _lastInterruptCheckTime >= InterruptCheckInterval)
@@ -240,23 +228,15 @@ namespace NPCBrain.BehaviorTree.Composites
             }
             else
             {
-                _continueTickCount = 0; // Reset tick counter for new action
                 _currentAction = SelectAction(brain);
                 if (_currentAction == null)
                 {
                     // Warning already logged in SelectAction
                     return NodeStatus.Failure;
                 }
-                Debug.Log($"<color=lime>[UtilitySelector]</color> {brain.name} SELECTED new action: '{_currentAction.Name}'");
             }
             
             NodeStatus status = _currentAction.Action.Execute(brain);
-            
-            // DIAGNOSTIC: Log the execution result occasionally
-            if (Time.time - _lastContinueLogTime > LOG_INTERVAL || status != NodeStatus.Running)
-            {
-                Debug.Log($"<color=cyan>[UtilitySelector DIAG]</color> {brain.name} action '{_currentAction.Name}' returned {status}");
-            }
 
             if (status != NodeStatus.Running)
             {
@@ -508,8 +488,6 @@ namespace NPCBrain.BehaviorTree.Composites
             _lastInterruptFromAction = null; // Reset interruption logging
             _lastInterruptToAction = null;
             _lastInterruptLogTime = 0f;
-            _lastContinueLogTime = 0f; // Reset diagnostic logging
-            _continueTickCount = 0;
         }
 
         /// <summary>
@@ -533,8 +511,6 @@ namespace NPCBrain.BehaviorTree.Composites
             _lastInterruptFromAction = null; // Reset interruption logging
             _lastInterruptToAction = null;
             _lastInterruptLogTime = 0f;
-            _lastContinueLogTime = 0f; // Reset diagnostic logging
-            _continueTickCount = 0;
             base.Abort(brain);
         }
         

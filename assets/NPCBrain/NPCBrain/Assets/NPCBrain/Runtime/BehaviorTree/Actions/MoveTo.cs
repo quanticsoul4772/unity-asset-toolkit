@@ -118,42 +118,21 @@ namespace NPCBrain.BehaviorTree.Actions
             _stuckCounter = 0;
             _lastLoggedWaypointCount = -1;
             _hasLoggedInitialPath = false;
-            _tickCount = 0;
-            _lastDiagnosticLogTime = 0f;
         }
-        
-        // Diagnostic logging state
-        private int _tickCount;
-        private float _lastDiagnosticLogTime;
         
         protected override NodeStatus Tick(NPCBrainController brain)
         {
-            _tickCount++;
             Vector3 target = _targetGetter();
             Vector3 currentPos = brain.transform.position;
             float distanceSqr = (currentPos - target).sqrMagnitude;
-            float distance = Mathf.Sqrt(distanceSqr);
-            
-            // DIAGNOSTIC: Log every 2 seconds to understand what MoveTo is doing
-            bool shouldLogDiagnostic = Time.time - _lastDiagnosticLogTime > 2f;
-            if (shouldLogDiagnostic)
-            {
-                _lastDiagnosticLogTime = Time.time;
-                string gridStatus = _cachedGrid != null ? "OK" : "NULL";
-                string charCtrlStatus = _cachedCharController != null ? "OK" : "NULL";
-                string navAgentStatus = _cachedNavAgent != null ? (_cachedNavAgent.isOnNavMesh ? "OnMesh" : "OffMesh") : "NULL";
-                Debug.Log($"<color=yellow>[MoveTo DIAG]</color> {brain.name} tick#{_tickCount} | Target={target} | Dist={distance:F1}m | ArrivalDist={Mathf.Sqrt(_arrivalDistanceSqr):F1}m | Grid={gridStatus} | CharCtrl={charCtrlStatus} | NavAgent={navAgentStatus}");
-            }
             
             if (distanceSqr <= _arrivalDistanceSqr)
             {
-                Debug.Log($"<color=green>[MoveTo]</color> {brain.name} ARRIVED at target (dist={distance:F2}m)");
                 return NodeStatus.Success;
             }
             
             if (Time.time - _startTime > _timeout)
             {
-                Debug.Log($"<color=red>[MoveTo]</color> {brain.name} TIMEOUT after {_timeout}s");
                 return NodeStatus.Failure;
             }
             
@@ -171,17 +150,9 @@ namespace NPCBrain.BehaviorTree.Actions
             // Use CharacterController alone if available (handles collision detection but no pathfinding)
             if (_cachedCharController != null)
             {
-                if (shouldLogDiagnostic)
-                {
-                    Debug.Log($"<color=orange>[MoveTo]</color> {brain.name} using CharacterController ONLY (no grid!) - moving directly");
-                }
                 return MoveViaCharacterController(_cachedCharController, brain.transform, target);
             }
             
-            if (shouldLogDiagnostic)
-            {
-                Debug.Log($"<color=red>[MoveTo]</color> {brain.name} using MoveDirectly - NO collision detection!");
-            }
             return MoveDirectly(brain.transform, target, brain.name);
         }
         

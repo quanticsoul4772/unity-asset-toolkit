@@ -247,8 +247,6 @@ namespace NPCBrain.Archetypes
         }
         
         private float _lastRobberDebugTime;
-        private int _updateCallCount;  // Track if Update() is being called
-        private int _btTickCount;  // Track if BT is being ticked
         
         // Cache action references for debug logging
         private UtilityAction _fleeAction;
@@ -259,39 +257,16 @@ namespace NPCBrain.Archetypes
         private UtilityAction _scoutAction;
         
         /// <summary>
-        /// Override Update to add diagnostic logging and ensure behavior tree ticks.
+        /// Override Update to handle escaped state check before ticking.
         /// </summary>
         protected override void Update()
         {
-            _updateCallCount++;
-            
-            // Log every 60 frames (~1 second at 60fps) to show Update IS being called
-            if (_updateCallCount % 60 == 1)
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> <color=orange>UPDATE #{_updateCallCount}</color> | IsPaused={IsPaused} | BT={BehaviorTree != null} | HasEscaped={_hasEscaped}");
-            }
-            
             if (_hasEscaped) return;
-            
-            // Call base.Update() which handles pause check, tick interval, and calls Tick()
             base.Update();
-            _btTickCount++;
-            
-            // Log BT tick status occasionally
-            if (_btTickCount % 60 == 1)
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> <color=lime>BT TICK #{_btTickCount}</color> | LastStatus={LastStatus}");
-            }
         }
         
         private void LateUpdate()
         {
-            // Log at VERY START before any early returns
-            if (Time.frameCount % 120 == 0)
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> <color=yellow>LATE UPDATE</color> | HasEscaped={_hasEscaped} | UpdateCalls={_updateCallCount} | BTTicks={_btTickCount}");
-            }
-            
             if (_hasEscaped) return;
             
             UpdateCopDetection();
@@ -303,25 +278,14 @@ namespace NPCBrain.Archetypes
             // Track tick count for debugging
             _tickCount++;
             
-            // Debug log every 2 seconds
-            if (Time.time - _lastRobberDebugTime > 2f)
+            // Debug log every 5 seconds (reduced from 2 for less spam)
+            if (Time.time - _lastRobberDebugTime > 5f)
             {
                 _lastRobberDebugTime = Time.time;
-                var nearestLoot = FindNearestLoot();
-                string lootInfo = nearestLoot != null ? $"{nearestLoot.name} at {Vector3.Distance(transform.position, nearestLoot.transform.position):F1}m" : "NO LOOT FOUND";
-                float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 999f);
                 float timeRemaining = HeistTimer.TimeRemaining;
-                string timeInfo = HeistTimer.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s | Urgency: {Urgency:F2}" : "No time limit";
+                string timeInfo = HeistTimer.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s" : "";
                 
-                // Debug utility scores to understand why robber might not be moving
-                string behaviorInfo = BehaviorTree != null ? "BT OK" : "BT NULL!";
-                string lastStatusInfo = $"LastStatus: {LastStatus}";
-                
-                // Calculate and log ALL action scores to diagnose the issue
-                string scoreInfo = GetUtilityScoresDebug();
-                
-                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | LootAvail: {_hasLootAvailable} | Loot: {lootInfo} | {behaviorInfo} | {lastStatusInfo}");
-                Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>SCORES:</color> {scoreInfo}");
+                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | HasLoot: {_isCarryingLoot} | Fear: {FearLevel:F2}");
             }
         }
         
@@ -579,10 +543,7 @@ namespace NPCBrain.Archetypes
             _sneakAction = CreateSneakAction();
             _scoutAction = CreateScoutAction();
             
-            Debug.Log($"<color=magenta>[{name}]</color> <color=green>CreateBehaviorTree - 6 actions created and cached for debug</color>");
-            
-            // DIAGNOSTIC: Log action creation details to help debug why robber might not show [UtilitySelector] logs
-            Debug.Log($"<color=magenta>[{name}]</color> Actions: Flee={_fleeAction != null}, Carry={_carryToEscapeAction != null}, Steal={_stealAction != null}, Hide={_hideAction != null}, Sneak={_sneakAction != null}, Scout={_scoutAction != null}");
+            // Actions created for utility AI
             
             var selector = new UtilitySelector(
                 _fleeAction,
@@ -595,10 +556,6 @@ namespace NPCBrain.Archetypes
             
             // Enable warning logging so we can see when no action is selected
             selector.LogWarnings = true;
-            
-            // DIAGNOSTIC: Log selector details to help debug missing [UtilitySelector] logs
-            // Note: 6 actions = Flee, CarryToEscape, StealLoot, Hide, Sneak, Scout
-            Debug.Log($"<color=magenta>[{name}]</color> UtilitySelector created with 6 actions, LogWarnings={selector.LogWarnings}");
             
             return selector;
         }
@@ -1042,16 +999,12 @@ namespace NPCBrain.Archetypes
             var loot = FindNearestLoot();
             if (loot != null)
             {
-                Vector3 target = loot.transform.position;
-                Debug.Log($"<color=magenta>[{name}]</color> GetScoutPosition: targeting loot at {target}");
-                return target;
+                return loot.transform.position;
             }
             
             // No loot found - wander toward center of map
             Vector2 randomCircle = Random.insideUnitCircle * 15f;
-            Vector3 wanderTarget = _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
-            Debug.Log($"<color=magenta>[{name}]</color> <color=orange>GetScoutPosition: NO LOOT - wandering to {wanderTarget}</color>");
-            return wanderTarget;
+            return _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
         }
         
         /// <summary>
