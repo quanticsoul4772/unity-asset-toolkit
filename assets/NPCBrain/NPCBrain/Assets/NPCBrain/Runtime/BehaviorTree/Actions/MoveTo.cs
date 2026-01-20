@@ -150,6 +150,12 @@ namespace NPCBrain.BehaviorTree.Actions
                 return MoveViaNavMesh(_cachedNavAgent, target);
             }
             
+            // DIAGNOSTIC BYPASS: Skip A* and use direct CharacterController movement
+            if (PathfindingSettings.BypassPathfinding && _cachedCharController != null)
+            {
+                return MoveViaCharacterControllerDirect(brain, _cachedCharController, brain.transform, target);
+            }
+            
             // Use EasyPath A* + CharacterController if grid exists (smart navigation + collision)
             if (_cachedGrid != null && _cachedCharController != null)
             {
@@ -323,11 +329,9 @@ namespace NPCBrain.BehaviorTree.Actions
                 Vector3 direction = toWaypoint / distanceToWaypoint;
                 Vector3 movement = direction * _moveSpeed * Time.deltaTime;
                 
-                // Add gravity
-                if (!controller.isGrounded)
-                {
-                    movement.y = -PathfindingSettings.Gravity * Time.deltaTime;
-                }
+                // ALWAYS apply gravity - CharacterController needs constant downward force to stay grounded
+                // Unity's isGrounded only returns true if the last Move() had a downward component
+                movement.y = -PathfindingSettings.Gravity * Time.deltaTime;
                 
                 controller.Move(movement);
                 
@@ -503,6 +507,72 @@ namespace NPCBrain.BehaviorTree.Actions
         }
         
         /// <summary>
+        /// DIAGNOSTIC: Moves NPC directly toward target using CharacterController, bypassing A* pathfinding.
+        /// This is used to test if movement issues are caused by pathfinding or basic movement.
+        /// </summary>
+        private NodeStatus MoveViaCharacterControllerDirect(NPCBrainController brain, CharacterController controller, Transform transform, Vector3 target)
+        {
+            Vector3 currentPos = transform.position;
+            Vector3 toTarget = target - currentPos;
+            toTarget.y = 0f; // Keep movement horizontal
+            float distance = toTarget.magnitude;
+            
+            // Verbose diagnostic logging
+            if (PathfindingSettings.VerboseMovementLogging && Time.time - _lastDebugLogTime > PathfindingSettings.VerboseLogInterval)
+            {
+                _lastDebugLogTime = Time.time;
+                Debug.Log($"<color=magenta>[MoveTo DIAG]</color> {brain.name}: " +
+                    $"pos={currentPos}, target={target}, dist={distance:F2}m, " +
+                    $"grounded={controller.isGrounded}, flags={controller.collisionFlags}, " +
+                    $"velocity={controller.velocity}, isOnGround={(currentPos.y < 0.2f)}, " +
+                    $"ctrlHeight={controller.height}, ctrlRadius={controller.radius}, ctrlCenter={controller.center}");
+            }
+
+            if (distance < 0.01f)
+            {
+                return NodeStatus.Running;
+            }
+
+            Vector3 direction = toTarget / distance;
+            
+            // Calculate movement
+            float stepDistance = _moveSpeed * Time.deltaTime;
+            Vector3 movement = direction * stepDistance;
+            
+            // ALWAYS apply gravity - CharacterController needs constant downward force to stay grounded
+            // This is a common Unity gotcha: isGrounded only returns true if you moved down last frame
+            movement.y = -PathfindingSettings.Gravity * Time.deltaTime;
+            
+            // Store position before move for debugging
+            Vector3 posBefore = transform.position;
+            
+            // Apply movement
+            CollisionFlags moveResult = controller.Move(movement);
+            
+            // Check if we actually moved
+            Vector3 posAfter = transform.position;
+            float actualMoveDist = Vector3.Distance(posBefore, posAfter);
+            
+            // Log if movement was blocked
+            if (actualMoveDist < stepDistance * 0.5f && distance > 1f)
+            {
+                if (Time.time - _lastDebugLogTime > 0.5f)  // Don't spam
+                {
+                    Debug.LogWarning($"<color=red>[MoveTo BLOCKED]</color> {brain.name}: " +
+                        $"wanted to move {stepDistance:F3}m but only moved {actualMoveDist:F3}m. " +
+                        $"CollisionFlags={moveResult}, grounded={controller.isGrounded}");
+                }
+            }
+
+            if (direction != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(direction);
+            }
+
+            return NodeStatus.Running;
+        }
+        
+        /// <summary>
         /// Moves the NPC using CharacterController.Move() which respects collisions with walls and obstacles.
         /// </summary>
         private NodeStatus MoveViaCharacterController(CharacterController controller, Transform transform, Vector3 target)
@@ -520,11 +590,8 @@ namespace NPCBrain.BehaviorTree.Actions
             Vector3 direction = toTarget / distance;
             Vector3 movement = direction * _moveSpeed * Time.deltaTime;
             
-            // Add gravity to keep grounded
-            if (!controller.isGrounded)
-            {
-                movement.y = -PathfindingSettings.Gravity * Time.deltaTime;
-            }
+            // ALWAYS apply gravity - CharacterController needs constant downward force to stay grounded
+            movement.y = -PathfindingSettings.Gravity * Time.deltaTime;
 
             controller.Move(movement);
 

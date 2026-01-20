@@ -5,6 +5,12 @@ namespace NPCBrain.Settings
     /// Adjust these values to tune how NPCs navigate and respond to their internal state.
     /// </summary>
     /// <remarks>
+    /// <para><b>DIAGNOSTIC MODE:</b></para>
+    /// <para>Set <see cref="BypassPathfinding"/> to true to skip A* pathfinding and use direct
+    /// CharacterController movement. This helps isolate whether movement issues are caused by
+    /// the pathfinding system or by the basic movement/collision system.</para>
+    /// </remarks>
+    /// <remarks>
     /// <para><b>How Criticality Affects Pathfinding:</b></para>
     /// <list type="bullet">
     ///   <item><description><b>Temperature</b> affects path recalculation frequency. Low temperature NPCs
@@ -30,6 +36,31 @@ namespace NPCBrain.Settings
     /// </remarks>
     public static class PathfindingSettings
     {
+        #region Diagnostic Settings
+        
+        /// <summary>
+        /// DIAGNOSTIC: When true, bypasses A* pathfinding and moves directly toward target.
+        /// Use this to test if movement issues are caused by pathfinding or basic movement.
+        /// </summary>
+        /// <remarks>
+        /// <para>When enabled, NPCs will walk in a straight line to their target, ignoring obstacles.</para>
+        /// <para>This is useful for debugging movement issues on flat terrain.</para>
+        /// <para>Set to false for normal operation with A* pathfinding.</para>
+        /// </remarks>
+        public const bool BypassPathfinding = true;  // TEMPORARILY TRUE FOR DEBUGGING
+        
+        /// <summary>
+        /// DIAGNOSTIC: When true, logs detailed movement information every frame.
+        /// </summary>
+        public const bool VerboseMovementLogging = true;  // TEMPORARILY TRUE FOR DEBUGGING
+        
+        /// <summary>
+        /// DIAGNOSTIC: How often to log verbose movement info (seconds).
+        /// </summary>
+        public const float VerboseLogInterval = 2f;
+        
+        #endregion
+        
         #region Path Recalculation Settings
         
         /// <summary>

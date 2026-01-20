@@ -172,8 +172,17 @@ namespace NPCBrain.Demo
             HeistTimer.StartHeist(_heistTimeLimit, _enableTimeLimit);
             
             string timeLimitInfo = _enableTimeLimit ? $" Time limit: {_heistTimeLimit}s" : " No time limit";
+            
+            // DIAGNOSTIC: Log pathfinding bypass status and CharacterController info
+            string bypassInfo = NPCBrain.Settings.PathfindingSettings.BypassPathfinding ? 
+                "<color=yellow>PATHFINDING BYPASSED - Direct movement enabled for debugging</color>" : 
+                "<color=green>A* Pathfinding enabled</color>";
             Debug.Log($"<color=cyan>Cops and Robbers Demo generated (SIMPLIFIED - no obstacles)!</color>\n" +
+                $"{bypassInfo}\n" +
                 $"Watch the AI battle it out! Robbers steal loot and escape, Cops patrol and arrest.{timeLimitInfo}");
+            
+            // Log CharacterController info for each NPC
+            LogCharacterControllerDiagnostics();
         }
         
         /// <summary>
@@ -933,6 +942,75 @@ namespace NPCBrain.Demo
             robber.GetComponent<Renderer>().material.color = _robberColor;
             
             return robber;
+        }
+        
+        /// <summary>
+        /// DIAGNOSTIC: Logs CharacterController configuration for all NPCs.
+        /// </summary>
+        private void LogCharacterControllerDiagnostics()
+        {
+            Debug.Log("<color=magenta>[DIAGNOSTIC] CharacterController configurations:</color>");
+            
+            foreach (var cop in _cops)
+            {
+                if (cop == null) continue;
+                var cc = cop.GetComponent<CharacterController>();
+                if (cc != null)
+                {
+                    Debug.Log($"  {cop.name}: pos={cop.transform.position}, " +
+                        $"CC(height={cc.height}, radius={cc.radius}, center={cc.center}, " +
+                        $"skinWidth={cc.skinWidth}, stepOffset={cc.stepOffset}, " +
+                        $"grounded={cc.isGrounded})");
+                }
+                else
+                {
+                    Debug.LogWarning($"  {cop.name}: NO CharacterController!");
+                }
+            }
+            
+            foreach (var robber in _robbers)
+            {
+                if (robber == null) continue;
+                var cc = robber.GetComponent<CharacterController>();
+                if (cc != null)
+                {
+                    Debug.Log($"  {robber.name}: pos={robber.transform.position}, " +
+                        $"CC(height={cc.height}, radius={cc.radius}, center={cc.center}, " +
+                        $"skinWidth={cc.skinWidth}, stepOffset={cc.stepOffset}, " +
+                        $"grounded={cc.isGrounded})");
+                }
+                else
+                {
+                    Debug.LogWarning($"  {robber.name}: NO CharacterController!");
+                }
+            }
+            
+            // Also log grid info
+            if (_pathfindingGrid != null)
+            {
+                Debug.Log($"<color=magenta>[DIAGNOSTIC] Grid: walkable={_pathfindingGrid.WalkableCount}, " +
+                    $"bounds=({-_arenaSize/2}, {-_arenaSize/2}) to ({_arenaSize/2}, {_arenaSize/2})</color>");
+            }
+            else
+            {
+                Debug.LogWarning("<color=red>[DIAGNOSTIC] No pathfinding grid!</color>");
+            }
+            
+            // Log loot positions
+            Debug.Log("<color=magenta>[DIAGNOSTIC] Loot positions:</color>");
+            foreach (var loot in _lootPoints)
+            {
+                if (loot != null)
+                {
+                    Debug.Log($"  {loot.name}: pos={loot.transform.position}, value=${loot.Value}");
+                }
+            }
+            
+            // Log escape zone
+            if (_escapeZone != null)
+            {
+                Debug.Log($"<color=magenta>[DIAGNOSTIC] Escape zone: pos={_escapeZone.transform.position}, radius={_escapeZone.ZoneRadius}</color>");
+            }
         }
         
         #region OnGUI Overlay
