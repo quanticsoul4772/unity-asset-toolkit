@@ -5,7 +5,6 @@ using UnityEngine.InputSystem.UI;
 using NPCBrain.Archetypes;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.Components;
-using NPCBrain.Core;
 
 namespace NPCBrain.Demo.UI
 {
