@@ -64,6 +64,8 @@ namespace NPCBrain.Archetypes
         private float _lootDetectionRangeSqr;
         private float _copDetectionRangeSqr;
         private bool _hasLootAvailable;  // Cached for performance
+        private bool _hasInitialized;  // Track first update
+        private int _tickCount;  // Debug counter
         
         [Header("Sound Settings")]
         [SerializeField] private float _footstepInterval = 0.4f;
@@ -148,19 +150,18 @@ namespace NPCBrain.Archetypes
             // Access time from HeistTimer static class
             float timeNormalized = HeistTimer.TimeRemainingNormalized;
             
+            // Defensive: ensure timeNormalized is valid
+            if (float.IsNaN(timeNormalized) || float.IsInfinity(timeNormalized))
+            {
+                timeNormalized = 1f;  // Assume full time if invalid
+            }
+            timeNormalized = Mathf.Clamp01(timeNormalized);
+            
             // Invert so 0 time = 1 urgency, full time = 0 urgency
-            // Use exponential curve: urgency rises slowly at first, then dramatically
-            // Formula: urgency = (1 - timeNormalized)^2 for gentle curve
-            // Or use a threshold-based approach for more dramatic effect
             float rawUrgency = 1f - timeNormalized;
             
             // Apply curve: low urgency until 50% time used, then rises quickly
-            // At 100% time remaining: urgency = 0
-            // At 50% time remaining: urgency = 0.25
-            // At 25% time remaining: urgency = 0.56
-            // At 10% time remaining: urgency = 0.81
-            // At 0% time remaining: urgency = 1.0
-            return rawUrgency * rawUrgency;
+            return Mathf.Clamp01(rawUrgency * rawUrgency);
         }
         
         protected override void Awake()
@@ -207,7 +208,11 @@ namespace NPCBrain.Archetypes
             // Also schedule another refresh in case scene setup is still in progress
             Invoke(nameof(RefreshKnownPoints), 0.5f);
             
-            Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>START - Found {_knownLootPoints.Count} loot points, {_knownCoverPoints.Count} cover points</color>");
+            // Initialize loot availability BEFORE first tick
+            UpdateLootAvailability();
+            _hasInitialized = true;
+            
+            Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>START - Found {_knownLootPoints.Count} loot points, {_knownCoverPoints.Count} cover points, HasLootAvailable={_hasLootAvailable}</color>");
         }
         
         protected override void OnDestroy()
@@ -251,6 +256,9 @@ namespace NPCBrain.Archetypes
             EmitFootstepsIfMoving();  // Emit footstep sounds when moving
             TryEscape();
             
+            // Track tick count for debugging
+            _tickCount++;
+            
             // Debug log every 2 seconds
             if (Time.time - _lastRobberDebugTime > 2f)
             {
@@ -260,7 +268,7 @@ namespace NPCBrain.Archetypes
                 float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 999f);
                 float timeRemaining = HeistTimer.TimeRemaining;
                 string timeInfo = HeistTimer.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s | Urgency: {Urgency:F2}" : "No time limit";
-                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | Loot: {lootInfo} | KnownLoot: {_knownLootPoints.Count}");
+                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | LootAvail: {_hasLootAvailable} | Loot: {lootInfo} | KnownLoot: {_knownLootPoints.Count} | Ticks: {_tickCount}");
             }
         }
         
@@ -474,6 +482,8 @@ namespace NPCBrain.Archetypes
             var sneakAction = CreateSneakAction();
             var scoutAction = CreateScoutAction();
             
+            Debug.Log($"<color=magenta>[{name}]</color> <color=green>CreateBehaviorTree - 6 actions created</color>");
+            
             return new UtilitySelector(
                 fleeAction,
                 carryToEscapeAction,
@@ -586,17 +596,23 @@ namespace NPCBrain.Archetypes
                 "StealLoot",
                 stealBehavior,
                 _stealWeight,
-                // Must not have loot already - but still allow partial score to avoid complete zeroing
+                // Must not have loot already
                 new FunctionalConsideration("NoLootYet",
                     _ => Blackboard.GetBool(BBKeys.HasLoot, false) ? 0f : 1f),
-                // Must have loot available to steal - uses cached value but with fallback
+                // Must have loot available to steal - ALWAYS do direct check to avoid timing issues
                 new FunctionalConsideration("LootAvailable", 
                     _ => {
-                        // Check cached value first, then do direct check as fallback
-                        if (_hasLootAvailable) return 1f;
-                        // Direct check as fallback
+                        // Always do direct check - cached value has timing issues
                         var loot = FindNearestLoot();
-                        return loot != null ? 1f : 0f;
+                        bool hasLoot = loot != null;
+                        if (!hasLoot && _tickCount < 10)
+                        {
+                            // Early ticks - refresh known points and try again
+                            RefreshKnownPoints();
+                            loot = FindNearestLoot();
+                            hasLoot = loot != null;
+                        }
+                        return hasLoot ? 1f : 0f;
                     }),
                 // Cop visibility - at high urgency, take more risks!
                 new FunctionalConsideration("CopRiskVsUrgency",
@@ -619,7 +635,6 @@ namespace NPCBrain.Archetypes
                         float fearMultiplier = Mathf.Lerp(0.5f, 0.1f, urgency);
                         return 1f - fear * fearMultiplier;
                     })
-                // Removed cooldown - stealing should always be available when possible!
             );
         }
         
@@ -715,27 +730,31 @@ namespace NPCBrain.Archetypes
                 new MoveTo(
                     () => GetScoutPosition(),
                     _arrivalDistance,
-                    _normalSpeed + 0.5f,  // Slightly faster scouting
-                    4f  // Shorter timeout
+                    _normalSpeed + 1f,  // Faster scouting - get to loot quickly!
+                    3f  // Short timeout to re-evaluate often
                 )
             );
             scoutBehavior.Name = "ScoutBehavior";
             
             // Scout is the FALLBACK action - it should ALWAYS have a positive score!
-            // This ensures the robber is never stuck doing nothing.
+            // Use HIGH base score (1.0) so even with low consideration, it's always viable.
+            // This ensures the robber is NEVER stuck doing nothing.
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
-                _scoutWeight,
+                1.0f,  // HIGH base score - Scout is the fallback!
                 // GUARANTEED MINIMUM SCORE - Scout is the fallback, must never be 0!
-                // This single consideration ensures Scout always has a positive utility.
-                new FunctionalConsideration("FallbackScore",
+                // Returns a constant high value to ensure Scout ALWAYS works.
+                new FunctionalConsideration("AlwaysAvailable",
                     _ => {
-                        float urgency = Urgency;
-                        float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
-                        // Base: 0.8, reduced by urgency and fear but never below 0.3
-                        float score = 0.8f * (1f - urgency * 0.3f) * (1f - fear * 0.5f);
-                        return Mathf.Max(0.3f, score);  // Floor at 0.3 - NEVER zero!
+                        // UNCONDITIONAL - Scout MUST always work!
+                        // Log on first few ticks to debug
+                        if (_tickCount < 5)
+                        {
+                            Debug.Log($"<color=magenta>[{name}]</color> Scout consideration: tick={_tickCount}, returning 0.8");
+                        }
+                        // Simple constant score - no dependencies that could fail
+                        return 0.8f;
                     })
             );
         }
@@ -899,19 +918,27 @@ namespace NPCBrain.Archetypes
         
         private Vector3 GetScoutPosition()
         {
-            // Randomly explore, biased toward loot areas
+            // Scouting should DIRECTLY move toward loot if available
             var loot = FindNearestLoot();
             if (loot != null)
             {
-                // Move toward loot with some randomness
-                Vector3 toLoot = (loot.transform.position - transform.position).normalized;
-                Vector3 randomOffset = Random.insideUnitSphere * 3f;
-                randomOffset.y = 0f;
-                return transform.position + toLoot * 8f + randomOffset;
+                // Move DIRECTLY toward loot - scouting IS seeking loot!
+                Debug.Log($"<color=magenta>[{name}]</color> Scout targeting loot at {loot.transform.position}");
+                return loot.transform.position;
             }
             
-            // Random wander
-            Vector2 randomCircle = Random.insideUnitCircle * 10f;
+            // No loot found - refresh and try again
+            RefreshKnownPoints();
+            loot = FindNearestLoot();
+            if (loot != null)
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> Scout found loot after refresh at {loot.transform.position}");
+                return loot.transform.position;
+            }
+            
+            // Still no loot - wander toward center of map
+            Debug.Log($"<color=magenta>[{name}]</color> Scout wandering - no loot found");
+            Vector2 randomCircle = Random.insideUnitCircle * 15f;
             return _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
         }
         
