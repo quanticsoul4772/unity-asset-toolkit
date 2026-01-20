@@ -132,11 +132,13 @@ namespace NPCBrain.BehaviorTree.Actions
             
             if (distanceSqr <= _arrivalDistanceSqr)
             {
+                Debug.Log($"<color=green>[MoveTo]</color> {brain.name} ARRIVED at target (dist={Mathf.Sqrt(distanceSqr):F2}m, arrivalDist={Mathf.Sqrt(_arrivalDistanceSqr):F2}m)");
                 return NodeStatus.Success;
             }
             
             if (Time.time - _startTime > _timeout)
             {
+                Debug.LogWarning($"<color=red>[MoveTo]</color> {brain.name} TIMEOUT after {_timeout}s trying to reach {target}");
                 return NodeStatus.Failure;
             }
             
@@ -154,9 +156,12 @@ namespace NPCBrain.BehaviorTree.Actions
             // Use CharacterController alone if available (handles collision detection but no pathfinding)
             if (_cachedCharController != null)
             {
+                Debug.LogWarning($"<color=orange>[MoveTo]</color> {brain.name} using CharController only (no grid!) - grid={_cachedGrid != null}");
                 return MoveViaCharacterController(_cachedCharController, brain.transform, target);
             }
             
+            // DIAGNOSTIC: Log when falling through to MoveDirectly (no CharController!)
+            Debug.LogWarning($"<color=red>[MoveTo]</color> {brain.name} using MoveDirectly (NO CharController!) - grid={_cachedGrid != null}, charCtrl={_cachedCharController != null}");
             return MoveDirectly(brain.transform, target, brain.name);
         }
         
