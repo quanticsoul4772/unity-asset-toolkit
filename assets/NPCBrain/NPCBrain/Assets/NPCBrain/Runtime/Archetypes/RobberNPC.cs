@@ -247,6 +247,8 @@ namespace NPCBrain.Archetypes
         }
         
         private float _lastRobberDebugTime;
+        private int _updateCallCount;  // Track if Update() is being called
+        private int _btTickCount;  // Track if BT is being ticked
         
         // Cache action references for debug logging
         private UtilityAction _fleeAction;
@@ -256,8 +258,43 @@ namespace NPCBrain.Archetypes
         private UtilityAction _sneakAction;
         private UtilityAction _scoutAction;
         
+        /// <summary>
+        /// DIAGNOSTIC: Override Update to ensure behavior tree ticks and add logging.
+        /// Unity calls this instead of the base class's private Update().
+        /// </summary>
+        private void Update()
+        {
+            _updateCallCount++;
+            
+            // Log every 60 frames (~1 second at 60fps) to show Update IS being called
+            if (_updateCallCount % 60 == 1)
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> <color=orange>UPDATE #{_updateCallCount}</color> | IsPaused={IsPaused} | BT={BehaviorTree != null} | HasEscaped={_hasEscaped}");
+            }
+            
+            if (_hasEscaped) return;
+            if (IsPaused) return;
+            
+            // IMPORTANT: Manually call Tick() since we're shadowing the base class's private Update()
+            // The base class Update() won't be called because this one exists!
+            Tick();
+            _btTickCount++;
+            
+            // Log BT tick status occasionally
+            if (_btTickCount % 60 == 1)
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> <color=lime>BT TICK #{_btTickCount}</color> | LastStatus={LastStatus}");
+            }
+        }
+        
         private void LateUpdate()
         {
+            // Log at VERY START before any early returns
+            if (Time.frameCount % 120 == 0)
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> <color=yellow>LATE UPDATE</color> | HasEscaped={_hasEscaped} | UpdateCalls={_updateCallCount} | BTTicks={_btTickCount}");
+            }
+            
             if (_hasEscaped) return;
             
             UpdateCopDetection();
