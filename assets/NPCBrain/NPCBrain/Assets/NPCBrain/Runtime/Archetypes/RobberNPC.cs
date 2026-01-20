@@ -593,14 +593,16 @@ namespace NPCBrain.Archetypes
                 new BlackboardConsideration<float>("CopProximity", BBKeys.ClosestCopDistance,
                     dist => Mathf.Clamp01(1f - (dist / _copDetectionRange)), 100f),
                 // Higher score when fear is high, but urgency reduces fear response
-                // When time is running out, we care less about fear!
+                // IMPORTANT: Even with 0 fear (before stealing), flee should still work when cop is CLOSE!
                 new FunctionalConsideration("FearVsUrgency",
                     _ => {
                         float fear = Blackboard.GetFloat(BBKeys.FearLevel, 0f);
                         float urgency = Urgency;
-                        // At high urgency, reduce fear's influence (take more risks)
-                        float fearInfluence = 1f - urgency * 0.5f; // At max urgency, fear only 50% effective
-                        return 0.5f + fear * 0.5f * fearInfluence;
+                        float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
+                        // Base of 0.7 ensures Flee can beat Scout (0.35) even with 0 fear when cop is close
+                        // Fear adds up to 0.3 more
+                        float fearInfluence = 1f - urgency * 0.5f;
+                        return 0.7f + fear * 0.3f * fearInfluence;
                     })
             );
         }
