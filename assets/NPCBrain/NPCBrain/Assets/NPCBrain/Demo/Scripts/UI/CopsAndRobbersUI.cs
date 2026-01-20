@@ -21,8 +21,8 @@ namespace NPCBrain.Demo.UI
         [SerializeField] private EasyPath.EasyPathGrid _pathfindingGrid;
         
         [Header("UI Settings")]
-        [SerializeField] private Vector2 _referenceResolution = new Vector2(1920, 1080);
-        [SerializeField] private float _panelWidth = 400f;
+        [SerializeField] private Vector2 _referenceResolution = new Vector2(1280, 720);
+        [SerializeField] private float _panelWidth = 520f;
         
         // Canvas components
         private Canvas _canvas;
@@ -163,33 +163,33 @@ namespace NPCBrain.Demo.UI
         
         private void CreateTitleSection(Transform parent)
         {
-            var section = CreateSection("TitleSection", parent, 100);
+            var section = CreateSection("TitleSection", parent, 140);
             
             // Title
-            _titleText = CreateText(section.transform, "Title", "🚨 COPS AND ROBBERS 🎭", 22, FontStyle.Bold, TextAnchor.MiddleCenter);
+            _titleText = CreateText(section.transform, "Title", "🚨 COPS AND ROBBERS 🎭", 28, FontStyle.Bold, TextAnchor.MiddleCenter);
             var titleRect = _titleText.GetComponent<RectTransform>();
-            titleRect.sizeDelta = new Vector2(0, 30);
+            titleRect.sizeDelta = new Vector2(0, 36);
             
             // Subtitle
-            var subtitle = CreateText(section.transform, "Subtitle", "NPCBrain Unified Demo", 12, FontStyle.Italic, TextAnchor.MiddleCenter);
+            var subtitle = CreateText(section.transform, "Subtitle", "NPCBrain Utility AI Demo", 14, FontStyle.Italic, TextAnchor.MiddleCenter);
             subtitle.color = new Color(0.7f, 0.7f, 0.7f);
             var subRect = subtitle.GetComponent<RectTransform>();
-            subRect.sizeDelta = new Vector2(0, 18);
+            subRect.sizeDelta = new Vector2(0, 20);
             
             // Time and Score
-            _timeText = CreateText(section.transform, "Time", "Time: 00:00", 14, FontStyle.Normal, TextAnchor.MiddleCenter);
+            _timeText = CreateText(section.transform, "Time", "Time: 00:00", 16, FontStyle.Normal, TextAnchor.MiddleCenter);
             var timeRect = _timeText.GetComponent<RectTransform>();
-            timeRect.sizeDelta = new Vector2(0, 22);
+            timeRect.sizeDelta = new Vector2(0, 26);
             
-            _scoreText = CreateText(section.transform, "Score", "COPS: $0  |  ROBBERS: $0", 14, FontStyle.Bold, TextAnchor.MiddleCenter);
+            _scoreText = CreateText(section.transform, "Score", "COPS: $0  |  ROBBERS: $0", 18, FontStyle.Bold, TextAnchor.MiddleCenter);
             var scoreRect = _scoreText.GetComponent<RectTransform>();
-            scoreRect.sizeDelta = new Vector2(0, 22);
+            scoreRect.sizeDelta = new Vector2(0, 28);
             
             // Winner text (hidden initially)
-            _winnerText = CreateText(section.transform, "Winner", "", 18, FontStyle.Bold, TextAnchor.MiddleCenter);
+            _winnerText = CreateText(section.transform, "Winner", "", 22, FontStyle.Bold, TextAnchor.MiddleCenter);
             _winnerText.color = Color.yellow;
             var winnerRect = _winnerText.GetComponent<RectTransform>();
-            winnerRect.sizeDelta = new Vector2(0, 26);
+            winnerRect.sizeDelta = new Vector2(0, 32);
             _winnerText.gameObject.SetActive(false);
         }
         
@@ -269,8 +269,8 @@ namespace NPCBrain.Demo.UI
             foreach (var cop in _cops)
             {
                 if (cop == null) continue;
-                var statusText = CreateText(_copsContainer.transform, $"Cop_{cop.name}", "", 11, FontStyle.Normal, TextAnchor.UpperLeft);
-                statusText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 50);
+                var statusText = CreateText(_copsContainer.transform, $"Cop_{cop.name}", "", 14, FontStyle.Normal, TextAnchor.UpperLeft);
+                statusText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 75);
                 _copStatusTexts[cop] = statusText;
             }
         }
@@ -295,8 +295,8 @@ namespace NPCBrain.Demo.UI
             foreach (var robber in _robbers)
             {
                 if (robber == null) continue;
-                var statusText = CreateText(_robbersContainer.transform, $"Robber_{robber.name}", "", 11, FontStyle.Normal, TextAnchor.UpperLeft);
-                statusText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 50);
+                var statusText = CreateText(_robbersContainer.transform, $"Robber_{robber.name}", "", 14, FontStyle.Normal, TextAnchor.UpperLeft);
+                statusText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 75);
                 _robberStatusTexts[robber] = statusText;
             }
         }
@@ -321,8 +321,8 @@ namespace NPCBrain.Demo.UI
             foreach (var loot in _lootPoints)
             {
                 if (loot == null) continue;
-                var statusText = CreateText(_lootContainer.transform, $"Loot_{loot.name}", "", 11, FontStyle.Normal, TextAnchor.UpperLeft);
-                statusText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 18);
+                var statusText = CreateText(_lootContainer.transform, $"Loot_{loot.name}", "", 14, FontStyle.Normal, TextAnchor.UpperLeft);
+                statusText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 24);
                 _lootStatusTexts[loot] = statusText;
             }
         }
@@ -334,11 +334,12 @@ namespace NPCBrain.Demo.UI
             
             var infoText = CreateText(section.transform, "InfoText", 
                 "<b>Criticality System:</b>\n" +
-                "  T = Temperature (exploration)\n" +
-                "  I = Inertia (path precision)\n\n" +
-                "<b>A* Pathfinding:</b> Active", 
-                10, FontStyle.Normal, TextAnchor.UpperLeft);
-            infoText.color = new Color(0.75f, 0.75f, 0.75f);
+                "  T = Temperature (exploration vs exploitation)\n" +
+                "  I = Inertia (path following precision)\n\n" +
+                "<b>A* Pathfinding:</b> EasyPath Active\n" +
+                "<b>AI:</b> Utility-based Decision Making", 
+                13, FontStyle.Normal, TextAnchor.UpperLeft);
+            infoText.color = new Color(0.8f, 0.8f, 0.8f);
         }
         
         private void CreateControlsSection(Transform parent)
@@ -351,7 +352,7 @@ namespace NPCBrain.Demo.UI
             buttonGO.transform.SetParent(section.transform, false);
             
             var buttonRect = buttonGO.AddComponent<RectTransform>();
-            buttonRect.sizeDelta = new Vector2(0, 35);
+            buttonRect.sizeDelta = new Vector2(0, 45);
             
             var buttonImg = buttonGO.AddComponent<Image>();
             buttonImg.color = new Color(0.2f, 0.5f, 0.3f);
@@ -360,7 +361,7 @@ namespace NPCBrain.Demo.UI
             button.targetGraphic = buttonImg;
             button.onClick.AddListener(() => _onRestartClicked?.Invoke());
             
-            var buttonText = CreateText(buttonGO.transform, "Text", "Restart Game", 14, FontStyle.Bold, TextAnchor.MiddleCenter);
+            var buttonText = CreateText(buttonGO.transform, "Text", "🔄 Restart Game", 16, FontStyle.Bold, TextAnchor.MiddleCenter);
             buttonText.color = Color.white;
             var textRect = buttonText.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
@@ -370,8 +371,8 @@ namespace NPCBrain.Demo.UI
             // Instructions
             var instructions = CreateText(section.transform, "Instructions", 
                 "View in Scene window with Gizmos enabled\nAll AI is fully autonomous!", 
-                9, FontStyle.Italic, TextAnchor.MiddleCenter);
-            instructions.color = new Color(0.6f, 0.6f, 0.6f);
+                12, FontStyle.Italic, TextAnchor.MiddleCenter);
+            instructions.color = new Color(0.7f, 0.7f, 0.7f);
         }
         
         // Helper methods
@@ -415,10 +416,10 @@ namespace NPCBrain.Demo.UI
         
         private Text CreateSectionHeader(Transform parent, string text, Color color)
         {
-            var header = CreateText(parent, "Header", text, 13, FontStyle.Bold, TextAnchor.MiddleLeft);
+            var header = CreateText(parent, "Header", text, 18, FontStyle.Bold, TextAnchor.MiddleLeft);
             header.color = color;
             var rect = header.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(0, 22);
+            rect.sizeDelta = new Vector2(0, 28);
             return header;
         }
         
@@ -509,7 +510,12 @@ namespace NPCBrain.Demo.UI
                 
                 string stateColor = GetStateColor(cop.CurrentState);
                 
-                text.text = $"<b>{cop.name}</b> - {cop.Role}\n" +
+                // Get additional cop details
+                string alertInfo = "";
+                string visionInfo = cop.CanSeeTarget ? " 👁️" : "";
+                
+                text.text = $"<b>{cop.name}</b> - {cop.Role}{visionInfo}\n" +
+                           $"  Goal: {cop.Goal}\n" +
                            $"  Action: <color={stateColor}>{actionName}</color> {critInfo}\n" +
                            $"  <color=#AADDFF>{cop.CurrentReason}</color>";
             }
@@ -526,8 +532,9 @@ namespace NPCBrain.Demo.UI
                 
                 if (!robber.gameObject.activeSelf)
                 {
-                    string status = robber.HasEscaped ? "<color=green>ESCAPED!</color>" : "<color=red>ARRESTED!</color>";
-                    text.text = $"<b>{robber.name}</b> - {status}\n" +
+                    string status = robber.HasEscaped ? "<color=green>✓ ESCAPED!</color>" : "<color=red>✗ ARRESTED!</color>";
+                    string lootResult = robber.HasEscaped ? $" with ${robber.CarriedLootValue}" : "";
+                    text.text = $"<b>{robber.name}</b> - {status}{lootResult}\n" +
                                $"  <color=#FFDDAA>{robber.CurrentReason}</color>";
                     continue;
                 }
@@ -542,12 +549,15 @@ namespace NPCBrain.Demo.UI
                     $"T:{robber.Criticality.Temperature:F1} I:{robber.Criticality.Inertia:F1}" : "";
                 
                 string lootInfo = robber.IsCarryingLoot ? $" 💰${robber.CarriedLootValue}" : "";
-                string fearInfo = robber.FearLevel > 0.3f ? " 😰" : "";
+                string fearEmoji = robber.FearLevel > 0.5f ? " 😱" : robber.FearLevel > 0.2f ? " 😰" : "";
+                string copVision = robber.CanSeeCop ? " 👁️COP!" : "";
                 string stateColor = GetStateColor(robber.CurrentState);
+                string urgency = robber.Urgency > 0.7f ? " <color=red>⏰RUSH!</color>" : robber.Urgency > 0.4f ? " <color=yellow>⏰</color>" : "";
                 
-                text.text = $"<b>{robber.name}</b>{lootInfo}{fearInfo}\n" +
+                text.text = $"<b>{robber.name}</b>{lootInfo}{fearEmoji}{copVision}{urgency}\n" +
+                           $"  Goal: {robber.Goal}\n" +
                            $"  Action: <color={stateColor}>{actionName}</color> {critInfo}\n" +
-                           $"  <color=#FFDDAA>{robber.CurrentReason}</color>";
+                           $"  Fear: {robber.FearLevel:P0} | <color=#FFDDAA>{robber.CurrentReason}</color>";
             }
         }
         
