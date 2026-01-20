@@ -614,13 +614,10 @@ namespace NPCBrain.Archetypes
                 // Must not have loot already
                 new FunctionalConsideration("NoLootYet",
                     _ => Blackboard.GetBool(BBKeys.HasLoot, false) ? 0f : 1f),
-                // Must have loot available to steal - use direct check for reliability
+                // Must have loot available to steal - use cached value (updated in LateUpdate)
+                // Note: _hasLootAvailable is initialized in Start() before first tick
                 new FunctionalConsideration("LootAvailable", 
-                    _ => {
-                        // Use direct check instead of cached value for reliability
-                        var loot = FindNearestLoot();
-                        return loot != null ? 1f : 0f;
-                    }),
+                    _ => _hasLootAvailable ? 1f : 0f),
                 // PROXIMITY BOOST: Higher score when closer to loot!
                 // This ensures StealLoot wins over Scout when we're close
                 new FunctionalConsideration("LootProximityBoost",
