@@ -64,7 +64,6 @@ namespace NPCBrain.Archetypes
         private float _lootDetectionRangeSqr;
         private float _copDetectionRangeSqr;
         private bool _hasLootAvailable;  // Cached for performance
-        private bool _hasInitialized;  // Track first update
         private int _tickCount;  // Debug counter
         
         [Header("Sound Settings")]
@@ -210,7 +209,6 @@ namespace NPCBrain.Archetypes
             
             // Initialize loot availability BEFORE first tick
             UpdateLootAvailability();
-            _hasInitialized = true;
             
             Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>START - Found {_knownLootPoints.Count} loot points, {_knownCoverPoints.Count} cover points, HasLootAvailable={_hasLootAvailable}</color>");
         }
@@ -599,21 +597,9 @@ namespace NPCBrain.Archetypes
                 // Must not have loot already
                 new FunctionalConsideration("NoLootYet",
                     _ => Blackboard.GetBool(BBKeys.HasLoot, false) ? 0f : 1f),
-                // Must have loot available to steal - ALWAYS do direct check to avoid timing issues
+                // Must have loot available to steal - use cached value (updated in LateUpdate)
                 new FunctionalConsideration("LootAvailable", 
-                    _ => {
-                        // Always do direct check - cached value has timing issues
-                        var loot = FindNearestLoot();
-                        bool hasLoot = loot != null;
-                        if (!hasLoot && _tickCount < 10)
-                        {
-                            // Early ticks - refresh known points and try again
-                            RefreshKnownPoints();
-                            loot = FindNearestLoot();
-                            hasLoot = loot != null;
-                        }
-                        return hasLoot ? 1f : 0f;
-                    }),
+                    _ => _hasLootAvailable ? 1f : 0f),
                 // Cop visibility - at high urgency, take more risks!
                 new FunctionalConsideration("CopRiskVsUrgency",
                     _ => {
@@ -746,16 +732,7 @@ namespace NPCBrain.Archetypes
                 // GUARANTEED MINIMUM SCORE - Scout is the fallback, must never be 0!
                 // Returns a constant high value to ensure Scout ALWAYS works.
                 new FunctionalConsideration("AlwaysAvailable",
-                    _ => {
-                        // UNCONDITIONAL - Scout MUST always work!
-                        // Log on first few ticks to debug
-                        if (_tickCount < 5)
-                        {
-                            Debug.Log($"<color=magenta>[{name}]</color> Scout consideration: tick={_tickCount}, returning 0.8");
-                        }
-                        // Simple constant score - no dependencies that could fail
-                        return 0.8f;
-                    })
+                    _ => 0.8f)  // Simple constant - Scout MUST always work!
             );
         }
         
@@ -923,21 +900,10 @@ namespace NPCBrain.Archetypes
             if (loot != null)
             {
                 // Move DIRECTLY toward loot - scouting IS seeking loot!
-                Debug.Log($"<color=magenta>[{name}]</color> Scout targeting loot at {loot.transform.position}");
                 return loot.transform.position;
             }
             
-            // No loot found - refresh and try again
-            RefreshKnownPoints();
-            loot = FindNearestLoot();
-            if (loot != null)
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> Scout found loot after refresh at {loot.transform.position}");
-                return loot.transform.position;
-            }
-            
-            // Still no loot - wander toward center of map
-            Debug.Log($"<color=magenta>[{name}]</color> Scout wandering - no loot found");
+            // No loot found - wander toward center of map
             Vector2 randomCircle = Random.insideUnitCircle * 15f;
             return _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
         }

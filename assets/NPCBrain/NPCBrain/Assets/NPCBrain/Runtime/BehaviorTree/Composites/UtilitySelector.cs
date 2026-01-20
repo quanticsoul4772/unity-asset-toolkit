@@ -403,9 +403,7 @@ namespace NPCBrain.BehaviorTree.Composites
         /// </summary>
         private void LogActionSelection(int selectedIndex, float temperature, float inertia)
         {
-            // Always log for robbers to debug the issue, otherwise check debug flag
-            bool isRobber = _actions.Count > 0 && _actions[0].Name == "Flee";  // Robber's first action
-            if (!isRobber && !NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+            if (!NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
                 return;
                 
             string selectedActionName = _actions[selectedIndex].Name;
