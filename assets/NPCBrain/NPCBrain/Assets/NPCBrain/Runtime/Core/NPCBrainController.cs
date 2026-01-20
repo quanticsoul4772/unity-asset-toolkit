@@ -161,7 +161,11 @@ namespace NPCBrain
             return null;
         }
         
-        private void Update()
+        /// <summary>
+        /// Unity Update callback. Override in derived classes if custom tick behavior is needed.
+        /// Call base.Update() to maintain standard tick logic, or call Tick() directly.
+        /// </summary>
+        protected virtual void Update()
         {
             if (_isPaused)
             {

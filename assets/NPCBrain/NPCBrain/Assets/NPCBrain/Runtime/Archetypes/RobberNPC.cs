@@ -259,10 +259,9 @@ namespace NPCBrain.Archetypes
         private UtilityAction _scoutAction;
         
         /// <summary>
-        /// DIAGNOSTIC: Override Update to ensure behavior tree ticks and add logging.
-        /// Unity calls this instead of the base class's private Update().
+        /// Override Update to add diagnostic logging and ensure behavior tree ticks.
         /// </summary>
-        private void Update()
+        protected override void Update()
         {
             _updateCallCount++;
             
@@ -273,11 +272,9 @@ namespace NPCBrain.Archetypes
             }
             
             if (_hasEscaped) return;
-            if (IsPaused) return;
             
-            // IMPORTANT: Manually call Tick() since we're shadowing the base class's private Update()
-            // The base class Update() won't be called because this one exists!
-            Tick();
+            // Call base.Update() which handles pause check, tick interval, and calls Tick()
+            base.Update();
             _btTickCount++;
             
             // Log BT tick status occasionally
