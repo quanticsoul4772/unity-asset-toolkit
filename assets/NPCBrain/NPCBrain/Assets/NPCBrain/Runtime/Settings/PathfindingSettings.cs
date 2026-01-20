@@ -170,9 +170,19 @@ namespace NPCBrain.Settings
         /// </summary>
         /// <remarks>
         /// <para>Should be large enough to escape collision but small enough to not overshoot.</para>
-        /// <para>Recommended range: 0.2 - 0.5</para>
+        /// <para>Recommended range: 0.5 - 1.5</para>
         /// </remarks>
-        public const float StuckRecoveryPushDistance = 0.3f;
+        public const float StuckRecoveryPushDistance = 1.0f;
+        
+        /// <summary>
+        /// Number of recovery attempts before forcing a complete path recalculation.
+        /// Lower values = faster adaptation to blocked paths but more CPU cost.
+        /// </summary>
+        /// <remarks>
+        /// <para>After this many failed recovery attempts, the path is discarded and recalculated.</para>
+        /// <para>Recommended range: 2 - 4</para>
+        /// </remarks>
+        public const int RecoveryAttemptsBeforePathRecalc = 2;
         
         /// <summary>
         /// Fixed downward push (meters) applied during stuck recovery when NPC is not grounded.

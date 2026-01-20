@@ -274,6 +274,7 @@ namespace NPCBrain.BehaviorTree.Actions
             if (distanceToWaypoint <= waypointTolerance)
             {
                 _currentWaypointIndex++;
+                _recoveryAttempts = 0; // Reset recovery attempts when we successfully reach a waypoint
                 
                 // Update visualizer with new waypoint index
                 NPCPathVisualizer.UpdatePathProgress(brain.name, _currentWaypointIndex, transform.position);
@@ -358,19 +359,21 @@ namespace NPCBrain.BehaviorTree.Actions
                         
                         _stuckCounter = 0;
                         
-                        // After several failed recovery attempts, force path recalculation with offset target
-                        if (_recoveryAttempts >= 5)
+                        // After a few failed recovery attempts, force path recalculation
+                        if (_recoveryAttempts >= PathfindingSettings.RecoveryAttemptsBeforePathRecalc)
                         {
                             Debug.Log($"<color=yellow>[MoveTo]</color> {brain.name} forcing path recalculation after {_recoveryAttempts} recovery attempts");
                             _currentPath = null;
-                            _recoveryAttempts = 0;
+                            // Don't reset _recoveryAttempts here - let it keep counting
+                            // so if we keep getting stuck on the same path, we'll keep trying new strategies
                         }
                     }
                 }
                 else
                 {
                     _stuckCounter = 0; // Reset if we're making progress
-                    _recoveryAttempts = 0; // Reset recovery attempts on successful movement
+                    // NOTE: Don't reset _recoveryAttempts here - only reset when waypoint is reached
+                    // This ensures we progress through recovery strategies if NPC keeps getting stuck
                 }
                 _lastStuckCheckPosition = transform.position;
                 _lastStuckCheckTime = Time.time;
@@ -392,7 +395,10 @@ namespace NPCBrain.BehaviorTree.Actions
         /// <summary>
         /// Performs stuck recovery maneuvers to get the NPC unstuck.
         /// Tries different strategies based on the recovery attempt number.
-        /// Uses collision flags to make smarter recovery decisions.
+        /// PRIORITY ORDER:
+        /// 1. Skip waypoint first (usually the path goes through a bad spot)
+        /// 2. Try sliding/backing movements with large push distance
+        /// 3. Random direction as last resort
         /// </summary>
         private void PerformStuckRecovery(NPCBrainController brain, CharacterController controller, Transform transform, Vector3 target)
         {
@@ -418,75 +424,79 @@ namespace NPCBrain.BehaviorTree.Actions
             CollisionFlags flags = controller.collisionFlags;
             bool blockedOnSides = (flags & CollisionFlags.Sides) != 0;
             
-            Vector3 recoveryDirection;
+            Vector3 recoveryDirection = Vector3.zero;
             
-            // Choose recovery strategy based on attempt number
-            // When blocked on sides, prioritize sliding movements (strategies 0, 1) first
-            int strategy = _recoveryAttempts % 6;
-            if (blockedOnSides && strategy >= 2 && strategy <= 4)
+            // PRIORITY 1: Always try to skip waypoint first (attempt 1)
+            // The path probably goes through a blocked area
+            if (_recoveryAttempts == 1)
             {
-                // Remap to sliding strategies when blocked on sides
-                strategy = _recoveryAttempts % 2; // Alternate between left (0) and right (1)
+                if (_currentPath != null && _currentWaypointIndex < _currentPath.Count - 1)
+                {
+                    // Skip multiple waypoints if stuck early in path
+                    int skipAmount = Mathf.Min(3, _currentPath.Count - 1 - _currentWaypointIndex);
+                    _currentWaypointIndex += skipAmount;
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: SKIPPING {skipAmount} waypoints to {_currentWaypointIndex}/{_currentPath.Count}");
+                    return; // No movement needed for waypoint skip
+                }
             }
+            
+            // PRIORITY 2: Physical movement strategies (attempts 2+)
+            // Choose strategy based on attempt number
+            int strategy = (_recoveryAttempts - 1) % 6; // -1 because attempt 1 was waypoint skip
             
             switch (strategy)
             {
                 case 0:
-                    // Try sliding left (perpendicular to target direction)
-                    recoveryDirection = Vector3.Cross(Vector3.up, toTarget).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: sliding LEFT (blockedOnSides={blockedOnSides})");
+                    // Try stepping backward (away from obstacle)
+                    recoveryDirection = -toTarget;
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: stepping BACK");
                     break;
                     
                 case 1:
-                    // Try sliding right
-                    recoveryDirection = -Vector3.Cross(Vector3.up, toTarget).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: sliding RIGHT (blockedOnSides={blockedOnSides})");
+                    // Try sliding left (perpendicular to target direction)
+                    recoveryDirection = Vector3.Cross(Vector3.up, toTarget).normalized;
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: sliding LEFT");
                     break;
                     
                 case 2:
-                    // Try stepping backward
-                    recoveryDirection = -toTarget;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: stepping BACK");
+                    // Try sliding right
+                    recoveryDirection = -Vector3.Cross(Vector3.up, toTarget).normalized;
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: sliding RIGHT");
                     break;
                     
                 case 3:
                     // Try diagonal left-back
                     recoveryDirection = (-toTarget + Vector3.Cross(Vector3.up, toTarget)).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: diagonal LEFT-BACK");
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: diagonal LEFT-BACK");
                     break;
                     
                 case 4:
                     // Try diagonal right-back
                     recoveryDirection = (-toTarget - Vector3.Cross(Vector3.up, toTarget)).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: diagonal RIGHT-BACK");
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: diagonal RIGHT-BACK");
                     break;
                     
                 case 5:
-                    // Skip to next waypoint if possible
+                    // Random direction as last resort, plus skip another waypoint
                     if (_currentPath != null && _currentWaypointIndex < _currentPath.Count - 1)
                     {
                         _currentWaypointIndex++;
-                        Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: skipping to waypoint {_currentWaypointIndex}/{_currentPath.Count}");
-                        return; // No movement needed for waypoint skip
                     }
-                    else
-                    {
-                        // Random direction as last resort
-                        float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                        recoveryDirection = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                        Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: random direction");
-                    }
-                    break;
-                    
-                default:
-                    recoveryDirection = Vector3.zero;
+                    float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+                    recoveryDirection = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: random direction + skip waypoint");
                     break;
             }
             
-            // Apply an immediate recovery movement (no continuous follow-up to avoid movement conflicts)
+            // Apply an immediate recovery movement with larger push
             if (recoveryDirection != Vector3.zero)
             {
-                Vector3 immediateMove = recoveryDirection * PathfindingSettings.StuckRecoveryPushDistance;
+                // Use larger push distance when blocked on sides (more aggressive escape)
+                float pushDistance = blockedOnSides ? 
+                    PathfindingSettings.StuckRecoveryPushDistance * 1.5f : 
+                    PathfindingSettings.StuckRecoveryPushDistance;
+                    
+                Vector3 immediateMove = recoveryDirection * pushDistance;
                 if (!controller.isGrounded)
                 {
                     immediateMove.y = -PathfindingSettings.StuckRecoveryDownwardPush;
