@@ -304,12 +304,8 @@ namespace NPCBrain.BehaviorTree.Composites
 
             if (maxScore <= 0f)
             {
-                if (ShouldLogWarning())
-                {
-                    NPCBrainDebug.LogWarning(NPCBrainDebug.Category.Utility,
-                        $"All {_actions.Count} action(s) scored <= 0. No action selected. " +
-                        $"Check that considerations return positive values.");
-                }
+                // ALWAYS log this warning - it's critical for debugging!
+                Debug.LogWarning($"[UtilitySelector] All {_actions.Count} action(s) scored <= 0 on {brain.name}. No action selected! Scores: {GetScoresDebugString()}");
                 return null;
             }
 
@@ -516,6 +512,20 @@ namespace NPCBrain.BehaviorTree.Composites
         
         /// <summary>Number of actions in this selector.</summary>
         public int ActionCount => _actions.Count;
+        
+        /// <summary>
+        /// Debug helper to get all action scores as a string.
+        /// </summary>
+        private string GetScoresDebugString()
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append($"{_actions[i].Name}={_scores[i]:F2}");
+            }
+            return sb.ToString();
+        }
         
         /// <summary>
         /// Gets the scores from the last selection (for debugging).

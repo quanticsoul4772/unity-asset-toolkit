@@ -264,6 +264,13 @@ namespace NPCBrain.Archetypes
         protected override void Update()
         {
             if (_hasEscaped) return;
+            
+            // DEBUG: Log every 2 seconds to verify Update is running
+            if (Time.frameCount % 120 == 0)
+            {
+                Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>UPDATE TICK - BT={BehaviorTree != null}, Paused={IsPaused}, LastStatus={LastStatus}</color>");
+            }
+            
             base.Update();
         }
         
