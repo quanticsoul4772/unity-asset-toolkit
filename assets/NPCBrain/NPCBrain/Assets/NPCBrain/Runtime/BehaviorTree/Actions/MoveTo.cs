@@ -426,23 +426,21 @@ namespace NPCBrain.BehaviorTree.Actions
             
             Vector3 recoveryDirection = Vector3.zero;
             
-            // PRIORITY 1: Always try to skip waypoint first (attempt 1)
-            // The path probably goes through a blocked area
-            if (_recoveryAttempts == 1)
+            // Try waypoint skip periodically (every 4 attempts starting at 1)
+            // The path probably goes through a blocked area, so skipping waypoints is often the fastest fix
+            bool shouldTryWaypointSkip = (_recoveryAttempts % 4 == 1);
+            if (shouldTryWaypointSkip && _currentPath != null && _currentWaypointIndex < _currentPath.Count - 1)
             {
-                if (_currentPath != null && _currentWaypointIndex < _currentPath.Count - 1)
-                {
-                    // Skip multiple waypoints if stuck early in path
-                    int skipAmount = Mathf.Min(3, _currentPath.Count - 1 - _currentWaypointIndex);
-                    _currentWaypointIndex += skipAmount;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery: SKIPPING {skipAmount} waypoints to {_currentWaypointIndex}/{_currentPath.Count}");
-                    return; // No movement needed for waypoint skip
-                }
+                // Skip multiple waypoints if stuck early in path
+                int skipAmount = Mathf.Min(3, _currentPath.Count - 1 - _currentWaypointIndex);
+                _currentWaypointIndex += skipAmount;
+                Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: SKIPPING {skipAmount} waypoints to {_currentWaypointIndex}/{_currentPath.Count}");
+                return; // No movement needed for waypoint skip
             }
             
-            // PRIORITY 2: Physical movement strategies (attempts 2+)
-            // Choose strategy based on attempt number
-            int strategy = (_recoveryAttempts - 1) % 6; // -1 because attempt 1 was waypoint skip
+            // Physical movement strategies
+            // Choose strategy based on attempt number (cycle through 6 strategies)
+            int strategy = _recoveryAttempts % 6;
             
             switch (strategy)
             {
@@ -477,14 +475,13 @@ namespace NPCBrain.BehaviorTree.Actions
                     break;
                     
                 case 5:
-                    // Random direction as last resort, plus skip another waypoint
-                    if (_currentPath != null && _currentWaypointIndex < _currentPath.Count - 1)
-                    {
-                        _currentWaypointIndex++;
-                    }
+                    // Random direction as last resort
                     float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
                     recoveryDirection = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: random direction + skip waypoint");
+                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: random direction");
+                    break;
+                    
+                default:
                     break;
             }
             
