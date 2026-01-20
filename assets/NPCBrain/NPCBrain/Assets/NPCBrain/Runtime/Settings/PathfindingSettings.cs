@@ -165,7 +165,7 @@ namespace NPCBrain.Settings
         public const int MaxStuckCount = 3;
         
         /// <summary>
-        /// Distance (meters) to push NPC when performing stuck recovery.
+        /// Distance (meters) to push NPC horizontally when performing stuck recovery.
         /// This is the immediate push applied in the recovery direction.
         /// </summary>
         /// <remarks>
@@ -173,6 +173,16 @@ namespace NPCBrain.Settings
         /// <para>Recommended range: 0.2 - 0.5</para>
         /// </remarks>
         public const float StuckRecoveryPushDistance = 0.3f;
+        
+        /// <summary>
+        /// Fixed downward push (meters) applied during stuck recovery when NPC is not grounded.
+        /// Uses a fixed value rather than frame-rate dependent gravity for consistency.
+        /// </summary>
+        /// <remarks>
+        /// <para>Should be small to keep NPC close to ground without teleporting through floors.</para>
+        /// <para>Recommended range: 0.05 - 0.2</para>
+        /// </remarks>
+        public const float StuckRecoveryDownwardPush = 0.1f;
         
         #endregion
         

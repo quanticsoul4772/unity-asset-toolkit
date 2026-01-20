@@ -489,7 +489,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 Vector3 immediateMove = recoveryDirection * PathfindingSettings.StuckRecoveryPushDistance;
                 if (!controller.isGrounded)
                 {
-                    immediateMove.y = -PathfindingSettings.Gravity * Time.deltaTime;
+                    immediateMove.y = -PathfindingSettings.StuckRecoveryDownwardPush;
                 }
                 controller.Move(immediateMove);
             }
