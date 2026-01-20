@@ -1042,13 +1042,16 @@ namespace NPCBrain.Archetypes
             var loot = FindNearestLoot();
             if (loot != null)
             {
-                // Move DIRECTLY toward loot - scouting IS seeking loot!
-                return loot.transform.position;
+                Vector3 target = loot.transform.position;
+                Debug.Log($"<color=magenta>[{name}]</color> GetScoutPosition: targeting loot at {target}");
+                return target;
             }
             
             // No loot found - wander toward center of map
             Vector2 randomCircle = Random.insideUnitCircle * 15f;
-            return _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
+            Vector3 wanderTarget = _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
+            Debug.Log($"<color=magenta>[{name}]</color> <color=orange>GetScoutPosition: NO LOOT - wandering to {wanderTarget}</color>");
+            return wanderTarget;
         }
         
         /// <summary>
