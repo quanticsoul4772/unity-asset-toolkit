@@ -216,7 +216,7 @@ namespace NPCBrain.Archetypes
             // Verify behavior tree is set up
             string btStatus = BehaviorTree != null ? "OK" : "NULL!";
             
-            Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>START - Found {_knownLootPoints.Count} loot points, {_knownCoverPoints.Count} cover points, HasLootAvailable={_hasLootAvailable}, BehaviorTree={btStatus}</color>");
+
         }
         
         protected override void OnDestroy()
@@ -241,14 +241,8 @@ namespace NPCBrain.Archetypes
                 _escapeZone = Object.FindAnyObjectByType<EscapeZone>();
             }
             
-            // Log for debugging
-            if (_knownLootPoints.Count > 0)
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> RefreshKnownPoints: Found {_knownLootPoints.Count} loot points");
-            }
+
         }
-        
-        private float _lastRobberDebugTime;
         
         // Cache action references for debug logging
         private UtilityAction _fleeAction;
@@ -265,12 +259,6 @@ namespace NPCBrain.Archetypes
         {
             if (_hasEscaped) return;
             
-            // DEBUG: Log every 2 seconds to verify Update is running
-            if (Time.frameCount % 120 == 0)
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>UPDATE TICK - BT={BehaviorTree != null}, Paused={IsPaused}, LastStatus={LastStatus}</color>");
-            }
-            
             base.Update();
         }
         
@@ -284,18 +272,7 @@ namespace NPCBrain.Archetypes
             EmitFootstepsIfMoving();  // Emit footstep sounds when moving
             TryEscape();
             
-            // Track tick count for debugging
-            _tickCount++;
-            
-            // Debug log every 5 seconds (reduced from 2 for less spam)
-            if (Time.time - _lastRobberDebugTime > 5f)
-            {
-                _lastRobberDebugTime = Time.time;
-                float timeRemaining = HeistTimer.TimeRemaining;
-                string timeInfo = HeistTimer.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s" : "";
-                
-                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | HasLoot: {_isCarryingLoot} | Fear: {FearLevel:F2}");
-            }
+
         }
         
         /// <summary>
@@ -515,11 +492,8 @@ namespace NPCBrain.Archetypes
         {
             if (loot == null || loot.IsStolen)
             {
-                Debug.Log($"<color=magenta>[{name}]</color> <color=red>PickupLoot FAILED - loot null or already stolen</color>");
                 return;
             }
-            
-            Debug.Log($"<color=magenta>[{name}]</color> <color=green>*** STEALING LOOT: {loot.name} worth ${loot.Value}! ***</color>");
             
             if (loot.TrySteal(gameObject))
             {
@@ -533,11 +507,7 @@ namespace NPCBrain.Archetypes
                 var bag = transform.Find("LootBag");
                 if (bag != null) bag.gameObject.SetActive(true);
                 
-                Debug.Log($"<color=magenta>[{name}]</color> <color=green>*** LOOT STOLEN SUCCESSFULLY! Now carrying ${_carriedLootValue} ***</color>");
-            }
-            else
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> <color=red>TrySteal returned false!</color>");
+                Debug.Log($"<color=green>[{name}] STOLE {loot.name} (${loot.Value}) - Now carrying ${_carriedLootValue}</color>");
             }
         }
         
@@ -878,9 +848,7 @@ namespace NPCBrain.Archetypes
         {
             if (_escapeZone != null)
             {
-                Vector3 escapePos = _escapeZone.transform.position;
-                Debug.Log($"<color=lime>[{name} TARGET]</color> GetEscapePosition -> {escapePos}");
-                return escapePos;
+                return _escapeZone.transform.position;
             }
             Debug.LogWarning($"<color=red>[{name}]</color> GetEscapePosition: No escape zone found!");
             return _homePosition;
@@ -892,20 +860,13 @@ namespace NPCBrain.Archetypes
             if (_targetLoot == null || _targetLoot.IsStolen)
             {
                 _targetLoot = FindNearestLoot();
-                if (_targetLoot != null)
-                {
-                    Debug.Log($"<color=magenta>[{name}]</color> Found new target loot: {_targetLoot.name} at {_targetLoot.transform.position}");
-                }
+    
             }
             
             if (_targetLoot != null)
             {
-                Vector3 lootPos = _targetLoot.transform.position;
-                Debug.Log($"<color=lime>[{name} TARGET]</color> GetTargetLootPosition -> {lootPos} (loot: {_targetLoot.name})");
-                return lootPos;
+                return _targetLoot.transform.position;
             }
-            
-            Debug.Log($"<color=magenta>[{name}]</color> <color=red>GetTargetLootPosition: No loot found!</color>");
             return transform.position;
         }
         
@@ -949,20 +910,12 @@ namespace NPCBrain.Archetypes
                 float distSqr = (transform.position - _targetLoot.transform.position).sqrMagnitude;
                 float stealRadiusSqr = _targetLoot.StealRadius * _targetLoot.StealRadius;
                 float dist = Mathf.Sqrt(distSqr);
-                Debug.Log($"<color=magenta>[{name}]</color> TryStealTargetLoot: Distance to {_targetLoot.name} = {dist:F1}m (need < {_targetLoot.StealRadius}m)");
                 if (distSqr <= stealRadiusSqr)
                 {
                     PickupLoot(_targetLoot);
                 }
-                else
-                {
-                    Debug.Log($"<color=magenta>[{name}]</color> <color=orange>Too far to steal!</color>");
-                }
             }
-            else
-            {
-                Debug.Log($"<color=magenta>[{name}]</color> <color=red>TryStealTargetLoot: No target or already stolen</color>");
-            }
+
         }
         
         private Vector3 GetNearestCoverPosition()
@@ -1040,16 +993,12 @@ namespace NPCBrain.Archetypes
             var loot = FindNearestLoot();
             if (loot != null)
             {
-                Vector3 lootPos = loot.transform.position;
-                Debug.Log($"<color=lime>[{name} TARGET]</color> GetScoutPosition -> {lootPos} (scouting toward loot: {loot.name})");
-                return lootPos;
+                return loot.transform.position;
             }
             
             // No loot found - wander toward center of map
             Vector2 randomCircle = Random.insideUnitCircle * 15f;
-            Vector3 wanderPos = _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
-            Debug.Log($"<color=lime>[{name} TARGET]</color> GetScoutPosition -> {wanderPos} (wandering, no loot found)");
-            return wanderPos;
+            return _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
         }
         
         /// <summary>
