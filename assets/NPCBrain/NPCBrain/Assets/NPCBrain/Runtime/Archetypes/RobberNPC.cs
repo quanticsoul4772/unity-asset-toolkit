@@ -48,7 +48,7 @@ namespace NPCBrain.Archetypes
         [SerializeField] private float _stealWeight = 0.85f;
         [SerializeField] private float _hideWeight = 0.7f;
         [SerializeField] private float _sneakWeight = 0.5f;
-        [SerializeField] private float _scoutWeight = 0.3f;
+        [SerializeField] private float _scoutWeight = 0.35f;  // Slightly higher to beat Hide's typical score
         
         private LootPoint _targetLoot;
         private EscapeZone _escapeZone;
@@ -839,7 +839,7 @@ namespace NPCBrain.Archetypes
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
-                0.35f,  // Slightly higher to beat Hide's typical score
+                _scoutWeight,  // Uses serialized weight (default 0.3, but set to 0.35 to beat Hide)
                 // Single consideration that ALWAYS returns 1.0 to ensure score is calculated
                 new FunctionalConsideration("AlwaysReady", _ => 1.0f)
             );
