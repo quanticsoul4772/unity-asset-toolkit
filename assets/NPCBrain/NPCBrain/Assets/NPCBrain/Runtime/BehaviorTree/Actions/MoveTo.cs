@@ -33,6 +33,10 @@ namespace NPCBrain.BehaviorTree.Actions
         private float _lastStuckCheckTime;
         private int _stuckCounter;
         
+        // Debug logging
+        private float _lastDebugLogTime;
+        private Vector3 _lastLoggedTarget;
+        
         // Smart logging - only log when path changes significantly
         private int _lastLoggedWaypointCount = -1;
         private bool _hasLoggedInitialPath;
@@ -334,10 +338,10 @@ namespace NPCBrain.BehaviorTree.Actions
                     if (_stuckCounter >= PathfindingSettings.MaxStuckCount)
                     {
                         // We're stuck - force path recalculation
-                        if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
-                        {
-                            Debug.Log($"<color=orange>[MoveTo]</color> {brain.name} appears stuck - forcing path recalc");
-                        }
+                        // ALWAYS log stuck issues for debugging
+                        Debug.LogWarning($"<color=orange>[MoveTo]</color> {brain.name} STUCK at {transform.position} trying to reach {target}. " +
+                            $"Path has {(_currentPath?.Count ?? 0)} waypoints, at index {_currentWaypointIndex}. " +
+                            $"Grounded={controller.isGrounded}, CollisionFlags={controller.collisionFlags}");
                         _currentPath = null;
                         _stuckCounter = 0;
                     }
@@ -348,6 +352,16 @@ namespace NPCBrain.BehaviorTree.Actions
                 }
                 _lastStuckCheckPosition = transform.position;
                 _lastStuckCheckTime = Time.time;
+            }
+            
+            // Debug logging every 3 seconds - show where we're going
+            if (Time.time - _lastDebugLogTime > 3f || Vector3.Distance(target, _lastLoggedTarget) > 5f)
+            {
+                _lastDebugLogTime = Time.time;
+                _lastLoggedTarget = target;
+                float distToTarget = Vector3.Distance(transform.position, target);
+                string waypointInfo = _currentPath != null ? $"wp {_currentWaypointIndex}/{_currentPath.Count}" : "no path";
+                Debug.Log($"<color=yellow>[MoveTo DEBUG]</color> {brain.name}: pos={transform.position}, target={target}, dist={distToTarget:F1}m, {waypointInfo}, grounded={controller.isGrounded}");
             }
             
             return NodeStatus.Running;

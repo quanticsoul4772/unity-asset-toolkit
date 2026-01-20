@@ -878,8 +878,11 @@ namespace NPCBrain.Archetypes
         {
             if (_escapeZone != null)
             {
-                return _escapeZone.transform.position;
+                Vector3 escapePos = _escapeZone.transform.position;
+                Debug.Log($"<color=lime>[{name} TARGET]</color> GetEscapePosition -> {escapePos}");
+                return escapePos;
             }
+            Debug.LogWarning($"<color=red>[{name}]</color> GetEscapePosition: No escape zone found!");
             return _homePosition;
         }
         
@@ -897,7 +900,9 @@ namespace NPCBrain.Archetypes
             
             if (_targetLoot != null)
             {
-                return _targetLoot.transform.position;
+                Vector3 lootPos = _targetLoot.transform.position;
+                Debug.Log($"<color=lime>[{name} TARGET]</color> GetTargetLootPosition -> {lootPos} (loot: {_targetLoot.name})");
+                return lootPos;
             }
             
             Debug.Log($"<color=magenta>[{name}]</color> <color=red>GetTargetLootPosition: No loot found!</color>");
@@ -1035,12 +1040,16 @@ namespace NPCBrain.Archetypes
             var loot = FindNearestLoot();
             if (loot != null)
             {
-                return loot.transform.position;
+                Vector3 lootPos = loot.transform.position;
+                Debug.Log($"<color=lime>[{name} TARGET]</color> GetScoutPosition -> {lootPos} (scouting toward loot: {loot.name})");
+                return lootPos;
             }
             
             // No loot found - wander toward center of map
             Vector2 randomCircle = Random.insideUnitCircle * 15f;
-            return _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
+            Vector3 wanderPos = _homePosition + new Vector3(randomCircle.x, 0f, randomCircle.y);
+            Debug.Log($"<color=lime>[{name} TARGET]</color> GetScoutPosition -> {wanderPos} (wandering, no loot found)");
+            return wanderPos;
         }
         
         /// <summary>
