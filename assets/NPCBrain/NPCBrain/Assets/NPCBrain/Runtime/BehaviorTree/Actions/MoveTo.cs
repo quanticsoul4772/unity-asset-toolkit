@@ -498,10 +498,8 @@ namespace NPCBrain.BehaviorTree.Actions
                     PathfindingSettings.StuckRecoveryPushDistance;
                     
                 Vector3 immediateMove = recoveryDirection * pushDistance;
-                if (!controller.isGrounded)
-                {
-                    immediateMove.y = -PathfindingSettings.StuckRecoveryDownwardPush;
-                }
+                // ALWAYS apply downward push for consistency with gravity fix
+                immediateMove.y = -PathfindingSettings.StuckRecoveryDownwardPush;
                 controller.Move(immediateMove);
             }
         }

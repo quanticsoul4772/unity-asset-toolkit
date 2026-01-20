@@ -9,8 +9,7 @@ namespace NPCBrain.Settings
     /// <para>Set <see cref="BypassPathfinding"/> to true to skip A* pathfinding and use direct
     /// CharacterController movement. This helps isolate whether movement issues are caused by
     /// the pathfinding system or by the basic movement/collision system.</para>
-    /// </remarks>
-    /// <remarks>
+    ///
     /// <para><b>How Criticality Affects Pathfinding:</b></para>
     /// <list type="bullet">
     ///   <item><description><b>Temperature</b> affects path recalculation frequency. Low temperature NPCs
