@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem.UI;
 using NPCBrain.Archetypes;
 using NPCBrain.BehaviorTree.Composites;
 using NPCBrain.Components;
@@ -110,13 +111,13 @@ namespace NPCBrain.Demo.UI
             // Add GraphicRaycaster for button interaction
             canvasGO.AddComponent<GraphicRaycaster>();
             
-            // Ensure EventSystem exists
+            // Ensure EventSystem exists (use new Input System module)
             if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 var eventSystemGO = new GameObject("EventSystem");
                 eventSystemGO.transform.SetParent(transform);
                 eventSystemGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
-                eventSystemGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                eventSystemGO.AddComponent<InputSystemUIInputModule>(); // New Input System
             }
         }
         
