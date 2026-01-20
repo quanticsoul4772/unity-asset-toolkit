@@ -46,12 +46,12 @@ namespace NPCBrain.Settings
         /// <para>This is useful for debugging movement issues on flat terrain.</para>
         /// <para>Set to false for normal operation with A* pathfinding.</para>
         /// </remarks>
-        public const bool BypassPathfinding = true;  // TEMPORARILY TRUE FOR DEBUGGING
+        public const bool BypassPathfinding = false;  // Set to true to skip A* and use direct movement for debugging
         
         /// <summary>
         /// DIAGNOSTIC: When true, logs detailed movement information every frame.
         /// </summary>
-        public const bool VerboseMovementLogging = true;  // TEMPORARILY TRUE FOR DEBUGGING
+        public const bool VerboseMovementLogging = false;  // Set to true to log detailed movement info every few seconds
         
         /// <summary>
         /// DIAGNOSTIC: How often to log verbose movement info (seconds).
