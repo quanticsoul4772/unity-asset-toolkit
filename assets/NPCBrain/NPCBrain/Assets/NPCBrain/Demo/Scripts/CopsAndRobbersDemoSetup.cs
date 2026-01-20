@@ -164,6 +164,7 @@ namespace NPCBrain.Demo
             CreatePathfindingGrid();  // Create grid AFTER all obstacles
             CreateCops();
             CreateRobbers();
+            SetupNPCCollisionIgnoring();  // Prevent NPCs from blocking each other
             CreatePathVisualizer();  // Create visualizer for path debug
             // Note: Canvas UI disabled - using OnGUI overlay instead (press F1 to toggle)
             // CreateModernUI();
@@ -942,6 +943,43 @@ namespace NPCBrain.Demo
             robber.GetComponent<Renderer>().material.color = _robberColor;
             
             return robber;
+        }
+        
+        /// <summary>
+        /// Sets up Physics.IgnoreCollision between all NPC CharacterControllers.
+        /// This prevents NPCs from blocking each other when they move to similar locations.
+        /// </summary>
+        private void SetupNPCCollisionIgnoring()
+        {
+            // Collect all NPC colliders (CharacterController is a Collider)
+            var allColliders = new List<Collider>();
+            
+            foreach (var cop in _cops)
+            {
+                if (cop == null) continue;
+                var cc = cop.GetComponent<CharacterController>();
+                if (cc != null) allColliders.Add(cc);
+            }
+            
+            foreach (var robber in _robbers)
+            {
+                if (robber == null) continue;
+                var cc = robber.GetComponent<CharacterController>();
+                if (cc != null) allColliders.Add(cc);
+            }
+            
+            // Ignore collisions between all pairs of NPCs
+            int ignoreCount = 0;
+            for (int i = 0; i < allColliders.Count; i++)
+            {
+                for (int j = i + 1; j < allColliders.Count; j++)
+                {
+                    Physics.IgnoreCollision(allColliders[i], allColliders[j], true);
+                    ignoreCount++;
+                }
+            }
+            
+            Debug.Log($"<color=green>[CopsAndRobbers]</color> Set up collision ignoring for {allColliders.Count} NPCs ({ignoreCount} pairs)");
         }
         
         /// <summary>
