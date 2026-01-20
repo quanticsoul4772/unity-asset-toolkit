@@ -71,6 +71,15 @@ namespace NPCBrain.Demo
         private bool _gameEnded;
         private string _winner;
         
+        // OnGUI Overlay
+        private bool _showOverlay = true;
+        private Vector2 _scrollPosition;
+        private GUIStyle _boxStyle;
+        private GUIStyle _headerStyle;
+        private GUIStyle _labelStyle;
+        private GUIStyle _sectionStyle;
+        private bool _stylesInitialized;
+        
         // Time limit now managed by HeistTimer static class in Runtime
         
         private void Start()
@@ -88,6 +97,12 @@ namespace NPCBrain.Demo
             {
                 _gameTime += Time.deltaTime;
                 CheckGameEnd();
+            }
+            
+            // Toggle overlay with F1 key
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                _showOverlay = !_showOverlay;
             }
         }
         
@@ -918,6 +933,233 @@ namespace NPCBrain.Demo
             
             return robber;
         }
+        
+        #region OnGUI Overlay
+        
+        private void InitStyles()
+        {
+            if (_stylesInitialized) return;
+            _stylesInitialized = true;
+            
+            _boxStyle = new GUIStyle(GUI.skin.box);
+            _boxStyle.normal.background = MakeTexture(2, 2, new Color(0.1f, 0.1f, 0.12f, 0.9f));
+            
+            _headerStyle = new GUIStyle(GUI.skin.label);
+            _headerStyle.fontSize = 14;
+            _headerStyle.fontStyle = FontStyle.Bold;
+            _headerStyle.normal.textColor = Color.white;
+            _headerStyle.alignment = TextAnchor.MiddleCenter;
+            
+            _labelStyle = new GUIStyle(GUI.skin.label);
+            _labelStyle.fontSize = 11;
+            _labelStyle.normal.textColor = new Color(0.9f, 0.9f, 0.9f);
+            _labelStyle.wordWrap = true;
+            _labelStyle.richText = true;
+            
+            _sectionStyle = new GUIStyle(GUI.skin.box);
+            _sectionStyle.normal.background = MakeTexture(2, 2, new Color(0.15f, 0.15f, 0.18f, 0.95f));
+            _sectionStyle.padding = new RectOffset(6, 6, 4, 4);
+        }
+        
+        private Texture2D MakeTexture(int width, int height, Color color)
+        {
+            Color[] pixels = new Color[width * height];
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] = color;
+            Texture2D tex = new Texture2D(width, height);
+            tex.SetPixels(pixels);
+            tex.Apply();
+            return tex;
+        }
+        
+        private void OnGUI()
+        {
+            if (!_showOverlay) return;
+            
+            InitStyles();
+            
+            // Panel dimensions - compact but readable
+            float panelWidth = 320f;
+            float panelHeight = Mathf.Min(Screen.height - 40f, 600f); // Max 600px or screen height
+            float panelX = 10f;
+            float panelY = 10f;
+            
+            // Main panel
+            GUI.Box(new Rect(panelX, panelY, panelWidth, panelHeight), "", _boxStyle);
+            
+            // Content area with scroll
+            Rect contentRect = new Rect(panelX + 5, panelY + 5, panelWidth - 10, panelHeight - 10);
+            
+            // Calculate content height
+            float contentHeight = CalculateContentHeight();
+            Rect viewRect = new Rect(0, 0, panelWidth - 30, contentHeight);
+            
+            _scrollPosition = GUI.BeginScrollView(contentRect, _scrollPosition, viewRect, false, true);
+            
+            float y = 0;
+            float w = panelWidth - 35;
+            
+            // Title
+            GUI.Label(new Rect(0, y, w, 22), "🚨 COPS AND ROBBERS 🎭", _headerStyle);
+            y += 24;
+            
+            // Time and Score
+            string timeStr = System.TimeSpan.FromSeconds(Mathf.Clamp(_gameTime, 0, 359999)).ToString(@"mm\:ss");
+            string timeInfo = $"Time: {timeStr}";
+            if (_enableTimeLimit)
+            {
+                float remaining = HeistTimer.TimeRemaining;
+                if (float.IsNaN(remaining) || float.IsInfinity(remaining)) remaining = 0;
+                remaining = Mathf.Clamp(remaining, 0, 359999);
+                string remStr = System.TimeSpan.FromSeconds(remaining).ToString(@"mm\:ss");
+                string urgency = remaining <= 10 ? " <color=red>CRITICAL!</color>" : remaining <= 30 ? " <color=yellow>HURRY!</color>" : "";
+                timeInfo += $" | Left: {remStr}{urgency}";
+            }
+            GUI.Label(new Rect(0, y, w, 18), timeInfo, _labelStyle);
+            y += 18;
+            
+            GUI.Label(new Rect(0, y, w, 18), $"<color=#6699FF>COPS: ${_copScore}</color> | <color=#888888>ROBBERS: ${_robberScore}</color>", _labelStyle);
+            y += 20;
+            
+            if (_gameEnded)
+            {
+                GUI.Label(new Rect(0, y, w, 20), $"<color=yellow><b>{_winner}</b></color>", _labelStyle);
+                y += 22;
+            }
+            
+            // Cops Section
+            y += 4;
+            GUI.Label(new Rect(0, y, w, 18), "<color=#6699FF><b>👮 COPS</b></color>", _labelStyle);
+            y += 20;
+            
+            foreach (var cop in _cops)
+            {
+                if (cop == null) continue;
+                y = DrawCopStatus(cop, y, w);
+            }
+            
+            // Robbers Section
+            y += 4;
+            GUI.Label(new Rect(0, y, w, 18), "<color=#888888><b>🎭 ROBBERS</b></color>", _labelStyle);
+            y += 20;
+            
+            foreach (var robber in _robbers)
+            {
+                if (robber == null) continue;
+                y = DrawRobberStatus(robber, y, w);
+            }
+            
+            // Loot Section
+            y += 4;
+            GUI.Label(new Rect(0, y, w, 18), "<color=#FFD700><b>💰 LOOT</b></color>", _labelStyle);
+            y += 20;
+            
+            foreach (var loot in _lootPoints)
+            {
+                if (loot == null) continue;
+                string status = loot.IsStolen ? "<color=red>STOLEN</color>" : "<color=green>Available</color>";
+                GUI.Label(new Rect(0, y, w, 16), $"  {loot.name}: ${loot.Value} - {status}", _labelStyle);
+                y += 16;
+            }
+            
+            // Controls
+            y += 8;
+            GUI.Label(new Rect(0, y, w, 16), "<color=#AAAAAA><b>Controls:</b> F1=Toggle | R=Restart</color>", _labelStyle);
+            y += 18;
+            GUI.Label(new Rect(0, y, w, 14), "<color=#888888>AI runs autonomously</color>", _labelStyle);
+            
+            GUI.EndScrollView();
+            
+            // Handle R key for restart
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.R)
+            {
+                RestartGame();
+            }
+        }
+        
+        private float DrawCopStatus(CopNPC cop, float y, float w)
+        {
+            string actionName = "(selecting)";
+            if (cop.BehaviorTree is UtilitySelector selector && selector.CurrentAction != null)
+            {
+                actionName = selector.CurrentAction.Name;
+            }
+            
+            string crit = cop.Criticality != null ? $"T:{cop.Criticality.Temperature:F1} I:{cop.Criticality.Inertia:F1}" : "";
+            string stateColor = GetStateColor(cop.CurrentState);
+            
+            // Check if cop has target
+            bool hasTarget = cop.Blackboard.TryGet<GameObject>(BBKeys.Target, out var target) && target != null;
+            string vision = hasTarget ? "👁️" : "";
+            
+            GUI.Label(new Rect(0, y, w, 16), $"<b>{cop.name}</b> {vision} - <color={stateColor}>{actionName}</color> {crit}", _labelStyle);
+            y += 16;
+            GUI.Label(new Rect(0, y, w, 14), $"  <color=#AADDFF>{cop.CurrentReason}</color>", _labelStyle);
+            y += 18;
+            
+            return y;
+        }
+        
+        private float DrawRobberStatus(RobberNPC robber, float y, float w)
+        {
+            if (!robber.gameObject.activeSelf)
+            {
+                string status = robber.HasEscaped ? "<color=green>✓ ESCAPED</color>" : "<color=red>✗ ARRESTED</color>";
+                string lootResult = robber.HasEscaped ? $" with ${robber.CarriedLootValue}" : "";
+                GUI.Label(new Rect(0, y, w, 16), $"<b>{robber.name}</b> {status}{lootResult}", _labelStyle);
+                return y + 18;
+            }
+            
+            string actionName = "(selecting)";
+            if (robber.BehaviorTree is UtilitySelector selector && selector.CurrentAction != null)
+            {
+                actionName = selector.CurrentAction.Name;
+            }
+            
+            string crit = robber.Criticality != null ? $"T:{robber.Criticality.Temperature:F1} I:{robber.Criticality.Inertia:F1}" : "";
+            string stateColor = GetStateColor(robber.CurrentState);
+            
+            string loot = robber.IsCarryingLoot ? $"💰${robber.CarriedLootValue}" : "";
+            string fear = robber.FearLevel > 0.5f ? "😱" : robber.FearLevel > 0.2f ? "😰" : "";
+            string copVis = robber.CanSeeCop ? "<color=red>👁️COP!</color>" : "";
+            string urgency = robber.Urgency > 0.7f ? "<color=red>⏰RUSH!</color>" : robber.Urgency > 0.4f ? "<color=yellow>⏰</color>" : "";
+            
+            GUI.Label(new Rect(0, y, w, 16), $"<b>{robber.name}</b> {loot}{fear}{copVis}{urgency}", _labelStyle);
+            y += 16;
+            GUI.Label(new Rect(0, y, w, 16), $"  <color={stateColor}>{actionName}</color> {crit} Fear:{robber.FearLevel:P0}", _labelStyle);
+            y += 16;
+            GUI.Label(new Rect(0, y, w, 14), $"  <color=#FFDDAA>{robber.CurrentReason}</color>", _labelStyle);
+            y += 18;
+            
+            return y;
+        }
+        
+        private string GetStateColor(string state)
+        {
+            if (state == null) return "#66FF66";
+            if (state.Contains("Arrest") || state.Contains("Chase") || state.Contains("Flee"))
+                return "#FF6666";
+            if (state.Contains("Investigate") || state.Contains("Steal") || state.Contains("Escape"))
+                return "#FFFF66";
+            if (state.Contains("Hide") || state.Contains("Sneak") || state.Contains("Return"))
+                return "#66FFFF";
+            return "#66FF66";
+        }
+        
+        private float CalculateContentHeight()
+        {
+            float h = 100; // Base height for header/time/score
+            h += 24; // Cops header
+            h += _cops.Count * 36; // Each cop
+            h += 24; // Robbers header
+            h += _robbers.Count * 52; // Each robber (more lines)
+            h += 24; // Loot header
+            h += _lootPoints.Count * 16; // Each loot
+            h += 40; // Controls footer
+            return h;
+        }
+        
+        #endregion
         
     }
 }
