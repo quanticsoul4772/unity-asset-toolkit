@@ -211,7 +211,10 @@ namespace NPCBrain.Archetypes
             // Initialize loot availability BEFORE first tick
             UpdateLootAvailability();
             
-            Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>START - Found {_knownLootPoints.Count} loot points, {_knownCoverPoints.Count} cover points, HasLootAvailable={_hasLootAvailable}</color>");
+            // Verify behavior tree is set up
+            string btStatus = BehaviorTree != null ? "OK" : "NULL!";
+            
+            Debug.Log($"<color=magenta>[{name}]</color> <color=cyan>START - Found {_knownLootPoints.Count} loot points, {_knownCoverPoints.Count} cover points, HasLootAvailable={_hasLootAvailable}, BehaviorTree={btStatus}</color>");
         }
         
         protected override void OnDestroy()
@@ -267,7 +270,12 @@ namespace NPCBrain.Archetypes
                 float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 999f);
                 float timeRemaining = HeistTimer.TimeRemaining;
                 string timeInfo = HeistTimer.IsTimeLimitEnabled ? $"Time: {timeRemaining:F0}s | Urgency: {Urgency:F2}" : "No time limit";
-                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | LootAvail: {_hasLootAvailable} | Loot: {lootInfo} | KnownLoot: {_knownLootPoints.Count} | Ticks: {_tickCount}");
+                
+                // Debug utility scores to understand why robber might not be moving
+                string behaviorInfo = BehaviorTree != null ? "BT OK" : "BT NULL!";
+                string lastStatusInfo = $"LastStatus: {LastStatus}";
+                
+                Debug.Log($"<color=magenta>[{name}]</color> State: <color=yellow>{_cachedState}</color> | {timeInfo} | CanSeeCop: {CanSeeCop} | Fear: {FearLevel:F2} | HasLoot: {_isCarryingLoot} | LootAvail: {_hasLootAvailable} | Loot: {lootInfo} | KnownLoot: {_knownLootPoints.Count} | Ticks: {_tickCount} | {behaviorInfo} | {lastStatusInfo}");
             }
         }
         
@@ -485,7 +493,7 @@ namespace NPCBrain.Archetypes
             
             Debug.Log($"<color=magenta>[{name}]</color> <color=green>CreateBehaviorTree - 6 actions created</color>");
             
-            return new UtilitySelector(
+            var selector = new UtilitySelector(
                 fleeAction,
                 carryToEscapeAction,
                 stealAction,
@@ -493,6 +501,11 @@ namespace NPCBrain.Archetypes
                 sneakAction,
                 scoutAction
             );
+            
+            // Enable warning logging so we can see when no action is selected
+            selector.LogWarnings = true;
+            
+            return selector;
         }
         
         private UtilityAction CreateFleeAction()
@@ -601,9 +614,13 @@ namespace NPCBrain.Archetypes
                 // Must not have loot already
                 new FunctionalConsideration("NoLootYet",
                     _ => Blackboard.GetBool(BBKeys.HasLoot, false) ? 0f : 1f),
-                // Must have loot available to steal - use cached value (updated in LateUpdate)
+                // Must have loot available to steal - use direct check for reliability
                 new FunctionalConsideration("LootAvailable", 
-                    _ => _hasLootAvailable ? 1f : 0f),
+                    _ => {
+                        // Use direct check instead of cached value for reliability
+                        var loot = FindNearestLoot();
+                        return loot != null ? 1f : 0f;
+                    }),
                 // PROXIMITY BOOST: Higher score when closer to loot!
                 // This ensures StealLoot wins over Scout when we're close
                 new FunctionalConsideration("LootProximityBoost",
@@ -735,25 +752,14 @@ namespace NPCBrain.Archetypes
             scoutBehavior.Name = "ScoutBehavior";
             
             // Scout is the FALLBACK action - it should ALWAYS have a positive score!
-            // BUT it should yield to StealLoot when close to loot to avoid oscillation.
+            // IMPORTANT: We use NO considerations here to guarantee Scout ALWAYS scores positive.
+            // The base score of 0.3 ensures it loses to StealLoot (0.85 base) when close to loot,
+            // but still provides a fallback when all other actions score 0.
             return new UtilityAction(
                 "Scout",
                 scoutBehavior,
-                1.0f,  // HIGH base score - Scout is the fallback!
-                // DISTANCE-BASED SCORING: High score when far from loot, low when close
-                // This prevents oscillation with StealLoot by making Scout back off
-                // when we're close enough for StealLoot to take over
-                new FunctionalConsideration("DistanceToLoot",
-                    _ => {
-                        if (!_hasLootAvailable) return 0.8f;  // No loot? Scout to find some!
-                        
-                        // Use cached distance to avoid repeated FindNearestLoot calls
-                        float dist = _cachedLootDistance;
-                        // At 0-5m: 0.2 (very low - let StealLoot handle it)
-                        // At 15m: 0.44 (transitioning)
-                        // At 30m+: 0.8 (high - need to scout toward loot)
-                        return Mathf.Lerp(0.2f, 0.8f, Mathf.Clamp01((dist - 5f) / 25f));
-                    })
+                0.3f  // Low base score so other actions win, but ALWAYS positive!
+                // NO CONSIDERATIONS - Scout must NEVER score 0!
             );
         }
         
