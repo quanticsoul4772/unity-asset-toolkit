@@ -38,9 +38,7 @@ namespace NPCBrain.BehaviorTree.Actions
         private float _lastDebugLogTime;
         private Vector3 _lastLoggedTarget;
         
-        // Smart logging - only log when path changes significantly
-        private int _lastLoggedWaypointCount = -1;
-        private bool _hasLoggedInitialPath;
+        // Smart logging fields removed - logging disabled to reduce console spam
         
         public MoveTo(Func<Vector3> targetGetter, float arrivalDistance, float moveSpeed, float timeout)
         {
@@ -77,9 +75,6 @@ namespace NPCBrain.BehaviorTree.Actions
             _lastStuckCheckTime = Time.time;
             _stuckCounter = 0;
             _recoveryAttempts = 0;
-            _lastLoggedWaypointCount = -1;
-            _hasLoggedInitialPath = false;
-            
             if (!_navAgentCached)
             {
                 _cachedNavAgent = brain.GetComponent<NavMeshAgent>();
@@ -123,8 +118,6 @@ namespace NPCBrain.BehaviorTree.Actions
             _currentWaypointIndex = 0;
             _stuckCounter = 0;
             _recoveryAttempts = 0;
-            _lastLoggedWaypointCount = -1;
-            _hasLoggedInitialPath = false;
         }
         
         protected override NodeStatus Tick(NPCBrainController brain)

@@ -60,15 +60,8 @@ namespace NPCBrain.BehaviorTree.Composites
         private float[] _probabilities;
         private readonly System.Random _random;
         
-        // Logging throttle: only log periodically or on action change
-        private float _lastLogTime;
+        // Logging constants (kept for potential re-enabling of debug logging)
         private const float LOG_INTERVAL = 2f; // Log every 2 seconds max
-        private string _lastLoggedActionName;
-        
-        // Interruption log throttle: avoid spam when same interruption keeps happening
-        private string _lastInterruptFromAction;
-        private string _lastInterruptToAction;
-        private float _lastInterruptLogTime;
         
         /// <summary>
         /// When true, logs warnings when no action can be selected.
@@ -484,11 +477,6 @@ namespace NPCBrain.BehaviorTree.Composites
             _currentAction = null;
             _currentActionIndex = -1;
             _lastSelectedActionIndex = -1; // Full reset clears inertia history
-            _lastLoggedActionName = null; // Reset logging state
-            _lastLogTime = 0f;
-            _lastInterruptFromAction = null; // Reset interruption logging
-            _lastInterruptToAction = null;
-            _lastInterruptLogTime = 0f;
         }
 
         /// <summary>
@@ -507,11 +495,6 @@ namespace NPCBrain.BehaviorTree.Composites
             _currentAction = null;
             _currentActionIndex = -1;
             _lastSelectedActionIndex = -1; // Full abort clears inertia history
-            _lastLoggedActionName = null; // Reset logging state
-            _lastLogTime = 0f;
-            _lastInterruptFromAction = null; // Reset interruption logging
-            _lastInterruptToAction = null;
-            _lastInterruptLogTime = 0f;
             base.Abort(brain);
         }
         
