@@ -610,6 +610,10 @@ namespace NPCBrain.Archetypes
                 // Must have loot - critical gate (returns 1.0 when has loot)
                 new BlackboardConsideration<bool>("HasLoot", BBKeys.HasLoot,
                     has => has ? 1f : 0f, false),
+                // CRITICAL: Only escape when ALL loot is collected!
+                // If there's still loot available, go steal it first.
+                new FunctionalConsideration("AllLootCollected",
+                    _ => _hasLootAvailable ? 0f : 1f),
                 // Cop visibility matters less when time is running out!
                 // At high urgency, ignore cops and just RUN for the exit
                 new FunctionalConsideration("CopVisibilityVsUrgency",
@@ -651,9 +655,9 @@ namespace NPCBrain.Archetypes
                 "StealLoot",
                 stealBehavior,
                 _stealWeight,
-                // Must not have loot already
-                new FunctionalConsideration("NoLootYet",
-                    _ => Blackboard.GetBool(BBKeys.HasLoot, false) ? 0f : 1f),
+                // Can steal even if already carrying loot - collect ALL the loot!
+                new FunctionalConsideration("CanStealMore",
+                    _ => 1f),  // Always allow stealing if loot is available
                 // Must have loot available to steal - use cached value (updated in LateUpdate)
                 new FunctionalConsideration("LootAvailable", 
                     _ => _hasLootAvailable ? 1f : 0f),
