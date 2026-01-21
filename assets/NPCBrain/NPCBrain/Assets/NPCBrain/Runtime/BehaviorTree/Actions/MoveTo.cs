@@ -135,7 +135,7 @@ namespace NPCBrain.BehaviorTree.Actions
             
             if (distanceSqr <= _arrivalDistanceSqr)
             {
-                Debug.Log($"<color=green>[MoveTo]</color> {brain.name} ARRIVED at target (dist={Mathf.Sqrt(distanceSqr):F2}m, arrivalDist={Mathf.Sqrt(_arrivalDistanceSqr):F2}m)");
+                // Arrival log disabled to reduce console spam
                 return NodeStatus.Success;
             }
             
@@ -229,7 +229,9 @@ namespace NPCBrain.BehaviorTree.Actions
                 _lastTargetPosition = target;
                 _lastPathCalcTime = Time.time;
                 
-                // Smart logging: only log when path changes significantly
+                // Path calculation logging DISABLED to reduce console spam
+                // Uncomment below to re-enable for debugging
+                /*
                 if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
                 {
                     int newWaypointCount = _currentPath?.Count ?? 0;
@@ -245,6 +247,7 @@ namespace NPCBrain.BehaviorTree.Actions
                         _hasLoggedInitialPath = true;
                     }
                 }
+                */
                 
                 // Register path with visualizer for debug drawing
                 NPCPathVisualizer.RegisterPath(brain.name, _currentPath, _currentWaypointIndex, 
@@ -254,10 +257,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 {
                     // Path failed - target is unreachable
                     // Don't move directly toward a blocked target as that will cause NPC to get stuck against walls
-                    if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
-                    {
-                        Debug.Log($"<color=red>[MoveTo]</color> {brain.name} cannot find path to target - waiting for recalc");
-                    }
+                    // Path failure log disabled to reduce console spam
                     return NodeStatus.Running; // Wait and retry on next recalc interval
                 }
             }
@@ -353,10 +353,10 @@ namespace NPCBrain.BehaviorTree.Actions
                         // We're stuck - attempt recovery maneuvers
                         _recoveryAttempts++;
                         
-                        // Log stuck status
-                        Debug.LogWarning($"<color=orange>[MoveTo]</color> {brain.name} STUCK at {transform.position} trying to reach {target}. " +
-                            $"Path has {(_currentPath?.Count ?? 0)} waypoints, at index {_currentWaypointIndex}. " +
-                            $"Recovery attempt {_recoveryAttempts}. Grounded={controller.isGrounded}, CollisionFlags={controller.collisionFlags}");
+                        // Stuck status log disabled to reduce console spam
+                        // Debug.LogWarning($"<color=orange>[MoveTo]</color> {brain.name} STUCK at {transform.position} trying to reach {target}. " +
+                        //     $"Path has {(_currentPath?.Count ?? 0)} waypoints, at index {_currentWaypointIndex}. " +
+                        //     $"Recovery attempt {_recoveryAttempts}. Grounded={controller.isGrounded}, CollisionFlags={controller.collisionFlags}");
                         
                         // Try different recovery strategies based on attempt number
                         PerformStuckRecovery(brain, controller, transform, target);
@@ -366,7 +366,7 @@ namespace NPCBrain.BehaviorTree.Actions
                         // After a few failed recovery attempts, force path recalculation
                         if (_recoveryAttempts >= PathfindingSettings.RecoveryAttemptsBeforePathRecalc)
                         {
-                            Debug.Log($"<color=yellow>[MoveTo]</color> {brain.name} forcing path recalculation after {_recoveryAttempts} recovery attempts");
+                            // Path recalc log disabled to reduce console spam
                             _currentPath = null;
                             // Don't reset _recoveryAttempts here - let it keep counting
                             // so if we keep getting stuck on the same path, we'll keep trying new strategies
@@ -383,7 +383,9 @@ namespace NPCBrain.BehaviorTree.Actions
                 _lastStuckCheckTime = Time.time;
             }
             
-            // Debug logging every 3 seconds - show where we're going
+            // Periodic debug logging DISABLED to reduce console spam
+            // Uncomment below to re-enable for debugging
+            /*
             if (Time.time - _lastDebugLogTime > 3f || Vector3.Distance(target, _lastLoggedTarget) > 5f)
             {
                 _lastDebugLogTime = Time.time;
@@ -392,6 +394,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 string waypointInfo = _currentPath != null ? $"wp {_currentWaypointIndex}/{_currentPath.Count}" : "no path";
                 Debug.Log($"<color=yellow>[MoveTo DEBUG]</color> {brain.name}: pos={transform.position}, target={target}, dist={distToTarget:F1}m, {waypointInfo}, grounded={controller.isGrounded}");
             }
+            */
             
             return NodeStatus.Running;
         }
@@ -438,7 +441,7 @@ namespace NPCBrain.BehaviorTree.Actions
                 // Skip multiple waypoints if stuck early in path
                 int skipAmount = Mathf.Min(3, _currentPath.Count - 1 - _currentWaypointIndex);
                 _currentWaypointIndex += skipAmount;
-                Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: SKIPPING {skipAmount} waypoints to {_currentWaypointIndex}/{_currentPath.Count}");
+                // Waypoint skip log disabled to reduce console spam
                 return; // No movement needed for waypoint skip
             }
             
@@ -451,38 +454,32 @@ namespace NPCBrain.BehaviorTree.Actions
                 case 0:
                     // Try stepping backward (away from obstacle)
                     recoveryDirection = -toTarget;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: stepping BACK");
                     break;
                     
                 case 1:
                     // Try sliding left (perpendicular to target direction)
                     recoveryDirection = Vector3.Cross(Vector3.up, toTarget).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: sliding LEFT");
                     break;
                     
                 case 2:
                     // Try sliding right
                     recoveryDirection = -Vector3.Cross(Vector3.up, toTarget).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: sliding RIGHT");
                     break;
                     
                 case 3:
                     // Try diagonal left-back
                     recoveryDirection = (-toTarget + Vector3.Cross(Vector3.up, toTarget)).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: diagonal LEFT-BACK");
                     break;
                     
                 case 4:
                     // Try diagonal right-back
                     recoveryDirection = (-toTarget - Vector3.Cross(Vector3.up, toTarget)).normalized;
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: diagonal RIGHT-BACK");
                     break;
                     
                 case 5:
                     // Random direction as last resort
                     float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
                     recoveryDirection = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                    Debug.Log($"<color=cyan>[MoveTo]</color> {brain.name} recovery #{_recoveryAttempts}: random direction");
                     break;
                     
                 default:

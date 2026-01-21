@@ -397,12 +397,16 @@ namespace NPCBrain.BehaviorTree.Composites
         
         /// <summary>
         /// Logs action selection, but only on action change or every LOG_INTERVAL seconds to reduce spam.
+        /// DISABLED: This was causing console spam. Enable NPCBrainDebug.Category.Utility to re-enable.
         /// </summary>
         private void LogActionSelection(int selectedIndex, float temperature, float inertia)
         {
-            if (!NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
-                return;
+            // DISABLED - too much console spam. Uncomment below to re-enable for debugging.
+            // if (!NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
+            //     return;
+            return; // Early exit - logging disabled
                 
+            /*
             string selectedActionName = _actions[selectedIndex].Name;
             float currentTime = Time.time;
             bool actionChanged = selectedActionName != _lastLoggedActionName;
@@ -440,6 +444,7 @@ namespace NPCBrain.BehaviorTree.Composites
                 }
             }
             Debug.Log(sb.ToString());
+            */
         }
         
         protected override void OnEnter(NPCBrainController brain)
@@ -613,9 +618,14 @@ namespace NPCBrain.BehaviorTree.Composites
         /// <summary>
         /// Logs interruption events, but only when it's a NEW interruption (different from/to pair)
         /// or enough time has passed since the last log of the same interruption.
+        /// DISABLED: This was causing console spam.
         /// </summary>
         private void LogInterruption(string fromAction, string toAction, float fromScore, float toScore, bool isForceSwitch)
         {
+            // DISABLED - too much console spam. Uncomment below to re-enable for debugging.
+            return;
+            
+            /*
             if (!NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.Utility))
                 return;
                 
@@ -639,6 +649,7 @@ namespace NPCBrain.BehaviorTree.Composites
             {
                 Debug.Log($"<color=yellow>[UtilitySelector]</color> Interrupting {fromAction} (score {fromScore:F2}) for {toAction} (score {toScore:F2})");
             }
+            */
         }
     }
 }

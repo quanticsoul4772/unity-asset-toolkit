@@ -84,7 +84,7 @@ namespace NPCBrain.Demo
         
         private void Start()
         {
-            Debug.Log("<color=lime>[CopsAndRobbersDemoSetup] START - Scripts are loaded and running!</color>");
+            // Startup log disabled to reduce console spam
             if (_autoGenerate)
             {
                 GenerateScene();
@@ -172,18 +172,8 @@ namespace NPCBrain.Demo
             // Initialize time limit system via HeistTimer
             HeistTimer.StartHeist(_heistTimeLimit, _enableTimeLimit);
             
-            string timeLimitInfo = _enableTimeLimit ? $" Time limit: {_heistTimeLimit}s" : " No time limit";
-            
-            // DIAGNOSTIC: Log pathfinding bypass status and CharacterController info
-            string bypassInfo = NPCBrain.Settings.PathfindingSettings.BypassPathfinding ? 
-                "<color=yellow>PATHFINDING BYPASSED - Direct movement enabled for debugging</color>" : 
-                "<color=green>A* Pathfinding enabled</color>";
-            Debug.Log($"<color=cyan>Cops and Robbers Demo generated (SIMPLIFIED - no obstacles)!</color>\n" +
-                $"{bypassInfo}\n" +
-                $"Watch the AI battle it out! Robbers steal loot and escape, Cops patrol and arrest.{timeLimitInfo}");
-            
-            // Log CharacterController info for each NPC
-            LogCharacterControllerDiagnostics();
+            // Demo generation log disabled to reduce console spam
+            // LogCharacterControllerDiagnostics() also disabled
         }
         
         /// <summary>
@@ -345,11 +335,11 @@ namespace NPCBrain.Demo
             if (namedLayer != -1)
             {
                 _obstacleLayer = namedLayer;
-                Debug.Log($"<color=green>[CopsAndRobbers]</color> Using 'Obstacles' layer (index {_obstacleLayer}) for pathfinding");
+                // Layer validation log disabled to reduce console spam
             }
             else
             {
-                // Layer doesn't exist - warn the user
+                // Layer doesn't exist - warn the user (keep this warning as it's important)
                 Debug.LogWarning("<color=yellow>[CopsAndRobbers]</color> Layer 'Obstacles' not found! " +
                     "Pathfinding may not work correctly.\n" +
                     "To fix: Go to Edit → Project Settings → Tags and Layers, and add 'Obstacles' as Layer 8.\n" +
@@ -782,8 +772,7 @@ namespace NPCBrain.Demo
             // Build the grid now that all obstacles exist and settings are configured
             _pathfindingGrid.BuildGrid();
             
-            Debug.Log($"<color=cyan>[Pathfinding]</color> Grid created: {gridSize}x{gridSize} cells, " +
-                $"{_pathfindingGrid.WalkableCount} walkable ({(_pathfindingGrid.WalkableCount * 100f / (gridSize * gridSize)):F1}%)");
+            // Grid creation log disabled to reduce console spam
         }
         
         private void CreateCoverPoints()
@@ -967,17 +956,15 @@ namespace NPCBrain.Demo
             }
             
             // Ignore collisions between all pairs of NPCs
-            int ignoreCount = 0;
             for (int i = 0; i < allColliders.Count; i++)
             {
                 for (int j = i + 1; j < allColliders.Count; j++)
                 {
                     Physics.IgnoreCollision(allColliders[i], allColliders[j], true);
-                    ignoreCount++;
                 }
             }
             
-            Debug.Log($"<color=green>[CopsAndRobbers]</color> Set up collision ignoring for {allColliders.Count} NPCs ({ignoreCount} pairs)");
+            // Collision setup log disabled to reduce console spam
         }
         
         /// <summary>
@@ -985,6 +972,9 @@ namespace NPCBrain.Demo
         /// </summary>
         private void LogCharacterControllerDiagnostics()
         {
+            // DIAGNOSTIC logging DISABLED to reduce console spam
+            // Uncomment below to re-enable for debugging
+            /*
             Debug.Log("<color=magenta>[DIAGNOSTIC] CharacterController configurations:</color>");
             
             foreach (var cop in _cops)
@@ -1047,6 +1037,7 @@ namespace NPCBrain.Demo
             {
                 Debug.Log($"<color=magenta>[DIAGNOSTIC] Escape zone: pos={_escapeZone.transform.position}, radius={_escapeZone.ZoneRadius}</color>");
             }
+            */
         }
         
         #region OnGUI Overlay
