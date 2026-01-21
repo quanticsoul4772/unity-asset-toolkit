@@ -270,6 +270,7 @@ namespace NPCBrain.Archetypes
             UpdateCopDetection();
             UpdateFearLevel();
             UpdateLootAvailability();  // Cache loot availability for utility scoring
+            TryOpportunisticLootGrab();  // Grab loot if passing within 2m while fleeing!
             EmitFootstepsIfMoving();  // Emit footstep sounds when moving
             TryEscape();
             
@@ -483,6 +484,38 @@ namespace NPCBrain.Archetypes
                 
                 // Disable the robber
                 gameObject.SetActive(false);
+            }
+        }
+        
+        /// <summary>
+        /// OPPORTUNISTIC LOOT GRAB: If the robber passes within 2m of loot while fleeing,
+        /// grab it automatically! This bypasses the utility system for this edge case.
+        /// A real thief would grab cash they're running past without stopping to think.
+        /// </summary>
+        private void TryOpportunisticLootGrab()
+        {
+            // Only do opportunistic grabs while fleeing - this is the edge case we need to fix
+            // The robber flees past loot but the utility system can't interrupt fast enough
+            if (_cachedState != "Flee!") return;
+            
+            const float opportunisticGrabRadius = 2.5f;  // Grab loot within 2.5m while fleeing
+            const float opportunisticGrabRadiusSqr = opportunisticGrabRadius * opportunisticGrabRadius;
+            
+            Vector3 myPosition = transform.position;
+            
+            for (int i = 0; i < _knownLootPoints.Count; i++)
+            {
+                var loot = _knownLootPoints[i];
+                if (loot == null || loot.IsStolen) continue;
+                
+                float distSqr = (myPosition - loot.transform.position).sqrMagnitude;
+                if (distSqr <= opportunisticGrabRadiusSqr)
+                {
+                    // Within grab range - snag it!
+                    Debug.Log($"<color=cyan>[{name}] OPPORTUNISTIC GRAB while fleeing! Snagging {loot.name}</color>");
+                    PickupLoot(loot);
+                    return;  // Only grab one loot per frame
+                }
             }
         }
         
