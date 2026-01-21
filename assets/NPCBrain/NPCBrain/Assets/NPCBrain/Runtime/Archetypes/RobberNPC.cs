@@ -272,8 +272,15 @@ namespace NPCBrain.Archetypes
             EmitFootstepsIfMoving();  // Emit footstep sounds when moving
             TryEscape();
             
-
+            // DEBUG: Log utility scores every 2 seconds when carrying loot
+            if (_isCarryingLoot && Time.time - _lastDebugLogTime > 2f)
+            {
+                _lastDebugLogTime = Time.time;
+                Debug.Log($"<color=yellow>[{name}] CARRYING LOOT - UTILITY SCORES:</color> {GetUtilityScoresDebug()}");
+            }
         }
+        
+        private float _lastDebugLogTime;
         
         /// <summary>
         /// Debug helper to log all utility action scores.

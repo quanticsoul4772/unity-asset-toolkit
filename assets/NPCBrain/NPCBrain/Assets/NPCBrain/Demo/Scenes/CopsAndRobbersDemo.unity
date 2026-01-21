@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &22020931
+--- !u!1 &131236031
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,8 +127,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 22020933}
-  - component: {fileID: 22020932}
+  - component: {fileID: 131236033}
+  - component: {fileID: 131236032}
   m_Layer: 0
   m_Name: CopsAndRobbersDemoSetup
   m_TagString: Untagged
@@ -136,13 +136,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &22020932
+--- !u!114 &131236032
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 22020931}
+  m_GameObject: {fileID: 131236031}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eb2d9944e9a76b34aa75850ad40c14d3, type: 3}
@@ -169,13 +169,13 @@ MonoBehaviour:
   _lootPoints: []
   _escapeZone: {fileID: 0}
   _showFloatingIndicators: 1
---- !u!4 &22020933
+--- !u!4 &131236033
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 22020931}
+  m_GameObject: {fileID: 131236031}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -184,7 +184,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &766899119
+--- !u!1 &333855338
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -192,9 +192,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 766899122}
-  - component: {fileID: 766899121}
-  - component: {fileID: 766899120}
+  - component: {fileID: 333855341}
+  - component: {fileID: 333855340}
+  - component: {fileID: 333855339}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -202,21 +202,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &766899120
+--- !u!81 &333855339
 AudioListener:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766899119}
+  m_GameObject: {fileID: 333855338}
   m_Enabled: 1
---- !u!20 &766899121
+--- !u!20 &333855340
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766899119}
+  m_GameObject: {fileID: 333855338}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
@@ -261,13 +261,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!4 &766899122
+--- !u!4 &333855341
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766899119}
+  m_GameObject: {fileID: 333855338}
   serializedVersion: 2
   m_LocalRotation: {x: 0.46174863, y: 0, z: 0, w: 0.8870109}
   m_LocalPosition: {x: 0, y: 35, z: -25}
@@ -276,7 +276,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &885290625
+--- !u!1 &738936186
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -284,9 +284,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 885290628}
-  - component: {fileID: 885290627}
-  - component: {fileID: 885290626}
+  - component: {fileID: 738936189}
+  - component: {fileID: 738936188}
+  - component: {fileID: 738936187}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -294,13 +294,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &885290626
+--- !u!114 &738936187
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 885290625}
+  m_GameObject: {fileID: 738936186}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
@@ -317,13 +317,13 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
---- !u!108 &885290627
+--- !u!108 &738936188
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 885290625}
+  m_GameObject: {fileID: 738936186}
   m_Enabled: 1
   serializedVersion: 11
   m_Type: 1
@@ -382,13 +382,13 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
---- !u!4 &885290628
+--- !u!4 &738936189
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 885290625}
+  m_GameObject: {fileID: 738936186}
   serializedVersion: 2
   m_LocalRotation: {x: 0.40821794, y: -0.23456973, z: 0.10938166, w: 0.8754261}
   m_LocalPosition: {x: 0, y: 3, z: 0}
@@ -397,7 +397,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &1181751334
+--- !u!1 &1869867030
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -405,9 +405,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1181751337}
-  - component: {fileID: 1181751336}
-  - component: {fileID: 1181751335}
+  - component: {fileID: 1869867033}
+  - component: {fileID: 1869867032}
+  - component: {fileID: 1869867031}
   m_Layer: 0
   m_Name: SceneInfo
   m_TagString: Untagged
@@ -415,14 +415,14 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!102 &1181751335
+--- !u!102 &1869867031
 TextMesh:
   serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1181751334}
+  m_GameObject: {fileID: 1869867030}
   m_Text: 'NPCBrain - Cops and Robbers Demo
 
     Full game: Cops chase robbers, robbers
@@ -443,13 +443,13 @@ TextMesh:
   m_Color:
     serializedVersion: 2
     rgba: 4283256141
---- !u!23 &1181751336
+--- !u!23 &1869867032
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1181751334}
+  m_GameObject: {fileID: 1869867030}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -488,13 +488,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!4 &1181751337
+--- !u!4 &1869867033
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1181751334}
+  m_GameObject: {fileID: 1869867030}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -15, y: 0.1, z: 15}
@@ -507,7 +507,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 766899122}
-  - {fileID: 885290628}
-  - {fileID: 22020933}
-  - {fileID: 1181751337}
+  - {fileID: 333855341}
+  - {fileID: 738936189}
+  - {fileID: 131236033}
+  - {fileID: 1869867033}
