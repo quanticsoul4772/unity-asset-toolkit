@@ -61,22 +61,22 @@ namespace NPCBrain.UtilityAI
             
             if (typeof(T) == typeof(bool))
             {
-                bool boolValue = bb.GetBool(_key, _defaultValue is bool b ? b : false);
+                bool boolValue = bb.GetBool(_key, (bool)(object)_defaultValue);
                 value = (T)(object)boolValue;
             }
             else if (typeof(T) == typeof(float))
             {
-                float floatValue = bb.GetFloat(_key, _defaultValue is float f ? f : 0f);
+                float floatValue = bb.GetFloat(_key, (float)(object)_defaultValue);
                 value = (T)(object)floatValue;
             }
             else if (typeof(T) == typeof(int))
             {
-                int intValue = bb.GetInt(_key, _defaultValue is int i ? i : 0);
+                int intValue = bb.GetInt(_key, (int)(object)_defaultValue);
                 value = (T)(object)intValue;
             }
             else if (typeof(T) == typeof(UnityEngine.Vector3))
             {
-                UnityEngine.Vector3 vecValue = bb.GetVector3(_key, _defaultValue is UnityEngine.Vector3 v ? v : default);
+                UnityEngine.Vector3 vecValue = bb.GetVector3(_key, (UnityEngine.Vector3)(object)_defaultValue);
                 value = (T)(object)vecValue;
             }
             else
