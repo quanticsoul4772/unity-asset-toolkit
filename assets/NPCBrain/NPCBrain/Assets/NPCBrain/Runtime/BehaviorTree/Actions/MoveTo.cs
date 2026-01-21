@@ -38,7 +38,9 @@ namespace NPCBrain.BehaviorTree.Actions
         private float _lastDebugLogTime;
         private Vector3 _lastLoggedTarget;
         
-        // Smart logging fields removed - logging disabled to reduce console spam
+        // One-time warning flags to prevent spam
+        private bool _hasLoggedNoCharControllerWarning;
+        private bool _hasLoggedNoGridWarning;
         
         public MoveTo(Func<Vector3> targetGetter, float arrivalDistance, float moveSpeed, float timeout)
         {
@@ -158,12 +160,21 @@ namespace NPCBrain.BehaviorTree.Actions
             // Use CharacterController alone if available (handles collision detection but no pathfinding)
             if (_cachedCharController != null)
             {
-                Debug.LogWarning($"<color=orange>[MoveTo]</color> {brain.name} using CharController only (no grid!) - grid={_cachedGrid != null}");
+                // Log warning only once per NPC to avoid spam
+                if (!_hasLoggedNoGridWarning)
+                {
+                    _hasLoggedNoGridWarning = true;
+                    Debug.LogWarning($"<color=orange>[MoveTo]</color> {brain.name} using CharController only (no grid!) - grid={_cachedGrid != null}");
+                }
                 return MoveViaCharacterController(_cachedCharController, brain.transform, target);
             }
             
-            // DIAGNOSTIC: Log when falling through to MoveDirectly (no CharController!)
-            Debug.LogWarning($"<color=red>[MoveTo]</color> {brain.name} using MoveDirectly (NO CharController!) - grid={_cachedGrid != null}, charCtrl={_cachedCharController != null}");
+            // Log warning only once per NPC to avoid spam
+            if (!_hasLoggedNoCharControllerWarning)
+            {
+                _hasLoggedNoCharControllerWarning = true;
+                Debug.LogWarning($"<color=red>[MoveTo]</color> {brain.name} using MoveDirectly (NO CharController!) - grid={_cachedGrid != null}, charCtrl={_cachedCharController != null}");
+            }
             return MoveDirectly(brain.transform, target, brain.name);
         }
         
