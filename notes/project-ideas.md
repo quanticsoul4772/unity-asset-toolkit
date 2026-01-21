@@ -58,30 +58,33 @@ Pending:
 - Combat Formations demo
 - Marketing materials for Asset Store 
  
-## Option 3: NPCBrain (In Development)
+## Option 3: NPCBrain (Complete)
 **All-in-one AI toolkit** 
  
 - Price: $60 
 - Target: Intermediate developers 
 - Complexity: High (4-6 weeks) 
 - Combines pathfinding + behaviors + sensing + decision making
-- **Status:** In Development
-- **Design Doc:** docs/NPCBRAIN-DESIGN.md (to be created)
+- **Status:** Complete
+- **Design Doc:** docs/NPCBRAIN-DESIGN.md
 
-Features (planned):
+Features (complete):
 - Design document
 - Folder structure and assembly definitions
 - Behavior Tree system (Selector, Sequence, Parallel, Decorator nodes)
-- Utility AI system (action scoring, considerations)
-- Perception system (sight, hearing, memory)
+- Utility AI system (UtilitySelector, UtilityAction, Considerations)
+- Perception system (SightSensor, HearingSensor with sound propagation)
 - Knowledge/Blackboard system
-- Integration with EasyPath (pathfinding)
-- Integration with SwarmAI (steering behaviors)
-- Pre-built NPC archetypes (Guard, Patrol, Civilian, Enemy)
+- NPC Registry for efficient agent lookups
+- Pre-built NPC archetypes (CopNPC, RobberNPC)
+- Cops & Robbers demo scene with balanced gameplay
 - Visual debugging tools
-- Demo scenes
 - Documentation
-- Unit tests 
+
+### Robber AI Improvements (January 2026)
+- **Smart Flee from ALL Cops**: Uses weighted inverse distance² to flee from all nearby cops, not just the closest one - prevents running into other cops
+- **Opportunistic Loot Grabbing**: While fleeing, robber automatically grabs any loot within 2.5m - bypasses utility system for instant pickup
+- **Commitment Override**: When within 4m of loot, StealLoot gets massive 2.0 multiplier to beat Flee - ensures robber commits to grabbing nearby loot instead of circling 
  
 ## Recommendation 
 ~~Start with EasyPath - lowest complexity, clear market demand.~~ 
@@ -105,4 +108,4 @@ Features (planned):
 - Unit tests for all behaviors and components
 - Combat Formations demo in progress
 
-**Next:** Complete NPCBrain development.
+**All assets complete!** Ready for Asset Store submission (needs marketing materials).

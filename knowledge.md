@@ -31,6 +31,13 @@ Unity Asset Store project for AI/pathfinding tools. C#, Unity 6 (6000.x), Visual
 **Phase:** Development (January 2026) 
 **Current Project:** NPCBrain - AI Toolkit (Complete)
 
+### NPCBrain Status
+**Status:** Complete
+- Behavior Tree system with Utility AI integration
+- Perception system (sight, hearing, memory)
+- Cops & Robbers demo scene with balanced gameplay
+- Robber AI with smart flee behavior (escapes ~50% of matches)
+
 ### EasyPath Status
 **Status:** Complete
 - A* pathfinding working and tested
@@ -107,7 +114,18 @@ unity-asset-toolkit/
 - Resource gathering system
 - Inter-agent messaging
 - Spatial hash for efficient neighbor queries
-- 4 demo scenes (Flocking, Formation, Resource Gathering, Combat Formations) 
+- 4 demo scenes (Flocking, Formation, Resource Gathering, Combat Formations)
+
+### NPCBrain Features
+- Behavior Tree with Utility AI (UtilitySelector, UtilityAction, Considerations)
+- Perception system (SightSensor, HearingSensor with sound propagation)
+- Blackboard knowledge system
+- NPC Archetypes (CopNPC, RobberNPC) with role-based behaviors
+- Smart flee algorithm (weighted inverse distance² from ALL threats)
+- Opportunistic loot grabbing (grabs items within 2.5m while fleeing)
+- Commitment override (prioritizes stealing when within 4m of loot)
+- Fear/urgency system affecting decision-making
+- Cops & Robbers demo with balanced win rates 
  
 ## Conventions 
 
