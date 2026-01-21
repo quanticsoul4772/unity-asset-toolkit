@@ -886,9 +886,50 @@ namespace NPCBrain.Archetypes
         
         private Vector3 GetFleePosition()
         {
-            // Flee away from the closest cop
-            Vector3 copPos = Blackboard.GetVector3(BBKeys.ClosestCopPosition, transform.position);
-            Vector3 fleeDir = (transform.position - copPos).normalized;
+            // SMART FLEE: Account for ALL cops, not just the closest one!
+            // This prevents running away from one cop directly into another.
+            Vector3 myPosition = transform.position;
+            Vector3 combinedFleeDir = Vector3.zero;
+            float totalWeight = 0f;
+            
+            var cops = NPCRegistry<CopNPC>.GetAll();
+            for (int i = 0; i < cops.Length; i++)
+            {
+                var cop = cops[i];
+                if (cop == null || !cop.gameObject.activeSelf) continue;
+                
+                Vector3 copPos = cop.transform.position;
+                Vector3 awayFromCop = (myPosition - copPos);
+                float distance = awayFromCop.magnitude;
+                
+                // Skip cops that are very far away (>30m)
+                if (distance > 30f) continue;
+                
+                // Weight by inverse distance squared - closer cops have MUCH more influence
+                // Clamp minimum distance to avoid division issues
+                float clampedDist = Mathf.Max(distance, 2f);
+                float weight = 1f / (clampedDist * clampedDist);
+                
+                // Normalize direction and add weighted contribution
+                if (distance > 0.1f)
+                {
+                    combinedFleeDir += (awayFromCop.normalized) * weight;
+                    totalWeight += weight;
+                }
+            }
+            
+            // Fallback to closest cop if no cops found
+            Vector3 fleeDir;
+            if (totalWeight > 0.001f)
+            {
+                fleeDir = (combinedFleeDir / totalWeight).normalized;
+            }
+            else
+            {
+                // Fallback: use closest cop position from blackboard
+                Vector3 copPos = Blackboard.GetVector3(BBKeys.ClosestCopPosition, myPosition);
+                fleeDir = (myPosition - copPos).normalized;
+            }
             
             // SMART FLEE: Bias flee direction toward objectives!
             // If there's still loot to collect, flee TOWARD the next loot location
@@ -898,19 +939,19 @@ namespace NPCBrain.Archetypes
                 var nextLoot = FindNearestLoot();
                 if (nextLoot != null)
                 {
-                    Vector3 toLoot = (nextLoot.transform.position - transform.position).normalized;
-                    // Blend: 60% away from cop, 40% toward loot
-                    fleeDir = (fleeDir * 0.6f + toLoot * 0.4f).normalized;
+                    Vector3 toLoot = (nextLoot.transform.position - myPosition).normalized;
+                    // Blend: 50% away from cops, 50% toward loot (balanced for multi-cop scenario)
+                    fleeDir = (fleeDir * 0.5f + toLoot * 0.5f).normalized;
                 }
             }
             // If all loot collected, flee toward escape zone
             else if (_isCarryingLoot && _escapeZone != null)
             {
-                Vector3 toEscape = (_escapeZone.transform.position - transform.position).normalized;
+                Vector3 toEscape = (_escapeZone.transform.position - myPosition).normalized;
                 fleeDir = (fleeDir + toEscape).normalized;
             }
             
-            return transform.position + fleeDir * 10f;
+            return myPosition + fleeDir * 10f;
         }
         
         private Vector3 GetEscapePosition()
