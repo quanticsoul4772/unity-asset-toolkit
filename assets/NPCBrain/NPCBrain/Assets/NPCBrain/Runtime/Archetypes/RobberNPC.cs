@@ -63,7 +63,8 @@ namespace NPCBrain.Archetypes
         private string _cachedState = "Scout";
         private float _lootDetectionRangeSqr;
         private float _copDetectionRangeSqr;
-        private bool _hasLootAvailable;  // Cached for performance
+        private bool _hasLootAvailable;  // Cached: is there loot in detection range?
+        private bool _anyLootRemaining;   // Cached: is ANY loot in scene still unstolen?
         private float _cachedLootDistance = 999f;  // Cached distance to nearest loot
         private int _tickCount;  // Debug counter
         private Vector3 _cachedCoverPosition;  // Cached to prevent moving target
@@ -378,6 +379,33 @@ namespace NPCBrain.Archetypes
             _cachedLootDistance = nearestLoot != null 
                 ? Vector3.Distance(transform.position, nearestLoot.transform.position) 
                 : 999f;
+            
+            // CRITICAL: Also check if ANY loot remains in scene (regardless of distance)
+            // This is used for escape condition - robber must collect ALL loot before escaping
+            _anyLootRemaining = IsAnyLootRemaining();
+        }
+        
+        /// <summary>
+        /// Checks if ANY loot in the scene is still unstolen, regardless of distance.
+        /// Used for determining if robber can escape (must collect ALL loot first).
+        /// </summary>
+        private bool IsAnyLootRemaining()
+        {
+            // Refresh if needed
+            if (_knownLootPoints.Count == 0)
+            {
+                RefreshKnownPoints();
+            }
+            
+            for (int i = 0; i < _knownLootPoints.Count; i++)
+            {
+                var loot = _knownLootPoints[i];
+                if (loot != null && !loot.IsStolen)
+                {
+                    return true;  // Found unstolen loot!
+                }
+            }
+            return false;  // All loot has been stolen
         }
         
         private void EmitFootstepsIfMoving()
@@ -444,7 +472,8 @@ namespace NPCBrain.Archetypes
         private void TryEscape()
         {
             // Must have loot AND all loot must be collected before escaping
-            if (!_isCarryingLoot || _escapeZone == null || _hasLootAvailable) return;
+            // Use _anyLootRemaining (not _hasLootAvailable) to check ALL loot regardless of distance
+            if (!_isCarryingLoot || _escapeZone == null || _anyLootRemaining) return;
             
             if (_escapeZone.TryEscape(gameObject, _carriedLootValue))
             {
@@ -613,8 +642,9 @@ namespace NPCBrain.Archetypes
                     has => has ? 1f : 0f, false),
                 // CRITICAL: Only escape when ALL loot is collected!
                 // If there's still loot available, go steal it first.
+                // Use _anyLootRemaining to check ALL loot regardless of distance
                 new FunctionalConsideration("AllLootCollected",
-                    _ => _hasLootAvailable ? 0f : 1f),
+                    _ => _anyLootRemaining ? 0f : 1f),
                 // Cop visibility matters less when time is running out!
                 // At high urgency, ignore cops and just RUN for the exit
                 new FunctionalConsideration("CopVisibilityVsUrgency",
