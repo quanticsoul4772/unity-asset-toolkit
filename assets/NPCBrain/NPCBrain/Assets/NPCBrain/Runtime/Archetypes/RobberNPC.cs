@@ -585,7 +585,7 @@ namespace NPCBrain.Archetypes
                     () => GetFleePosition(),
                     _arrivalDistance,
                     _fleeSpeed,
-                    3f
+                    8f  // Increased from 3s - robber needs time to build distance from cops
                 )
             );
             fleeBehavior.Name = "FleeBehavior";
@@ -690,6 +690,20 @@ namespace NPCBrain.Archetypes
                 // Note: Robber can steal even if already carrying loot - collect ALL the loot!
                 new FunctionalConsideration("LootAvailable", 
                     _ => _hasLootAvailable ? 1f : 0f),
+                // CRITICAL: Safe distance check - don't try to steal if cops are too close!
+                // This prevents flip-flopping between Flee and Steal.
+                // Robber must actually ESCAPE (get 20m+ away) before trying to steal again.
+                new FunctionalConsideration("SafeDistanceToSteal",
+                    _ => {
+                        bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
+                        if (!seesCop) return 1f;  // Can't see cop - safe to steal
+                        float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
+                        // Need 20m+ distance to safely attempt stealing when cop is visible
+                        // Below 20m: score drops to 0, preventing Steal from winning over Flee
+                        if (copDist < 12f) return 0f;  // Too close - keep fleeing!
+                        if (copDist < 20f) return (copDist - 12f) / 8f;  // Gradual increase 12-20m
+                        return 1f;  // 20m+ is safe
+                    }),
                 // PROXIMITY BOOST: Higher score when closer to loot!
                 new FunctionalConsideration("LootProximityBoost",
                     _ => {
