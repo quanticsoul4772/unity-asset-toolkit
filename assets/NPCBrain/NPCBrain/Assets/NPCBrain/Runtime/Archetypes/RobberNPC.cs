@@ -32,7 +32,7 @@ namespace NPCBrain.Archetypes
 
         [Header("Robber Settings")]
         [SerializeField] private float _normalSpeed = 4f;
-        [SerializeField] private float _fleeSpeed = 7f;
+        [SerializeField] private float _fleeSpeed = 9f;  // Increased from 7 for better escape odds vs 4 cops
         [SerializeField] private float _sneakSpeed = 2f;
         [SerializeField] private float _arrivalDistance = 1f;
         [SerializeField] private float _stealTime = 2f;
