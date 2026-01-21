@@ -691,15 +691,18 @@ namespace NPCBrain.Archetypes
                 new FunctionalConsideration("LootAvailable", 
                     _ => _hasLootAvailable ? 1f : 0f),
                 // CRITICAL: Safe distance check - don't try to steal if cops are too close!
-                // This prevents flip-flopping between Flee and Steal.
-                // Lowered thresholds for 60x60m arena with 4 cops - robber needs windows to steal.
+                // EXCEPTION: If robber is VERY close to loot (<4m), COMMIT to grabbing it!
+                // This prevents the circling behavior where robber never actually grabs loot.
                 new FunctionalConsideration("SafeDistanceToSteal",
                     _ => {
+                        // COMMITMENT OVERRIDE: If very close to loot, ALWAYS allow stealing!
+                        // This prevents endless circling - robber commits to grabbing nearby loot.
+                        if (_cachedLootDistance < 4f) return 1f;  // Within 4m = COMMIT TO STEAL!
+                        
                         bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
                         if (!seesCop) return 1f;  // Can't see cop - safe to steal
                         float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
-                        // Lowered from 12m/20m to 6m/10m for smaller arena with multiple cops
-                        // Below 6m: too dangerous, keep fleeing
+                        // Below 6m: too dangerous, keep fleeing (unless very close to loot - handled above)
                         // 6-10m: risky but possible, gradual score increase
                         // 10m+: safe enough to attempt stealing
                         if (copDist < 6f) return 0f;  // Too close - keep fleeing!
@@ -707,12 +710,16 @@ namespace NPCBrain.Archetypes
                         return 1f;  // 10m+ is safe enough
                     }),
                 // PROXIMITY BOOST: Higher score when closer to loot!
+                // CRITICAL: Massive boost when within 4m to BEAT FLEE and commit to stealing!
                 new FunctionalConsideration("LootProximityBoost",
                     _ => {
                         if (!_hasLootAvailable) return 0.3f;
                         float dist = _cachedLootDistance;
-                        // At 0m: 1.3 (very high priority), at 40m+: 0.5
-                        return Mathf.Lerp(1.3f, 0.5f, Mathf.Clamp01(dist / 40f));
+                        // COMMITMENT ZONE (<4m): Massive 2.0 multiplier to beat Flee!
+                        // This ensures robber grabs nearby loot instead of circling forever.
+                        if (dist < 4f) return 2.0f;
+                        // At 4m: 1.3, at 40m+: 0.5
+                        return Mathf.Lerp(1.3f, 0.5f, Mathf.Clamp01((dist - 4f) / 36f));
                     }),
                 // Cop visibility - LESS PUNISHING now!
                 // INTENDED BEHAVIOR: Robber WILL try to steal even with cops visible because
@@ -934,7 +941,10 @@ namespace NPCBrain.Archetypes
             // SMART FLEE: Bias flee direction toward objectives!
             // If there's still loot to collect, flee TOWARD the next loot location
             // This lets the robber steal opportunistically while escaping
-            if (_anyLootRemaining)
+            // EXCEPTION: If already close to loot (<5m), DON'T bias flee toward it!
+            // When close to loot, Steal should win instead of Flee, so no bias needed.
+            // This prevents the circling behavior where flee pulls toward loot tangentially.
+            if (_anyLootRemaining && _cachedLootDistance >= 5f)
             {
                 var nextLoot = FindNearestLoot();
                 if (nextLoot != null)
