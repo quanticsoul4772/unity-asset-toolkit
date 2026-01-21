@@ -130,15 +130,15 @@ namespace NPCBrain
                 {
                     // No previous direction either - this is expected when pursuit starts from alarm
                     // (alarm provides position but not direction). Cops will converge on position.
-                    // This is normal for alarm-triggered pursuits, so just log info (not warning).
-                    Debug.Log("<color=cyan>[CopAlertSystem]</color> No direction for pursuit - converging on position only");
+                    // DISABLED: This log was too spammy
+                    // Debug.Log("<color=cyan>[CopAlertSystem]</color> No direction for pursuit - converging on position only");
                 }
                 
-                string directionStatus = _lastKnownRobberDirection.sqrMagnitude > 0.01f 
-                    ? $"direction {_lastKnownRobberDirection}" 
-                    : "<color=red>NO DIRECTION!</color>";
-                
-                Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=magenta>COORDINATED PURSUIT STARTED!</color> Position: {lastPosition} | {directionStatus} | Duration: {PursuitValidDuration}s | HasActivePursuit: {_hasActivePursuit}");
+                // DISABLED: Pursuit started log - too spammy
+                // string directionStatus = _lastKnownRobberDirection.sqrMagnitude > 0.01f 
+                //     ? $"direction {_lastKnownRobberDirection}" 
+                //     : "<color=red>NO DIRECTION!</color>";
+                // Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=magenta>COORDINATED PURSUIT STARTED!</color> Position: {lastPosition} | {directionStatus} | Duration: {PursuitValidDuration}s | HasActivePursuit: {_hasActivePursuit}");
             }
         }
         
@@ -165,15 +165,15 @@ namespace NPCBrain
             // If no direction, just return last known position (cops will converge there)
             if (_lastKnownRobberDirection.sqrMagnitude < 0.01f)
             {
-                // Throttle this log to avoid spam (every 2 seconds max)
-                if (Time.time - _lastNoDirectionLogTime > 2f)
-                {
-                    _lastNoDirectionLogTime = Time.time;
-                    if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
-                    {
-                        Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=yellow>No direction for prediction - returning last known position</color>");
-                    }
-                }
+                // DISABLED: No direction log - too spammy
+                // if (Time.time - _lastNoDirectionLogTime > 2f)
+                // {
+                //     _lastNoDirectionLogTime = Time.time;
+                //     if (NPCBrainDebug.IsEnabled(NPCBrainDebug.Category.General))
+                //     {
+                //         Debug.Log($"<color=cyan>[CopAlertSystem]</color> <color=yellow>No direction for prediction - returning last known position</color>");
+                //     }
+                // }
                 return _lastKnownRobberPosition;
             }
             

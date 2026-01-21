@@ -187,11 +187,11 @@ namespace EasyPath
                 Debug.LogWarning($"[EasyPathGrid] Cell size ({_cellSize}) is very large. Pathfinding may be imprecise.");
             }
             
-            // Log successful configuration
-            if (walkablePercent >= 30f)
-            {
-                Debug.Log($"[EasyPathGrid] Grid built: {_width}x{_height}, {WalkableCount} walkable cells ({walkablePercent:F1}%)");
-            }
+            // DISABLED: Grid built log - too spammy during gameplay
+            // if (walkablePercent >= 30f)
+            // {
+            //     Debug.Log($"[EasyPathGrid] Grid built: {_width}x{_height}, {WalkableCount} walkable cells ({walkablePercent:F1}%)");
+            // }
         }
         
         /// <summary>

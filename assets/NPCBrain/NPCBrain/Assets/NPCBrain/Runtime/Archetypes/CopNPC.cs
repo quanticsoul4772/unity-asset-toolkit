@@ -356,13 +356,13 @@ namespace NPCBrain.Archetypes
                 // Also continuously update last known position while tracking
                 Blackboard.SetVector3(BBKeys.LastKnownRobberPosition, robberPosition);
                 
-                // Log every 2 seconds to avoid spam
-                if (Time.time - _lastDebugLogTime > 2f)
-                {
-                    _lastDebugLogTime = Time.time;
-                    float dist = Vector3.Distance(transform.position, robberPosition);
-                    Debug.Log($"<color=blue>[{name}]</color> <color=cyan>TRACKING TARGET</color> | State: {_cachedState} | Distance: {dist:F1}m | CanArrest: {Blackboard.GetBool(BBKeys.CanArrest, false)}");
-                }
+                // DISABLED: Tracking target log - too spammy
+                // if (Time.time - _lastDebugLogTime > 2f)
+                // {
+                //     _lastDebugLogTime = Time.time;
+                //     float dist = Vector3.Distance(transform.position, robberPosition);
+                //     Debug.Log($"<color=blue>[{name}]</color> <color=cyan>TRACKING TARGET</color> | State: {_cachedState} | Distance: {dist:F1}m | CanArrest: {Blackboard.GetBool(BBKeys.CanArrest, false)}");
+                // }
                 
                 // Broadcast robber sighting to all cops
                 CopAlertSystem.BroadcastRobberSighting(robberPosition, target);
@@ -378,12 +378,12 @@ namespace NPCBrain.Archetypes
                 // Check if we should respond to shared alert
                 UpdateSharedAlertResponse();
                 
-                // VERBOSE LOGGING: Show what this cop is doing when no visual target
-                if (Time.time - _lastActionLogTime > 3f)
-                {
-                    _lastActionLogTime = Time.time;
-                    LogCurrentActionStatus();
-                }
+                // DISABLED: Action status logging - too spammy
+                // if (Time.time - _lastActionLogTime > 3f)
+                // {
+                //     _lastActionLogTime = Time.time;
+                //     LogCurrentActionStatus();
+                // }
             }
         }
         
@@ -626,12 +626,12 @@ namespace NPCBrain.Archetypes
                 new SetBlackboard(BBKeys.LastChaseTime, () => Time.time),
                 new SetBlackboard(BBKeys.CurrentState, () => { 
                     _cachedState = "Chase!";
-                    // Throttle chase log to avoid spam (only log every 2 seconds)
-                    if (Time.time - _lastChaseLogTime > 2f)
-                    {
-                        _lastChaseLogTime = Time.time;
-                        Debug.Log($"<color=blue>[{name}]</color> <color=lime>*** CHASING! ***</color>");
-                    }
+                    // DISABLED: Chase log - too spammy
+                    // if (Time.time - _lastChaseLogTime > 2f)
+                    // {
+                    //     _lastChaseLogTime = Time.time;
+                    //     Debug.Log($"<color=blue>[{name}]</color> <color=lime>*** CHASING! ***</color>");
+                    // }
                     return "Chase!"; 
                 }),
                 new MoveTo(
@@ -666,12 +666,13 @@ namespace NPCBrain.Archetypes
             var pursueBehavior = new Sequence(
                 new SetBlackboard(BBKeys.CurrentState, () => { 
                     _cachedState = "Pursuing!";
-                    if (Time.time - _lastPursueLogTime > 2f)
-                    {
-                        _lastPursueLogTime = Time.time;
-                        Vector3 predictedPos = GetPredictedRobberPosition();
-                        Debug.Log($"<color=blue>[{name}]</color> <color=magenta>*** COORDINATED PURSUIT! ***</color> Time since lost: {CopAlertSystem.TimeSinceLostSight:F1}s | Predicted pos: {predictedPos} | Direction: {CopAlertSystem.LastKnownRobberDirection}");
-                    }
+                    // DISABLED: Coordinated pursuit log - too spammy
+                    // if (Time.time - _lastPursueLogTime > 2f)
+                    // {
+                    //     _lastPursueLogTime = Time.time;
+                    //     Vector3 predictedPos = GetPredictedRobberPosition();
+                    //     Debug.Log($"<color=blue>[{name}]</color> <color=magenta>*** COORDINATED PURSUIT! ***</color> Time since lost: {CopAlertSystem.TimeSinceLostSight:F1}s | Predicted pos: {predictedPos} | Direction: {CopAlertSystem.LastKnownRobberDirection}");
+                    // }
                     return "Pursuing!"; 
                 }),
                 new MoveTo(
@@ -742,11 +743,11 @@ namespace NPCBrain.Archetypes
             {
                 if (IsClosestCopToRobber())
                 {
-                    // Log role transition if changed
+                    // DISABLED: Role transition log - too spammy
                     if (_lastPursuitRole != PursuitRole.Pursuer)
                     {
                         _lastPursuitRole = PursuitRole.Pursuer;
-                        Debug.Log($"<color=blue>[{name}]</color> <color=lime>ROLE: PURSUER</color> - I'm closest, chasing directly!");
+                        // Debug.Log($"<color=blue>[{name}]</color> <color=lime>ROLE: PURSUER</color> - I'm closest, chasing directly!");
                     }
                     
                     // I'm closest - chase directly!
@@ -754,11 +755,11 @@ namespace NPCBrain.Archetypes
                 }
                 else
                 {
-                    // Log role transition if changed
+                    // DISABLED: Role transition log - too spammy
                     if (_lastPursuitRole != PursuitRole.Interceptor)
                     {
                         _lastPursuitRole = PursuitRole.Interceptor;
-                        Debug.Log($"<color=blue>[{name}]</color> <color=yellow>ROLE: INTERCEPTOR</color> - Blocking escape zone!");
+                        // Debug.Log($"<color=blue>[{name}]</color> <color=yellow>ROLE: INTERCEPTOR</color> - Blocking escape zone!");
                     }
                     
                     // I'm not closest - intercept at escape zone!
@@ -908,13 +909,14 @@ namespace NPCBrain.Archetypes
             var trackBehavior = new Sequence(
                 new SetBlackboard(BBKeys.CurrentState, () => { 
                     _cachedState = "Tracking!";
-                    if (Time.time - _lastTrackLogTime > 2f)
-                    {
-                        _lastTrackLogTime = Time.time;
-                        Vector3 footstepPos = Blackboard.GetVector3(BBKeys.LastFootstepPosition, transform.position);
-                        float dist = Vector3.Distance(transform.position, footstepPos);
-                        Debug.Log($"<color=blue>[{name}]</color> <color=orange>*** TRACKING FOOTSTEPS! ***</color> Distance: {dist:F1}m");
-                    }
+                    // DISABLED: Tracking footsteps log - too spammy
+                    // if (Time.time - _lastTrackLogTime > 2f)
+                    // {
+                    //     _lastTrackLogTime = Time.time;
+                    //     Vector3 footstepPos = Blackboard.GetVector3(BBKeys.LastFootstepPosition, transform.position);
+                    //     float dist = Vector3.Distance(transform.position, footstepPos);
+                    //     Debug.Log($"<color=blue>[{name}]</color> <color=orange>*** TRACKING FOOTSTEPS! ***</color> Distance: {dist:F1}m");
+                    // }
                     return "Tracking!"; 
                 }),
                 new MoveTo(
