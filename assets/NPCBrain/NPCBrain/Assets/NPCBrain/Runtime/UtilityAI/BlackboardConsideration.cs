@@ -51,7 +51,40 @@ namespace NPCBrain.UtilityAI
                 return _normalizer(_defaultValue);
             }
             
-            T value = brain.Blackboard.Get(_key, _defaultValue);
+            // IMPORTANT: Check type-specific dictionaries first!
+            // The Blackboard has separate storage for SetBool/GetBool, SetFloat/GetFloat, etc.
+            // The generic Get<T>() only reads from _data, not from _boolData, _floatData, etc.
+            // This caused a critical bug where BlackboardConsideration<bool> couldn't read values
+            // set via SetBool().
+            T value;
+            var bb = brain.Blackboard;
+            
+            if (typeof(T) == typeof(bool))
+            {
+                bool boolValue = bb.GetBool(_key, _defaultValue is bool b ? b : false);
+                value = (T)(object)boolValue;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                float floatValue = bb.GetFloat(_key, _defaultValue is float f ? f : 0f);
+                value = (T)(object)floatValue;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                int intValue = bb.GetInt(_key, _defaultValue is int i ? i : 0);
+                value = (T)(object)intValue;
+            }
+            else if (typeof(T) == typeof(UnityEngine.Vector3))
+            {
+                UnityEngine.Vector3 vecValue = bb.GetVector3(_key, _defaultValue is UnityEngine.Vector3 v ? v : default);
+                value = (T)(object)vecValue;
+            }
+            else
+            {
+                // Fallback to generic Get for other types
+                value = bb.Get(_key, _defaultValue);
+            }
+            
             return _normalizer(value);
         }
         
