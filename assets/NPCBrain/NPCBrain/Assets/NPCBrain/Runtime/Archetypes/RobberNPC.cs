@@ -443,7 +443,8 @@ namespace NPCBrain.Archetypes
         
         private void TryEscape()
         {
-            if (!_isCarryingLoot || _escapeZone == null) return;
+            // Must have loot AND all loot must be collected before escaping
+            if (!_isCarryingLoot || _escapeZone == null || _hasLootAvailable) return;
             
             if (_escapeZone.TryEscape(gameObject, _carriedLootValue))
             {
