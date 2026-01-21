@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using NPCBrain;
 
 namespace NPCBrain.Demo
@@ -6,6 +7,7 @@ namespace NPCBrain.Demo
     /// <summary>
     /// Performance testing utility for NPCBrain.
     /// Spawns multiple NPCs and monitors performance metrics.
+    /// Uses Unity's Input System package (not legacy Input Manager).
     /// </summary>
     public class PerformanceTest : MonoBehaviour
     {
@@ -20,10 +22,6 @@ namespace NPCBrain.Demo
 
         [Header("Performance Monitoring")]
         [SerializeField] private bool _showStats = true;
-        [SerializeField] private KeyCode _spawnKey = KeyCode.Space;
-        [SerializeField] private KeyCode _clearKey = KeyCode.C;
-        [SerializeField] private KeyCode _increaseKey = KeyCode.Plus;
-        [SerializeField] private KeyCode _decreaseKey = KeyCode.Minus;
 
         [Header("Advanced Options")]
         #pragma warning disable CS0414 // Field is assigned but never used
@@ -48,27 +46,31 @@ namespace NPCBrain.Demo
 
         void Update()
         {
-            // Manual spawn control
-            if (Input.GetKeyDown(_spawnKey))
+            // Manual spawn control using new Input System
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
             {
-                SpawnNPCs();
-            }
+                if (keyboard.spaceKey.wasPressedThisFrame)
+                {
+                    SpawnNPCs();
+                }
 
-            if (Input.GetKeyDown(_clearKey))
-            {
-                ClearNPCs();
-            }
+                if (keyboard.cKey.wasPressedThisFrame)
+                {
+                    ClearNPCs();
+                }
 
-            if (Input.GetKeyDown(_increaseKey))
-            {
-                _npcCount += 10;
-                SpawnNPCs();
-            }
+                if (keyboard.equalsKey.wasPressedThisFrame || keyboard.numpadPlusKey.wasPressedThisFrame)
+                {
+                    _npcCount += 10;
+                    SpawnNPCs();
+                }
 
-            if (Input.GetKeyDown(_decreaseKey))
-            {
-                _npcCount = Mathf.Max(10, _npcCount - 10);
-                SpawnNPCs();
+                if (keyboard.minusKey.wasPressedThisFrame || keyboard.numpadMinusKey.wasPressedThisFrame)
+                {
+                    _npcCount = Mathf.Max(10, _npcCount - 10);
+                    SpawnNPCs();
+                }
             }
 
             // Track performance

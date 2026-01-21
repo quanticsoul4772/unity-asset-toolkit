@@ -1,132 +1,86 @@
 # NPCBrain Demo Scenes
 
-Demo scenes for NPCBrain archetypes.
+This folder contains demo scenes showcasing NPCBrain's AI capabilities.
 
-## Cops and Robbers Demo
+## Demo Scenes
 
-**File:** `Scenes/CopsAndRobbersDemo.unity`
+### 1. Stealth Infiltration Demo (`StealthDemo.unity`) ⭐ NEW
+A spy/infiltrator must sneak through a facility guarded by patrols, collect intel, and reach extraction.
 
-Demo showcasing NPC archetypes working together in a heist scenario.
+**Features Showcased:**
+- SightSensor vision cones (visible in debug - red cones)
+- HearingSensor footstep detection
+- Guard alert levels and investigation behavior
+- Patrol routes with WaypointPath
+- Player sneaking mechanics (sprint = louder)
+- Intel collection system
+- Extraction zone
 
-### Features
-- CopNPC - Patrol, investigate, chase, arrest
-- RobberNPC - Steal, evade, hide, escape
-- LootPoints - Stealable objectives that trigger alarms
-- EscapeZone - Victory condition for robbers
-- CoverPoints - Hiding spots
-- Utility AI with Criticality system
-- Scoring system (arrests vs escapes)
-- Real-time UI showing NPC states
+**Controls:**
+- WASD - Move
+- Shift - Sprint (makes more noise!)
+- E - Collect intel when near
+- F1 - Toggle UI
+- R - Restart mission
 
-### How It Works
-1. Robbers spawn near the escape zone and seek out loot
-2. Cops patrol the area, listening for alarms and footsteps
-3. When a robber steals loot, an alarm sounds alerting nearby cops
-4. Robbers must evade cops and reach the escape zone with their loot
-5. Cops win by arresting robbers; Robbers win by escaping with loot
+**Objective:** Collect the primary intel (red) and any secondary intel (blue), then reach the extraction zone (cyan helipad) without being detected!
 
-### Behaviors
+---
 
-Cops (CopNPC):
-- Arrest, Chase, InvestigateAlarm, InvestigateSound, Return, Patrol
+### 2. Cops and Robbers Demo (`CopsAndRobbersDemo.unity`)
+Robbers try to steal loot and escape while cops patrol and arrest them.
 
-Robbers (RobberNPC):
-- Flee, CarryToEscape, StealLoot, Hide, Sneak, Scout
+**Features Showcased:**
+- Utility AI decision-making
+- Multi-agent coordination (cops share robber sightings)
+- Smart flee algorithm (robber evades multiple cops)
+- Opportunistic loot grabbing
+- Fear/urgency system
 
-## Creating Demo Scenes
+**Controls:**
+- F1 - Toggle UI
+- R - Restart game
 
-Use the Unity menu to create demo scenes:
+---
 
-- **NPCBrain → Create Guard Demo Scene** - Creates `GuardDemo.unity`
-- **NPCBrain → Create Patrol Demo Scene** - Creates `PatrolDemo.unity`
-- **NPCBrain → Create All Demo Scenes** - Creates both at once
+### 3. Guard Demo (`GuardDemo.unity`)
+A player-controlled character avoids guards with sight-based detection.
 
-## Opening Demo Scenes
+**Features Showcased:**
+- GuardNPC + Utility AI
+- Criticality system (behavioral variety)
+- Chase, Investigate, Return, Patrol behaviors
 
-- **NPCBrain → Open Guard Demo** - Opens the Guard demo (creates if needed)
-- **NPCBrain → Open Patrol Demo** - Opens the Patrol demo (creates if needed)
+**Controls:**
+- WASD - Move player
+- Shift - Sprint
 
-## Guard Demo
+---
 
-**File:** `Scenes/GuardDemo.unity`
+### 4. Patrol Demo (`PatrolDemo.unity`)
+Simple patrol route demonstration.
 
-Demonstrates GuardNPC with chase, investigate, and patrol behaviors.
+---
 
-### Features
-- Player-controlled character (WASD + Shift to sprint)
-- Guards with sight sensors
-- Chase when spotted, investigate last known position
-- Return to post after losing target
+### 5. Hearing Demo (`HearingDemo.unity`)
+Demonstrates HearingSensor and sound propagation.
 
-### Controls
-| Key | Action |
-|-----|--------|
-| W/↑ | Move forward |
-| S/↓ | Move backward |
-| A/← | Move left |
-| D/→ | Move right |
-| Shift | Sprint |
+---
 
-### Guard Behavior Priority
-1. **Chase** - If target is visible and in range
-2. **Investigate** - Go to last known position if target lost
-3. **Return** - Return to patrol area if far from home
-4. **Patrol** - Walk between waypoints when idle
+### 6. Utility Demo (`UtilityDemo.unity`)
+Raw Utility AI scoring visualization.
 
-## Patrol Demo
+---
 
-**File:** `Scenes/PatrolDemo.unity`
+## Quick Start
 
-Demonstrates PatrolNPC with waypoint following.
+1. Open any demo scene in Unity
+2. Press Play
+3. The scene will auto-generate (if `Auto Generate` is enabled)
+4. Use the on-screen controls
 
-### Features
-- Multiple patrol NPCs with different routes
-- Color-coded patrollers and waypoints
-- Patterns: Square, Diamond, Circle, Line
+## Tips
 
-## Debug Tools
-
-While running any demo, you can use NPCBrain's debug tools:
-
-1. **Window → NPCBrain → Debug Window** - Inspect any NPC's state
-2. **Scene Gizmos** - Vision cones and waypoint paths are drawn in Scene view
-
-### Debug Window Features
-- NPC selector dropdown
-- Current state display
-- Blackboard key viewer
-- Criticality stats (Temperature, Entropy, Inertia)
-
-Note: To see Criticality values change, use the Utility Demo scene which uses UtilitySelector. The Guard and Patrol demos use regular BT nodes which don't record actions to the Criticality system.
-
-## Customization
-
-Demo setups have serialized fields:
-
-- GuardDemoSetup: `_guardCount`, `_arenaSize`, colors
-- PatrolDemoSetup: `_patrollerCount`, `_arenaSize`, `_patrollerColors`
-
-## Creating Your Own NPCs
-
-Use these demos as reference for creating custom NPCs:
-
-```csharp
-// Simple patrol NPC
-public class MyPatroller : PatrolNPC
-{
-    // PatrolNPC handles everything!
-    // Just assign a WaypointPath in the inspector
-}
-
-// Custom guard with extended behavior
-public class MyGuard : GuardNPC
-{
-    protected override void Awake()
-    {
-        base.Awake();
-        // Add custom initialization
-    }
-}
-```
-
-See the `Runtime/Archetypes/` folder for the full source code of each archetype.
+- In Stealth Demo, watch the guard vision cones (red) - stay out of their sight!
+- Guards will investigate sounds, so sprint carefully
+- The UI shows real-time guard states and your detection status
