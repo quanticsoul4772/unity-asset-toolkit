@@ -16,7 +16,6 @@ namespace NPCBrain
         private static GameObject _lastSeenRobber;
         private static bool _hasActiveAlert;
         private static bool _hasActivePursuit;
-        private static float _lastNoDirectionLogTime = -100f;  // Throttle for "no direction" debug log
         
         // Coordinated pursuit: escape zone interception
         private static Vector3 _escapeZonePosition = Vector3.zero;
@@ -243,7 +242,6 @@ namespace NPCBrain
             _lastSeenRobber = null;
             _hasActiveAlert = false;
             _hasActivePursuit = false;
-            _lastNoDirectionLogTime = -100f;
             _escapeZonePosition = Vector3.zero;
         }
     }
