@@ -655,10 +655,8 @@ namespace NPCBrain.Archetypes
                 "StealLoot",
                 stealBehavior,
                 _stealWeight,
-                // Can steal even if already carrying loot - collect ALL the loot!
-                new FunctionalConsideration("CanStealMore",
-                    _ => 1f),  // Always allow stealing if loot is available
                 // Must have loot available to steal - use cached value (updated in LateUpdate)
+                // Note: Robber can steal even if already carrying loot - collect ALL the loot!
                 new FunctionalConsideration("LootAvailable", 
                     _ => _hasLootAvailable ? 1f : 0f),
                 // PROXIMITY BOOST: Higher score when closer to loot!
