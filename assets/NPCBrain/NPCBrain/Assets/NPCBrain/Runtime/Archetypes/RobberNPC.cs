@@ -692,17 +692,19 @@ namespace NPCBrain.Archetypes
                     _ => _hasLootAvailable ? 1f : 0f),
                 // CRITICAL: Safe distance check - don't try to steal if cops are too close!
                 // This prevents flip-flopping between Flee and Steal.
-                // Robber must actually ESCAPE (get 20m+ away) before trying to steal again.
+                // Lowered thresholds for 60x60m arena with 4 cops - robber needs windows to steal.
                 new FunctionalConsideration("SafeDistanceToSteal",
                     _ => {
                         bool seesCop = Blackboard.GetBool(BBKeys.CanSeeCop, false);
                         if (!seesCop) return 1f;  // Can't see cop - safe to steal
                         float copDist = Blackboard.GetFloat(BBKeys.ClosestCopDistance, 100f);
-                        // Need 20m+ distance to safely attempt stealing when cop is visible
-                        // Below 20m: score drops to 0, preventing Steal from winning over Flee
-                        if (copDist < 12f) return 0f;  // Too close - keep fleeing!
-                        if (copDist < 20f) return (copDist - 12f) / 8f;  // Gradual increase 12-20m
-                        return 1f;  // 20m+ is safe
+                        // Lowered from 12m/20m to 6m/10m for smaller arena with multiple cops
+                        // Below 6m: too dangerous, keep fleeing
+                        // 6-10m: risky but possible, gradual score increase
+                        // 10m+: safe enough to attempt stealing
+                        if (copDist < 6f) return 0f;  // Too close - keep fleeing!
+                        if (copDist < 10f) return (copDist - 6f) / 4f;  // Gradual increase 6-10m
+                        return 1f;  // 10m+ is safe enough
                     }),
                 // PROXIMITY BOOST: Higher score when closer to loot!
                 new FunctionalConsideration("LootProximityBoost",
@@ -888,8 +890,21 @@ namespace NPCBrain.Archetypes
             Vector3 copPos = Blackboard.GetVector3(BBKeys.ClosestCopPosition, transform.position);
             Vector3 fleeDir = (transform.position - copPos).normalized;
             
-            // Try to flee toward escape zone if carrying loot
-            if (_isCarryingLoot && _escapeZone != null)
+            // SMART FLEE: Bias flee direction toward objectives!
+            // If there's still loot to collect, flee TOWARD the next loot location
+            // This lets the robber steal opportunistically while escaping
+            if (_anyLootRemaining)
+            {
+                var nextLoot = FindNearestLoot();
+                if (nextLoot != null)
+                {
+                    Vector3 toLoot = (nextLoot.transform.position - transform.position).normalized;
+                    // Blend: 60% away from cop, 40% toward loot
+                    fleeDir = (fleeDir * 0.6f + toLoot * 0.4f).normalized;
+                }
+            }
+            // If all loot collected, flee toward escape zone
+            else if (_isCarryingLoot && _escapeZone != null)
             {
                 Vector3 toEscape = (_escapeZone.transform.position - transform.position).normalized;
                 fleeDir = (fleeDir + toEscape).normalized;
